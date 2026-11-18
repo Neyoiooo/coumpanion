@@ -4,7 +4,9 @@ Coumpanion shows updates from your AI apps in a small island while you use anoth
 
 [![Download the Coumpanion APK](https://img.shields.io/badge/Download-Coumpanion%20APK-146c5b?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.5.0-preview.5/Coumpanion-debug.apk)
 
-**Android 11 or later.** Preview 5 adds **Watch AI apps**. You can install it over Preview 4. [Release notes](https://github.com/Neyoiooo/coumpanion/releases/tag/coumpanion-v0.5.0-preview.5)
+**Android 11 or later.** Preview 5 adds **Watch AI apps**. [Release notes](https://github.com/Neyoiooo/coumpanion/releases/tag/coumpanion-v0.5.0-preview.5)
+
+If Google Play Protect shows **App blocked to protect your device**, it stopped the GitHub APK before installation because Watch AI apps uses notification access. Keep your existing Preview 4 installation for server pairing and chat. [Preview 4 download](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.5.0-preview.4/Coumpanion-debug.apk) · [Google’s explanation](https://developers.google.com/android/play-protect/warning-dev-guidance#app_blocked_to_protect_your_device)
 
 ## Watch AI apps on your phone
 

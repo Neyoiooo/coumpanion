@@ -6,6 +6,8 @@ The offline demo runs on Android 11 or later. [Coumpanion Server](server/README.
 
 ## Watch AI apps
 
+Google Play Protect can block the Preview 5 GitHub APK before installation because it uses notification access. If you see **App blocked to protect your device**, you can keep using Preview 4 for server pairing and chat. Watch AI apps was added in Preview 5. [Preview 4 download](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.5.0-preview.4/Coumpanion-debug.apk) · [Google’s explanation](https://developers.google.com/android/play-protect/warning-dev-guidance#app_blocked_to_protect_your_device)
+
 1. Open Coumpanion and tap **Choose AI apps** on Home or **Watch AI apps** in Settings.
 2. Turn on the installed apps you want to watch, then tap **Allow notification access** and grant it for Coumpanion in Android Settings.
 3. Return to Coumpanion and tap **Allow the island** if it appears. Turn on **Display over other apps**. Switch to another app and wait for a new notification from a selected AI app.
@@ -14,7 +16,7 @@ The island shows **Update** for a few seconds. Tap to open the source app, or pr
 
 Android grants notification access for the device. Coumpanion filters by the packages you select before reading a notification title, keeps the title in memory for the island, and leaves the original notification in the shade. This feature runs locally on the phone.
 
-If Android blocks notification access for an APK you installed yourself, open **Settings → Apps → Coumpanion**. When the menu offers **Allow restricted settings**, use it, then return to **Watch AI apps** to grant notification access.
+If Coumpanion is already installed and Android labels the notification access switch as a **Restricted setting**, open **Settings → Apps → Coumpanion**. When the menu offers **Allow restricted settings**, use it, then return to **Watch AI apps** to grant notification access.
 
 ## Build and test
 
