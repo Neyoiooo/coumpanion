@@ -122,6 +122,7 @@ class IslandOverlay(
     private val onOpen: () -> Unit,
     /** The user swiped the island up: what it showed now belongs in the notification shade. */
     private val onSwiped: (IslandSpec) -> Unit = {},
+    private val onOpenWatchedApp: (packageName: String) -> Unit,
 ) {
     private val wm = context.getSystemService(WindowManager::class.java)
     private val main = Handler(Looper.getMainLooper())
@@ -165,6 +166,17 @@ class IslandOverlay(
     /** An agent finished, failed or hit a limit: shown for 10 s, then the island goes up. */
     fun flash(next: IslandSpec) = safely {
         timeline.flash(next)
+        sync()
+    }
+
+    fun showWatchedUpdate(next: IslandSpec) {
+        if (seenByUser()) flash(next)
+    }
+
+    /** Clear notification text as soon as access is revoked or the screen locks. */
+    fun clearWatchedUpdate() = safely {
+        timeline.clearFlash(IslandSpec.Kind.APP_UPDATE)
+        if (timeline.current?.kind == IslandSpec.Kind.APP_UPDATE) timeline.retractFinished()
         sync()
     }
 
@@ -217,7 +229,8 @@ class IslandOverlay(
         val opening = view == null
         if (!ensureView()) return
         val b = box ?: return
-        if (spec?.kind != current.kind || spec?.fingerprint != current.fingerprint) shownAt = clock()
+        if (spec?.kind != current.kind || spec?.fingerprint != current.fingerprint ||
+            (current.kind == IslandSpec.Kind.APP_UPDATE && spec != current)) shownAt = clock()
         if (spec?.kind != current.kind || spec?.pillId != current.pillId || spec?.fingerprint != current.fingerprint) {
             expanded = false
         }
@@ -288,9 +301,12 @@ class IslandOverlay(
         val b = box ?: return
         val params = v.layoutParams as? WindowManager.LayoutParams ?: return
         val left = b.leftFor(visibleWidth(b))
-        if (params.x == left && params.y == b.windowTop) return
+        val secure = WindowManager.LayoutParams.FLAG_SECURE
+        val flags = if (spec?.kind == IslandSpec.Kind.APP_UPDATE) params.flags or secure else params.flags and secure.inv()
+        if (params.x == left && params.y == b.windowTop && params.flags == flags) return
         params.x = left
         params.y = b.windowTop
+        params.flags = flags
         wm.updateViewLayout(v, params)
     }
 
@@ -521,12 +537,17 @@ class IslandOverlay(
             IslandSpec.Kind.ERROR -> R.string.notif_error
             IslandSpec.Kind.RATELIMIT -> R.string.notif_ratelimit
             IslandSpec.Kind.QUESTION -> R.string.notif_question
+            IslandSpec.Kind.APP_UPDATE -> R.string.watch_apps_update
             else -> R.string.notif_finished
         })
         val accent = Color(palette.label)
         Column(
             modifier.fillMaxWidth().combinedClickable(
-                onClick = { tap("the status strip") { onOpen() } },
+                onClick = {
+                    tap("the status strip") {
+                        if (s.kind == IslandSpec.Kind.APP_UPDATE) onOpenWatchedApp(s.pillId) else onOpen()
+                    }
+                },
                 onLongClick = { tap("the island long press") { toggleDetails() } },
                 onLongClickLabel = stringResource(if (expanded) R.string.island_collapse_details else R.string.island_expand_details),
             ),

@@ -1,17 +1,19 @@
 # Coumpanion
 
-Start an AI task, then go back to scrolling. Coumpanion puts a small island over your other Android apps so you can see when your assistant is working, done, or waiting for your approval. The goal is to keep the task running on your server even when you switch apps or lose your connection.
+Coumpanion shows updates from your AI apps in a small island while you use another Android app. Watch apps like Claude and ChatGPT directly on your phone. Pair Coumpanion Server for DeepSeek chat and task progress. Compatible desktop integrations also support approvals.
 
-[![Download the Coumpanion APK](https://img.shields.io/badge/Download-Coumpanion%20APK-146c5b?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.5.0-preview.4/Coumpanion-debug.apk)
+[![Download the Coumpanion APK](https://img.shields.io/badge/Download-Coumpanion%20APK-146c5b?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.5.0-preview.5/Coumpanion-debug.apk)
 
-**Android 11 or later.** Preview 4 shares one screen-lock check between approvals and answers while the screen stays on. Real DeepSeek chat requires a reachable Coumpanion Server with its own API key. [Release notes](https://github.com/Neyoiooo/coumpanion/releases/tag/coumpanion-v0.5.0-preview.4)
+**Android 11 or later.** Preview 5 adds **Watch AI apps**. You can install it over Preview 4. [Release notes](https://github.com/Neyoiooo/coumpanion/releases/tag/coumpanion-v0.5.0-preview.5)
 
-## Try it on your phone
+## Watch AI apps on your phone
 
 1. Download and open the APK. If Android asks, allow your browser or file manager to install it.
-2. Open **Coumpanion** and tap **Try demo mode**.
-3. Grant **Display over other apps** for Coumpanion, then switch to another app. Watch the island while the demo runs.
-4. When the demo asks for approval, tap **Deny** or **Review request**. The first **Allow** uses your phone's PIN, pattern, or password.
+2. Open **Coumpanion** and tap **Choose AI apps**. Turn on the installed apps you want to watch.
+3. Tap **Allow notification access** and grant it for Coumpanion in Android Settings. If **Allow the island** appears when you return, tap it and enable **Display over other apps**.
+4. Switch apps. When a selected app posts a new notification, Coumpanion shows an **Update** pill. Tap it to open that app or hold it to see the notification title.
+
+[Phone setup and permission help](android/README.md#watch-ai-apps)
 
 ## Build from source
 
@@ -25,7 +27,7 @@ node scripts/gen-strings.mjs --check
 
 See the [Android guide](android/README.md) for pairing, settings, and development. The [phone link protocol](docs/ANDROID_LINK.md) documents how the app connects to a compatible host.
 
-For real AI chat, pair the phone with [Coumpanion Server](android/server/README.md). The server uses DeepSeek and holds the API key.
+Start Coumpanion Server on a cloud host from your phone, then copy its private link into the app. The server holds your DeepSeek API key. [Phone setup guide](android/server/README.md#from-your-phone)
 
 ## Credits
 

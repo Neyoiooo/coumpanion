@@ -1,6 +1,8 @@
 package com.coucou.android.app
 
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.PowerManager
@@ -16,6 +18,7 @@ import com.coucou.android.core.Decision
 import com.coucou.android.core.DecisionLog
 import com.coucou.android.core.KeyValueStore
 import com.coucou.android.core.IslandPlan
+import com.coucou.android.core.WatchedAiApp
 import com.coucou.android.core.OverlayChoice
 import com.coucou.android.core.StatusPolicy
 import com.coucou.android.core.UserSettings
@@ -128,6 +131,32 @@ class AppModel(private val context: Context) : LinkListener {
     )
 
     private val prefs = context.getSharedPreferences("coucou_ui", Context.MODE_PRIVATE)
+
+    var installedWatchApps by mutableStateOf<List<WatchedAiApp>>(emptyList()); private set
+    var watchedPackages by mutableStateOf(prefs.getStringSet("watched_ai_apps", emptySet()).orEmpty().toSet()); private set
+    var watchAccess by mutableStateOf(false); private set
+
+    fun refreshWatchApps() {
+        installedWatchApps = WatchedAiApp.entries.filter { app ->
+            @Suppress("DEPRECATION")
+            try {
+                context.packageManager.getApplicationInfo(app.packageName, 0).enabled
+            } catch (_: PackageManager.NameNotFoundException) {
+                false
+            }
+        }
+        watchAccess = WatchNotificationService.accessGranted(context)
+    }
+
+    fun setWatched(app: WatchedAiApp, on: Boolean) {
+        if (app !in installedWatchApps) return
+        watchedPackages = if (on) watchedPackages + app.packageName else watchedPackages - app.packageName
+        prefs.edit().putStringSet("watched_ai_apps", watchedPackages).apply()
+        if (!on) clearWatchedUpdate()
+    }
+
+    internal fun watchedApp(packageName: String): WatchedAiApp? = WatchedAiApp.selected(packageName, watchedPackages)
+
     private val kv = object : KeyValueStore {
         override fun getBoolean(key: String, default: Boolean) = prefs.getBoolean(key, default)
         override fun getInt(key: String, default: Int) = prefs.getInt(key, default)
@@ -366,6 +395,7 @@ class AppModel(private val context: Context) : LinkListener {
         onDeny = { decide(it, allow = false) },
         onOpen = { notifier.openApp() },
         onSwiped = { shadeAfterSwipe(it) },
+        onOpenWatchedApp = ::openWatchedApp,
     )
 
     /** The island went up: leave what it showed in the notification shade (quietly), so nothing is lost with the swipe. */
@@ -375,8 +405,24 @@ class AppModel(private val context: Context) : LinkListener {
             IslandPlan.Shade.REQUEST_NOTE ->
                 approvals.firstOrNull { it.fingerprint == spec.fingerprint }
                     ?.let { notifier.showApproval(it, agentName(it.pillId), OverlayPolicy.ApprovalAlert.QUIET) }
-            IslandPlan.Shade.ONGOING -> Unit // the ongoing notification already says who is working
+            // Both sources already have their own notification in the shade.
+            IslandPlan.Shade.ONGOING, IslandPlan.Shade.ORIGINAL_NOTE -> Unit
         }
+    }
+
+    internal fun showWatchedUpdate(app: WatchedAiApp, title: String) {
+        if (!islandAllowed(requireLink = false)) return
+        val time = java.time.LocalTime.now()
+        if (!settings.quiet.isQuiet(time.hour * 60 + time.minute)) overlay.showWatchedUpdate(app.update(title))
+    }
+
+    internal fun clearWatchedUpdate() = overlay.clearWatchedUpdate()
+
+    private fun openWatchedApp(packageName: String) {
+        val app = watchedApp(packageName) ?: return
+        val launch = context.packageManager.getLaunchIntentForPackage(app.packageName) ?: return
+        runCatching { context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        clearWatchedUpdate()
     }
 
     fun overlayPermitted() = overlay.permitted()
@@ -391,8 +437,8 @@ class AppModel(private val context: Context) : LinkListener {
         refreshIsland()
     }
 
-    private fun islandAllowed(): Boolean {
-        val connected = mode != Mode.PAIRED || linkState == LinkState.CONNECTED
+    private fun islandAllowed(requireLink: Boolean = true): Boolean {
+        val connected = !requireLink || mode != Mode.PAIRED || linkState == LinkState.CONNECTED
         val silenced = OverlayPolicy.silenced(settings.hideIslandInDnd, settings.hideIslandInDnd && dndOn())
         val why = OverlayPolicy.blocker(choice.wished, overlay.permitted(), inForeground, silenced)
             ?: if (!connected) "not connected to a computer" else null
@@ -424,11 +470,11 @@ class AppModel(private val context: Context) : LinkListener {
 
     private fun refreshIsland() {
         pushGlance()
-        if (!islandAllowed()) {
+        if (!islandAllowed(requireLink = false)) {
             overlay.hide()
             return
         }
-        overlay.setActive(IslandPlan.active(sessions, approvals, allowed = true, this::agentName))
+        overlay.setActive(IslandPlan.active(sessions, approvals, allowed = islandAllowed(), this::agentName))
     }
 
     private val expiry = HashMap<String, Runnable>()

@@ -36,11 +36,15 @@ class DevDesktopInteropTest {
         "android/tools/dev-desktop.mjs", "--host", "127.0.0.1", "--port", "0", "--quiet", "--step", "300", *extra,
     )
 
-    private fun startNode(relativeScript: String, vararg args: String): JSONObject {
+    private fun startNode(relativeScript: String, vararg args: String, extraEnv: Map<String, String> = emptyMap()): JSONObject {
         assumeTrue("node not available", have("node"))
         assumeTrue("openssl not available", have("openssl", "version"))
         val script = ReferenceFiles.file(relativeScript).absolutePath
-        val process = ProcessBuilder(listOf("node", script) + args).redirectErrorStream(true).start()
+        val process = ProcessBuilder(listOf("node", script) + args).redirectErrorStream(true).apply {
+            environment().remove("COUMPANION_RELAY_URL")
+            environment().remove("COUMPANION_RELAY_ACCESS_KEY")
+            environment().putAll(extraEnv)
+        }.start()
         proc = process
         Thread {
             BufferedReader(InputStreamReader(process.inputStream)).forEachLine { lines.add(it) }
@@ -96,15 +100,29 @@ class DevDesktopInteropTest {
     private fun chatClient(info: JSONObject, rec: Rec, caps: List<String> = Protocol.CAPABILITIES): LinkClient =
         LinkClient(PairingPayload.parse(info.getString("link"))!!, "Interop Pixel", rec, readTimeoutMs = 5_000, caps = caps)
 
-    @Test fun serverPairsStreamsAnAnswerAndReportsWorkingThenFinished() {
+    @Test fun serverPairsStreamsAnAnswerAndReportsWorkingThenFinished() = serverChat(emptyMap())
+
+    @Test fun serverPairsAndAnswersThroughTheRelay() {
+        val url = System.getenv("COUMPANION_SERVER_E2E_RELAY_URL")
+        val access = System.getenv("COUMPANION_SERVER_E2E_RELAY_ACCESS_KEY")
+        assumeTrue("local relay fixture is not configured", url != null && access != null)
+        serverChat(mapOf("COUMPANION_RELAY_URL" to url!!, "COUMPANION_RELAY_ACCESS_KEY" to access!!))
+    }
+
+    private fun serverChat(extraEnv: Map<String, String>) {
         val state = Files.createTempDirectory("coumpanion-interop-").toFile()
         try {
-            val info = startNode("android/server/run.mjs", "--port", "0", "--state-dir", state.absolutePath, "--fake")
+            val info = startNode(
+                "android/server/run.mjs", "--port", "0", "--state-dir", state.absolutePath, "--fake", extraEnv = extraEnv,
+            )
             require(info.getBoolean("fake"))
             val pairing = PairingPayload.parse(File(info.getString("pairingFile")).readText())!!
             assertTrue(!info.toString().contains(pairing.token))
             val rec = Rec()
-            val client = LinkClient(pairing, "Interop Pixel", rec)
+            val relay = pairing.relay
+            assertEquals(extraEnv.isNotEmpty(), relay != null)
+            val client = if (relay != null) LinkClient(pairing, "Interop Pixel", rec, connector = RelayConnector(relay))
+                else LinkClient(pairing, "Interop Pixel", rec)
             try {
                 client.start()
                 assertEquals("Coumpanion Server", rec.welcome.poll(10, TimeUnit.SECONDS))

@@ -79,6 +79,36 @@ function loadIdentity(dir) {
   }
 }
 
+function relaySettings(fake) {
+  const address = process.env.COUMPANION_RELAY_URL;
+  const access = process.env.COUMPANION_RELAY_ACCESS_KEY;
+  if (!address && !access) return null;
+  if (!address || !access || !/^[A-Za-z0-9_-]{43}$/.test(access) ||
+      Buffer.from(access, "base64url").toString("base64url") !== access) {
+    throw new Error("Set COUMPANION_RELAY_URL and a valid COUMPANION_RELAY_ACCESS_KEY together.");
+  }
+  const url = URL.canParse(address) ? new URL(address) : null;
+  const localTest = fake && url?.protocol === "ws:" && url.hostname === "127.0.0.1";
+  if (!url || (!localTest && url.protocol !== "wss:") || !url.hostname ||
+      url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
+    throw new Error("Set COUMPANION_RELAY_URL to the Worker address beginning with wss://.");
+  }
+  return { url: `${url.protocol}//${url.host}`, access };
+}
+
+function loadRelayIdentity(dir) {
+  const file = join(dir, "relay-identity.json");
+  if (!existsSync(file)) {
+    const identity = { room: randomBytes(16).toString("base64url"), key: randomBytes(32).toString("base64url") };
+    try {
+      privateWrite(file, JSON.stringify(identity), false);
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+    }
+  }
+  return JSON.parse(readFileSync(file, "utf8"));
+}
+
 function sessionStore(dir, agent) {
   const file = join(dir, "session.json");
   let session = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : null;
@@ -321,6 +351,16 @@ async function main() {
   if (!values.fake && !process.env.DEEPSEEK_API_KEY?.trim()) {
     throw new Error("Set DEEPSEEK_API_KEY on the server, or use --fake for a local test.");
   }
+  const relay = relaySettings(values.fake);
+  let startRelay;
+  if (relay) {
+    try {
+      ({ startRelay } = await import("./relay.mjs"));
+    } catch (error) {
+      if (error.code !== "ERR_MODULE_NOT_FOUND") throw error;
+      throw new Error("Run npm ci in android/server to install the relay dependency.");
+    }
+  }
 
   const dir = resolve(values["state-dir"]);
   mkdirSync(dir, { recursive: true, mode: 0o700 });
@@ -337,16 +377,30 @@ async function main() {
   const params = new URLSearchParams({
     v: String(VERSION), host, port: String(realPort), fp, token: identity.token, name: "Coumpanion Server",
   });
+  const relayIdentity = relay && loadRelayIdentity(dir);
+  if (relayIdentity) {
+    params.set("relay", relay.url);
+    params.set("room", relayIdentity.room);
+    params.set("key", relayIdentity.key);
+    params.set("access", relay.access);
+  }
   const linkPath = join(dir, "pairing.txt");
   privateWrite(linkPath, `coucou://pair?${params}\n`);
   console.log(JSON.stringify({ listening: realPort, pairingFile: linkPath, fake: values.fake }));
+  const stopRelay = relayIdentity && startRelay({
+    ...relay, room: relayIdentity.room, key: Buffer.from(relayIdentity.key, "base64url"),
+    host, port: realPort, cert: identity.cert, fingerprint: fp,
+  });
 
   let discovery;
   if (!host.startsWith("127.")) {
     discovery = spawn("avahi-publish-service", ["Coumpanion Server", "_coucou._tcp", String(realPort), "v=1", `fp=${fp.slice(0, 16)}`], { stdio: "ignore" });
     discovery.on("error", () => console.error("mDNS unavailable. Pair or reconnect using the server address."));
   }
-  process.once("exit", () => discovery?.kill());
+  process.once("exit", () => {
+    if (stopRelay) stopRelay();
+    discovery?.kill();
+  });
   for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => process.exit(0));
 }
 
@@ -354,7 +408,7 @@ main().catch(error => {
   // Keep secrets, paths from the provider, and error bodies out of stdout and stderr.
   if (error.code === "EADDRINUSE") console.error("The server address and port are already in use.");
   else if (error.code === "EADDRNOTAVAIL") console.error("The local IPv4 address is not assigned to this server.");
-  else if (/^(Use a local IPv4|Set DEEPSEEK_API_KEY|The server state directory)/.test(error.message)) console.error(error.message);
+  else if (/^(Use a local IPv4|Set DEEPSEEK_API_KEY|Set COUMPANION_RELAY_URL|Run npm ci|The server state directory)/.test(error.message)) console.error(error.message);
   else console.error("Coumpanion Server could not start. Check the state directory and OpenSSL installation.");
   process.exit(1);
 });

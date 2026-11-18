@@ -49,6 +49,7 @@ const plurals = source.plurals ?? {};
 const BS = String.fromCharCode(92);
 const esc = (s) =>
   s.split(BS).join(BS + BS)
+    .replace(/\r?\n/g, BS + "n")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/'/g, BS + "'").replace(/"/g, BS + '"')
     .replace(/^([@?])/, BS + "$1");

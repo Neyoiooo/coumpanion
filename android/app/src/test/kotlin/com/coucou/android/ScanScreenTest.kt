@@ -89,13 +89,25 @@ class ScanScreenTest {
         assertTrue(File("../../.github/workflows/phone-link.yml").readText().contains("mlkit"))
     }
 
-    @Test fun theScanButtonIsTheMainActionOfThePairingScreenAndPastingStays() {
+    @Test fun thePairingScreenShowsTheTutorialAndMakesPasteTheMainAction() {
         val ui = src("ui/PairingScreen.kt")
-        assertTrue(ui.indexOf("R.string.scan_button") < ui.indexOf("R.string.pair_paste_short"))
-        assertTrue(ui.contains("PillKind.PRIMARY") && ui.contains("R.string.demo_try"))
+        val pairing = ui.substringAfter("return@Column")
+        val actions = pairing.substringAfter("model.message?.let").substringBefore("internal fun PairingPasteSheet")
+        assertTrue(pairing.indexOf("R.string.pairing_help") in 0 until pairing.indexOf("model.message?.let"))
+        assertTrue(actions.contains("stringResource(R.string.pair_paste_short), onPaste, Modifier.fillMaxWidth(), PillKind.PRIMARY"))
+        assertTrue(actions.contains("R.string.scan_button") && actions.contains("R.string.demo_try"))
         assertTrue("paste lives in a sheet, with the clipboard shortcut", ui.contains("PasteSheet(") && ui.contains("R.string.pair_clipboard"))
         // a pasted link is checked by the same parser before anything is paired
         assertTrue(ui.contains("if (PairingPayload.parse(link) != null) { model.pair(link)"))
         assertTrue(src("MainActivity.kt").contains("if (model.mode == Mode.NONE) PairingScreen("))
+    }
+
+    @Test fun thePasteSheetClearsTheAppNavigationAndKeyboard() {
+        val main = src("MainActivity.kt")
+        val pasteSheet = main.indexOf("if (pairingPasteVisible) PairingPasteSheet(")
+        assertTrue(pasteSheet > main.indexOf("BottomBar(") && pasteSheet > 0)
+        assertTrue(main.contains("Nav.barVisible(screen, keyboardOpen) && !pairingPasteVisible"))
+        assertTrue(main.contains("WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)"))
+        assertTrue(file("src/main/AndroidManifest.xml").contains("android:windowSoftInputMode=\"adjustResize\""))
     }
 }

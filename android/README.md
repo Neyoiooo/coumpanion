@@ -4,6 +4,18 @@ Coumpanion shows your agents, lets you answer approval requests and supports cha
 
 The offline demo runs on Android 11 or later. [Coumpanion Server](server/README.md) provides a real DeepSeek connection over a private network. Compatible desktop links can also be used for pairing and chat.
 
+## Watch AI apps
+
+1. Open Coumpanion and tap **Choose AI apps** on Home or **Watch AI apps** in Settings.
+2. Turn on the installed apps you want to watch, then tap **Allow notification access** and grant it for Coumpanion in Android Settings.
+3. Return to Coumpanion and tap **Allow the island** if it appears. Turn on **Display over other apps**. Switch to another app and wait for a new notification from a selected AI app.
+
+The island shows **Update** for a few seconds. Tap to open the source app, or press and hold to see a short notification title. You can switch apps on or off in **Settings → Watch AI apps**. Coumpanion uses incoming Android notifications, so the updates you see depend on what each app posts.
+
+Android grants notification access for the device. Coumpanion filters by the packages you select before reading a notification title, keeps the title in memory for the island, and leaves the original notification in the shade. This feature runs locally on the phone.
+
+If Android blocks notification access for an APK you installed yourself, open **Settings → Apps → Coumpanion**. When the menu offers **Allow restricted settings**, use it, then return to **Watch AI apps** to grant notification access.
+
 ## Build and test
 
 Needs JDK 17 and the Android SDK (platform 35). From this folder:
@@ -19,7 +31,7 @@ A release build (R8 shrinking and obfuscation, resources shrunk, `android.util.L
 `~/.gradle/gradle.properties`. Without them the release APK is unsigned (it cannot be installed), never signed with a debug key. Keep
 `app/build/outputs/mapping/release/mapping.txt` with the build you ship. Nothing is published from here.
 
-Without a computer, open the app and tap **Try demo mode**. Tap **Allow** next to the overlay permission notice on Home and enable **Display over other apps** for Coumpanion. Return to Coumpanion, then switch to another app while the demo runs. The island shows progress and the demo approval. Tap **Review request** to see the exact command. The first **Allow** or **Send answer** uses your PIN, pattern, or password. That check is shared while the screen stays on. **Deny** works directly.
+To run the offline demo, open **Connect to your server** and tap **Try demo mode**. Tap **Allow** next to the overlay permission notice on Home and enable **Display over other apps** for Coumpanion. Return to Coumpanion, then switch to another app while the demo runs. The island shows progress and the demo approval. Tap **Review request** to see the exact command. The first **Allow** or **Send answer** uses your PIN, pattern, or password. That check is shared while the screen stays on. **Deny** works directly.
 
 For a separate test over Wi-Fi, run the fake desktop:
 

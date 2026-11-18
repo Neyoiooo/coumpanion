@@ -46,34 +46,56 @@ import com.coucou.android.core.TypeScale
 import com.coucou.android.link.PairingPayload
 
 /**
- * The first thing a new user sees: one clear action. The Coumpanion firefly, a sentence, "Scan QR code" as the main
- * pill, and two quiet ones: paste the link (in a sheet, so no field sits on the screen) and try the demo.
+ * The server pairing steps and a paste button for same-phone setup. A QR scanner is available for a second screen.
  */
 @Composable
-fun PairingScreen(model: AppModel, onScan: () -> Unit, onAbout: () -> Unit) {
+fun PairingScreen(
+    model: AppModel, onScan: () -> Unit, onPaste: () -> Unit, onAbout: () -> Unit, onWatchApps: () -> Unit,
+    showPairing: Boolean, onShowPairing: (Boolean) -> Unit,
+) {
     val t = tokens()
-    var pasteOpen by remember { mutableStateOf(false) }
+    androidx.activity.compose.BackHandler(enabled = showPairing) { onShowPairing(false) }
     Column(
         Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).verticalScroll(rememberScrollState())
             .padding(start = Gutter + 8.dp, end = Gutter + 8.dp, bottom = BarClearance),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.size(48.dp))
+        Spacer(Modifier.size(32.dp))
         Image(painterResource(R.drawable.coumpanion_firefly), contentDescription = null, modifier = Modifier.size(132.dp))
         Spacer(Modifier.size(24.dp))
+        if (!showPairing) {
+            Text(stringResource(R.string.watch_apps_title), style = TypeScale.DISPLAY.style(t.text.c()).copy(textAlign = TextAlign.Center))
+            Text(
+                stringResource(R.string.watch_apps_intro), Modifier.padding(top = 10.dp, bottom = 24.dp),
+                style = TypeScale.BODY.style(t.textDim.c()).copy(textAlign = TextAlign.Center),
+            )
+            model.message?.let { MessagePanel(it) { model.message = null }; Spacer(Modifier.size(Gap)) }
+            PillButton(stringResource(R.string.watch_apps_choose), onWatchApps, Modifier.fillMaxWidth(), PillKind.PRIMARY)
+            Spacer(Modifier.size(Gap))
+            PillButton(stringResource(R.string.pairing_headline), { onShowPairing(true) }, Modifier.fillMaxWidth())
+            return@Column
+        }
         Text(stringResource(R.string.pairing_headline), style = TypeScale.DISPLAY.style(t.text.c()).copy(textAlign = TextAlign.Center))
         Text(
-            stringResource(R.string.pairing_help), Modifier.padding(top = 10.dp, bottom = 28.dp),
-            style = TypeScale.BODY.style(t.textDim.c()).copy(textAlign = TextAlign.Center),
+            stringResource(
+                R.string.pairing_help,
+                stringResource(R.string.pair_paste_short),
+                stringResource(R.string.pair_clipboard),
+                stringResource(R.string.pair_button),
+            ),
+            Modifier.padding(top = 10.dp, bottom = 28.dp),
+            style = TypeScale.BODY.style(t.textDim.c()),
         )
         model.message?.let { MessagePanel(it) { model.message = null }; Spacer(Modifier.size(Gap)) }
         PillButton(
-            stringResource(R.string.scan_button), onScan, Modifier.fillMaxWidth(), PillKind.PRIMARY,
-            icon = { CoucouIcon(IconKind.SCAN, tint = t.onPrimaryButton.c(), size = 20.dp) },
+            stringResource(R.string.pair_paste_short), onPaste, Modifier.fillMaxWidth(), PillKind.PRIMARY,
         )
         Spacer(Modifier.size(Gap))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Gap)) {
-            PillButton(stringResource(R.string.pair_paste_short), { pasteOpen = true }, Modifier.weight(1f))
+            PillButton(
+                stringResource(R.string.scan_button), onScan, Modifier.weight(1f),
+                icon = { CoucouIcon(IconKind.SCAN, tint = t.text.c(), size = 20.dp) },
+            )
             PillButton(stringResource(R.string.demo_try), { model.startDemo() }, Modifier.weight(1f))
         }
         Spacer(Modifier.size(32.dp))
@@ -84,12 +106,11 @@ fun PairingScreen(model: AppModel, onScan: () -> Unit, onAbout: () -> Unit) {
             style = TypeScale.SECONDARY.style(t.textDim.c()).copy(textDecoration = TextDecoration.Underline),
         )
     }
-    if (pasteOpen) PasteSheet(model, onDismiss = { pasteOpen = false })
 }
 
 /** The pairing link as text, for people who cannot scan. A link that is not a Coucou one is refused here, with the same words as everywhere. */
 @Composable
-private fun PasteSheet(model: AppModel, onDismiss: () -> Unit) {
+internal fun PairingPasteSheet(model: AppModel, onDismiss: () -> Unit) {
     var text by remember { mutableStateOf("") }
     var bad by remember { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current

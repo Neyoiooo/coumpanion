@@ -14,7 +14,7 @@ object IslandPlan {
         OverlayPolicy.shouldShow(overlayOn, permitted, appInForeground)
 
     /** What stays in the notification shade when the user swipes the island up: it goes there instead of vanishing. */
-    enum class Shade { STATUS_NOTE, REQUEST_NOTE, ONGOING }
+    enum class Shade { STATUS_NOTE, REQUEST_NOTE, ONGOING, ORIGINAL_NOTE }
 
     /**
      * A finished, failed, rate-limited or asked-a-question island becomes a quiet notice; a request keeps its
@@ -24,6 +24,7 @@ object IslandPlan {
         IslandSpec.Kind.FINISHED, IslandSpec.Kind.ERROR, IslandSpec.Kind.RATELIMIT, IslandSpec.Kind.QUESTION -> Shade.STATUS_NOTE
         IslandSpec.Kind.APPROVAL -> Shade.REQUEST_NOTE
         IslandSpec.Kind.WORKING -> Shade.ONGOING
+        IslandSpec.Kind.APP_UPDATE -> Shade.ORIGINAL_NOTE
     }
 
     private val WORKING = setOf(BotState.WORKING, BotState.THINKING, BotState.SEARCHING)

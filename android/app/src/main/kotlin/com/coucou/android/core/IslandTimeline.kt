@@ -14,7 +14,7 @@ data class IslandSpec(
     /** False for a request whose command could not be shown in full: the island offers Deny only. */
     val canAllow: Boolean = true,
 ) {
-    enum class Kind { WORKING, QUESTION, APPROVAL, FINISHED, ERROR, RATELIMIT }
+    enum class Kind { WORKING, QUESTION, APPROVAL, FINISHED, ERROR, RATELIMIT, APP_UPDATE }
 
     /** Working, a question and a permission request stay until something changes. */
     val persistent: Boolean get() = kind == Kind.WORKING || kind == Kind.QUESTION || kind == Kind.APPROVAL
@@ -61,6 +61,14 @@ class IslandTimeline(private val clockMs: () -> Double) {
         flash = spec
         flashUntil = clockMs() + HOLD_MS
         refresh()
+    }
+
+    /** Drop one type of transient event without interrupting an active session. */
+    fun clearFlash(kind: IslandSpec.Kind) {
+        if (flash?.kind == kind) {
+            flash = null
+            refresh()
+        }
     }
 
     /** The user swiped the island up: it retracts now, and the same thing does not bring it back. */
