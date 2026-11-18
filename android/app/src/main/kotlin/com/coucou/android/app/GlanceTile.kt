@@ -8,6 +8,7 @@ import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.coucou.android.MainActivity
+import com.coucou.android.R
 import com.coucou.android.core.Glance
 
 /**
@@ -40,7 +41,7 @@ class GlanceTile : TileService() {
         private fun paint(tile: TileService) {
             val t = tile.qsTile ?: return
             val g: Glance = (tile.applicationContext as CoucouApp).model.glance()
-            t.label = "Coucou"
+            t.label = tile.getString(R.string.app_name)
             t.subtitle = g.headline
             t.state = if (g.connected) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
             t.updateTile()

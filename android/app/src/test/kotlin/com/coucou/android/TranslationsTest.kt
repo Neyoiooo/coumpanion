@@ -59,8 +59,8 @@ class TranslationsTest {
             "about_repo", "widget_initial_title", "widget_initial_count", "widget_sample_claude", "widget_sample_claude_short", "widget_sample_codex",
             "widget_sample_gemini", "widget_sample_one", "widget_sample_today", "widget_sample_pct_a", "widget_sample_pct_b", "widget_sample_ring_pct",
             "widget_sample_ring_label", "usage_claude", "usage_codex", "widget_pill_cd", "chat_count", "files_counts", "usage_window_5h", "ago_minutes",
-            "ago_hours", "ago_hours_minutes", "widget_btn_chat", "chat_model", "app_name", "tab_chat", "chat_title", "settings_volume", "question_ok", "diag_ok", "agent_kind",
-            "wardrobe_auto_tag", "usage_pct", "tool_a_file", "widget_mochi_description", "widget_sample_two_waiting",
+            "ago_hours", "ago_hours_minutes", "widget_btn_chat", "chat_model", "app_name", "about_credit", "pairing_credit", "about_assets", "tab_chat", "chat_title", "settings_volume", "question_ok", "diag_ok", "agent_kind",
+            "usage_pct", "tool_a_file", "widget_mark_description", "widget_sample_two_waiting",
             // The same word in the language (French "Licences", "Services", "Standard").
             "licences_title", "services_title", "vibration_standard", "recap_sessions",
         )

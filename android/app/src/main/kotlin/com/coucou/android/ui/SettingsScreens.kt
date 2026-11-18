@@ -209,7 +209,7 @@ val BarClearance = 96.dp
  * from the everyday switches), the island, sound, notices, more, and About (Louis Raillé's required notice).
  */
 @Composable
-fun SettingsScreen(model: AppModel, onHistory: () -> Unit, onGallery: () -> Unit, onWardrobe: () -> Unit, onOverlay: (Boolean) -> Unit, onDiagnostics: () -> Unit, onLicences: () -> Unit) {
+fun SettingsScreen(model: AppModel, onHistory: () -> Unit, onOverlay: (Boolean) -> Unit, onDiagnostics: () -> Unit, onLicences: () -> Unit) {
     val s = model.settings
     val uri = LocalUriHandler.current
     val t = tokens()
@@ -273,7 +273,7 @@ fun SettingsScreen(model: AppModel, onHistory: () -> Unit, onGallery: () -> Unit
                     }
                 }
                 RowDivider()
-                SettingSwitch(stringResource(R.string.overlay_title), stringResource(R.string.overlay_hint), model.overlayOn, onOverlay)
+                SettingSwitch(stringResource(R.string.overlay_title), stringResource(R.string.overlay_hint), model.overlayWished, onOverlay)
                 RowDivider()
                 SettingSwitch(stringResource(R.string.overlay_dnd_title), stringResource(R.string.overlay_dnd_hint), s.hideIslandInDnd) {
                     model.updateSettings(s.copy(hideIslandInDnd = it))
@@ -364,14 +364,9 @@ fun SettingsScreen(model: AppModel, onHistory: () -> Unit, onGallery: () -> Unit
         item {
             Panel {
                 LinkRow(stringResource(R.string.history_title), onHistory)
-                RowDivider()
-                LinkRow(stringResource(R.string.wardrobe_title), onWardrobe)
-                RowDivider()
-                LinkRow(stringResource(R.string.gallery), onGallery)
             }
         }
 
-        // Required by Louis Raillé's permission: visible, one tap from Home.
         item { SectionHeading(stringResource(R.string.settings_section_about)) }
         item {
             Panel {

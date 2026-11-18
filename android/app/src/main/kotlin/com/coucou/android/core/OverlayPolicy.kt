@@ -8,7 +8,7 @@ package com.coucou.android.core
  * it is answered.
  */
 object OverlayPolicy {
-    /** The pill is for when you are in another app; inside Coucou the screen already shows it. */
+    /** The pill is for when you are in another app; inside the app the screen already shows it. */
     fun shouldShow(enabled: Boolean, permitted: Boolean, appInForeground: Boolean, silenced: Boolean = false): Boolean =
         blocker(enabled, permitted, appInForeground, silenced) == null
 
@@ -52,7 +52,7 @@ interface WishStore {
 }
 
 /**
- * The switch "Show Mochi over other apps". The wish is saved the moment the user taps, before the
+ * The switch "Show island over other apps". The wish is saved the moment the user taps, before the
  * system permission screen opens: if Android recreates the activity or the process while the user is
  * in Settings, nothing is lost. The permission is asked live each time, so granting it later from
  * Android's own settings makes the pill work without another tap.
@@ -61,6 +61,6 @@ class OverlayChoice(private val store: WishStore) {
     val wished: Boolean get() = store.read()
     fun choose(on: Boolean) = store.write(on)
 
-    /** What the switch shows, and whether the pill may exist. */
+    /** Whether the island may be drawn. */
     fun active(permitted: Boolean): Boolean = wished && permitted
 }

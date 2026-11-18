@@ -1,7 +1,7 @@
 package com.coucou.android.core
 
 import com.coucou.android.link.SessionInfo
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 
 /** The words on Home: one plain line per agent, what you decided lately, how many are busy. Pure, so it is unit-tested. */
 object HomeText {

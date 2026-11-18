@@ -108,7 +108,7 @@ class LightThemeTest {
 
     @Test fun mochiAndTheStateColoursDoNotDependOnTheTheme() {
         val home = ui("HomePanel.kt")
-        assertTrue(home.contains("MochiConst.STATES[state]?.color?.let(::rgbColor)"))
-        assertFalse(File("src/main/kotlin/com/coucou/android/mochi/MochiPainter.kt").readText().contains("LocalTokens"))
+        assertTrue(home.contains("rgbColor(StatePalette.color(state))"))
+        assertFalse(File("src/main/kotlin/com/coucou/android/ui/StatusMark.kt").readText().contains("LocalTokens"))
     }
 }

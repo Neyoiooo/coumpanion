@@ -3,7 +3,7 @@ package com.coucou.android
 import com.coucou.android.core.WidgetData
 import com.coucou.android.core.WidgetSample
 import com.coucou.android.core.WidgetSpoken
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

@@ -1,6 +1,5 @@
 package com.coucou.android.ui
 
-import android.os.SystemClock
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +12,7 @@ import androidx.compose.foundation.layout.heightIn
 import com.coucou.android.core.HomeText
 import com.coucou.android.core.IconKind
 import com.coucou.android.core.TypeScale
-import com.coucou.android.mochi.MochiConst
+import com.coucou.android.core.StatePalette
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,7 +21,6 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,9 +33,7 @@ import com.coucou.android.app.AppModel
 import com.coucou.android.core.HomePanel
 import com.coucou.android.core.Pills
 import com.coucou.android.core.ToolLabels
-import com.coucou.android.mochi.BotState
-import com.coucou.android.mochi.MochiEngine
-import com.coucou.android.mochi.MochiView
+import com.coucou.android.core.BotState
 
 /**
  * One agent in detail, from what the computer sends with "Show session details on the phone": the project's
@@ -47,8 +43,6 @@ import com.coucou.android.mochi.MochiView
 @Composable
 fun SessionScreen(model: AppModel, pillId: String, onBack: () -> Unit) {
     val s = model.sessions.firstOrNull { it.pillId == pillId }
-    val clock = remember { { SystemClock.elapsedRealtimeNanos() / 1e6 } }
-    val engine = remember(pillId) { MochiEngine(clock) }
     if (s == null) {
         Column(Modifier.fillMaxSize().padding(horizontal = Gutter)) {
             ScreenTitle(stringResource(R.string.session_details), onBack)
@@ -56,9 +50,6 @@ fun SessionScreen(model: AppModel, pillId: String, onBack: () -> Unit) {
         }
         return
     }
-    if (engine.state != s.state) engine.setState(s.state)
-    // Its own colour, like on Home: the Mochi's body, the glow's state colour stays Louis's.
-    engine.bodyColor = HomePanel.colorHex(s)?.let { HomePanel.rgb(it) }
     val name = s.agent.ifBlank { Pills.byId(s.pillId)?.name.orEmpty() }
     val accent = HomePanel.colorHex(s)?.let { HomePanel.rgb(it) }?.let(::rgbColor) ?: tokens().text.c()
     val t = tokens()
@@ -67,9 +58,9 @@ fun SessionScreen(model: AppModel, pillId: String, onBack: () -> Unit) {
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = Gutter), verticalArrangement = Arrangement.spacedBy(Gap)) {
         item { ScreenTitle(name, onBack) }
         item {
-            Panel(wash = MochiConst.STATES[s.state]?.color?.let(::rgbColor)) {
+            Panel(wash = rgbColor(StatePalette.color(s.state))) {
                 Row(Modifier.padding(Gutter), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Gutter)) {
-                    MochiView(engine, Modifier.size(96.dp))
+                    StatusMark(s.state, Modifier.size(96.dp), accent)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
                             HomeText.line(s) ?: stringResource(stateLabel(s.state)), style = TypeScale.HEADLINE.style(t.text.c()),
@@ -83,7 +74,7 @@ fun SessionScreen(model: AppModel, pillId: String, onBack: () -> Unit) {
         if (!s.finalLine.isNullOrBlank()) {
             item { SectionHeading(stringResource(R.string.session_last)) }
             item {
-                Panel(wash = MochiConst.STATES[BotState.FINISHED]?.color?.let(::rgbColor)) {
+                Panel(wash = rgbColor(StatePalette.color(BotState.FINISHED))) {
                     SelectionContainer { Text(s.finalLine, Modifier.padding(Gutter), style = TypeScale.BODY.style(t.text.c())) }
                 }
             }

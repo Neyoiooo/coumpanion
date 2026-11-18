@@ -40,7 +40,7 @@
                     android:layout_height="36dp"
                     android:importantForAccessibility="no"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/preview_face_waiting" />
+                    android:src="@drawable/preview_mark_waiting" />
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -101,7 +101,7 @@
                     android:layout_height="36dp"
                     android:importantForAccessibility="no"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/preview_face_working" />
+                    android:src="@drawable/preview_mark_working" />
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -169,7 +169,7 @@
                     android:layout_height="36dp"
                     android:importantForAccessibility="no"
                     android:scaleType="fitCenter"
-                    android:src="@drawable/preview_face_done" />
+                    android:src="@drawable/preview_mark_done" />
 
                 <LinearLayout
                     android:layout_width="0dp"

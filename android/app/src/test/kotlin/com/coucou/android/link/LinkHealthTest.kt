@@ -35,7 +35,7 @@ class LinkHealthTest {
         assertTrue(LinkHealthText.why(LostReason.NETWORK, wifiUp = false).contains("not on Wi-Fi"))
         // On Wi-Fi but unreachable: the computer's side is a short list of what to look at.
         val reach = LinkHealthText.why(LostReason.NETWORK, wifiUp = true)
-        assertTrue(reach.contains("closed there") && reach.contains("phone link may be off") && reach.contains("another network"))
+        assertTrue(reach.contains("desktop app may be closed") && reach.contains("phone link may be off") && reach.contains("another network"))
         assertTrue(LinkHealthText.why(LostReason.CLOSED).contains("closed or restarted"))
         assertEquals("", LinkHealthText.why(null))
         assertFalse(LinkHealthText.why(LostReason.NETWORK, true).contains("dropped"))

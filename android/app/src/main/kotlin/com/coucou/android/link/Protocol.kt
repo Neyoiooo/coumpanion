@@ -1,7 +1,6 @@
 package com.coucou.android.link
 
-import com.coucou.android.mochi.BotState
-import com.coucou.android.mochi.outfit.Wardrobe
+import com.coucou.android.core.BotState
 import java.security.MessageDigest
 import org.json.JSONArray
 import org.json.JSONException
@@ -24,8 +23,12 @@ object Protocol {
     const val CAP_DETAILS = "details"
     /** Answering the questions Claude Code asks, from the phone (each answer confirmed with the screen lock). */
     const val CAP_ANSWERS = "answers"
-    /** What Mochi wears on the computer (no switch there: it is no secret). */
+    /** Legacy desktop appearance preference. */
     const val CAP_PREFS = "prefs"
+    internal val OUTFIT_VALUES = setOf(
+        "auto", "none", "partyHat", "beanie", "crown", "sunglasses", "roundGlasses",
+        "bow", "scarf", "witchHat", "pumpkin", "santaHat", "bunnyEars",
+    )
     /** The files an agent changed (a list on each session) and, when asked for one, its lines. */
     const val CAP_DIFFS = "diffs"
     /** How much of the Claude and Codex plans is used, and when they reset. */
@@ -140,7 +143,7 @@ sealed interface ServerMsg {
     data class Approval(val request: ApprovalRequest) : ServerMsg
     data class ApprovalResolved(val fingerprint: String) : ServerMsg
     data class Question(val request: QuestionRequest) : ServerMsg
-    /** What Mochi wears on the computer: "auto" or an outfit, exactly one of [com.coucou.android.mochi.outfit.Wardrobe.SELECTIONS]. */
+    /** Legacy desktop appearance preference. */
     data class Prefs(val outfit: String) : ServerMsg
     /** The relay's access key was replaced on the computer (only with the `relay` capability). */
     data class RelayAccess(val access: String) : ServerMsg
@@ -227,12 +230,11 @@ object Wire {
                 )
                 "approvalResolved" -> ServerMsg.ApprovalResolved(o.getString("fingerprint"))
                 "question" -> question(o)?.let { ServerMsg.Question(it) }
-                // A value this build does not know is dropped rather than guessed: the phone keeps what it had.
                 "diff" -> diff(o)
                 "services" -> ServerMsg.Services(services(o.getJSONArray("services")))
                 "recap" -> ServerMsg.RecapMsg(recap(o))
                 "usage" -> ServerMsg.Usage(UsageSnapshot(plan(o.optJSONObject("claude")), plan(o.optJSONObject("codex"))))
-                "prefs" -> o.optString("outfit", "").takeIf { it in Wardrobe.SELECTIONS }?.let { ServerMsg.Prefs(it) }
+                "prefs" -> o.optString("outfit", "").takeIf { it in Protocol.OUTFIT_VALUES }?.let { ServerMsg.Prefs(it) }
                 "relayAccess" -> o.optString("access", "").takeIf(RelayPairing::isSecret)?.let { ServerMsg.RelayAccess(it) }
                 "pong" -> ServerMsg.Pong
                 "chatModels" -> ServerMsg.ChatModels(o.getJSONArray("models").objects().mapNotNull(::chatModel))

@@ -11,8 +11,7 @@ enum class MotionChoice(val key: String) {
 }
 
 /**
- * Whether motion is reduced. Reduced motion stops Mochi's idle animations (breathing, bouncing, scanning, blinking, floating
- * particles) and turns the island's and the sheets' springs into a short fade or a jump. Pure, so every case is a unit test.
+ * Whether the island and sheets use a short fade or a jump. Pure, so every case is a unit test.
  */
 object MotionPolicy {
     fun reduced(choice: MotionChoice, animatorDurationScale: Float): Boolean = when (choice) {
@@ -22,7 +21,7 @@ object MotionPolicy {
     }
 }
 
-/** The choice in force, set by the app model when Settings change; read by the Mochi view, the island and the sheets. */
+/** The choice in force, set by the app model when Settings change; read by the island and the sheets. */
 object MotionState {
     @Volatile var choice: MotionChoice = MotionChoice.SYSTEM
 }

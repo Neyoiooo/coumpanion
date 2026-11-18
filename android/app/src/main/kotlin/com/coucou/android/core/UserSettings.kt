@@ -1,6 +1,6 @@
 package com.coucou.android.core
 
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -34,8 +34,6 @@ data class UserSettings(
     val volume: Float = com.coucou.android.sound.SoundVolume.DEFAULT,
     val notifyDone: Boolean = true,
     val quiet: QuietHours = QuietHours(false, 22 * 60, 8 * 60),
-    /** Mochi's outfit on this phone: "computer" (follow the one chosen on the computer), "auto", "none" or an outfit. */
-    val outfit: String = com.coucou.android.mochi.outfit.Wardrobe.FOLLOW,
     /** Use the relay when the computer is not reachable on this network (only matters when the pairing includes one). */
     val useRelay: Boolean = true,
     /** Do not light the screen when a request arrives on a sleeping phone (the notification is still posted). Off = today's behaviour. */
@@ -60,7 +58,6 @@ data class UserSettings(
         private const val Q_ON = "quiet_on"
         private const val Q_FROM = "quiet_from"
         private const val Q_TO = "quiet_to"
-        private const val OUTFIT = "outfit_choice"
         private const val RELAY = "use_relay"
         private const val NO_WAKE = "no_wake_screen"
         private const val VIBRATION = "vibration_choice"
@@ -81,7 +78,6 @@ data class UserSettings(
                     QuietHours.wrap(store.getInt(Q_FROM, d.quiet.fromMin)),
                     QuietHours.wrap(store.getInt(Q_TO, d.quiet.toMin)),
                 ),
-                outfit = com.coucou.android.mochi.outfit.Wardrobe.parseLocal(store.getString(OUTFIT, d.outfit)),
                 useRelay = store.getBoolean(RELAY, d.useRelay),
                 keepScreenOff = store.getBoolean(NO_WAKE, d.keepScreenOff),
                 vibration = VibrationChoice.parse(store.getString(VIBRATION, d.vibration.key)),
@@ -100,7 +96,6 @@ data class UserSettings(
             store.put(Q_ON, s.quiet.enabled)
             store.put(Q_FROM, QuietHours.wrap(s.quiet.fromMin))
             store.put(Q_TO, QuietHours.wrap(s.quiet.toMin))
-            store.put(OUTFIT, com.coucou.android.mochi.outfit.Wardrobe.parseLocal(s.outfit))
             store.put(RELAY, s.useRelay)
             store.put(NO_WAKE, s.keepScreenOff)
             store.put(VIBRATION, s.vibration.key)
@@ -131,7 +126,7 @@ object StatusPolicy {
      *   A question is never silenced: like a permission request it needs the user.
      * - A muted agent ([UserSettings.mutedAgents]) is silent for those too, but never for a question.
      * - Inside Coucou the screen already shows everything: no notification, no pill. The sound stays.
-     * - The notification is always posted quietly (shade only): the sound is Mochi's own and the pill
+     * - The notification is always posted quietly (shade only): the app plays a tone and the pill
      *   is the on-screen alert, so nothing overlaps or rings twice.
      */
     fun announce(previous: BotState?, now: BotState, s: UserSettings, minuteOfDay: Int, appInForeground: Boolean, pillId: String? = null): Announce {

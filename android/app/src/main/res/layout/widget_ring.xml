@@ -89,7 +89,7 @@
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:importantForAccessibility="no"
-                android:src="@drawable/preview_face_idle" />
+                android:src="@drawable/preview_mark_idle" />
 
             <TextView
                 android:id="@+id/ring_off_text"

@@ -5,7 +5,7 @@ import com.coucou.android.core.PlanUsageLook
 import com.coucou.android.core.WidgetData
 import com.coucou.android.core.WidgetSample
 import com.coucou.android.core.WidgetTone
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull

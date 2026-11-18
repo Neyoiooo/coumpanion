@@ -12,7 +12,7 @@ import com.coucou.android.core.WidgetContent
 import com.coucou.android.core.WidgetSpoken
 
 /**
- * The Solo widget: Mochi with a glow in the state's colour, the name of the most urgent agent with a dot and one state
+ * The Solo widget: the status mark with a glow in the state's colour, the name of the most urgent agent with a dot and one state
  * word. Drawn by [WidgetHub] when something changes (updatePeriodMillis = 0). A tap opens that agent, or the app when none
  * is running. It only opens things: nothing is changed from here.
  */
@@ -34,9 +34,9 @@ class SoloWidget : AppWidgetProvider() {
             val large = size == WidgetHub.Size.LARGE
             val small = size == WidgetHub.Size.SMALL
 
-            v.setImageViewBitmap(R.id.solo_mochi, MochiBitmap.of(c.mood, WidgetHub.px(context, if (large) 150 else if (small) 72 else 104), glow = true, tone = c.look))
+            v.setImageViewBitmap(R.id.solo_mark, StatusMarkBitmap.of(c.mood, WidgetHub.px(context, if (large) 150 else if (small) 72 else 104), glow = true, tone = c.look))
             val word = top?.stateWord ?: c.headline
-            v.setContentDescription(R.id.solo_mochi, context.getString(R.string.widget_mochi_description, word.lowercase()))
+            v.setContentDescription(R.id.solo_mark, context.getString(R.string.widget_mark_description, word.lowercase()))
             // The tapped card says who and what, in one sentence.
             v.setContentDescription(R.id.solo_root, WidgetSpoken.top(c))
 

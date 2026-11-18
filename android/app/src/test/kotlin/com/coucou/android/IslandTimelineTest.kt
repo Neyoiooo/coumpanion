@@ -3,7 +3,7 @@ package com.coucou.android
 import com.coucou.android.core.IslandSpec
 import com.coucou.android.core.IslandTimeline
 import com.coucou.android.core.IslandTimeline.Phase
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

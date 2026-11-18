@@ -31,14 +31,13 @@ class LicencesTest {
         )) assertTrue("missing: $part", a.contains(part))
     }
 
-    @Test fun theNoticesNameWhoOwnsWhatAndTheArtworkIsNotMit() {
+    @Test fun theNoticesCreditBothAuthorsAndIdentifyTheNewArtwork() {
         val n = asset("NOTICES.txt")
-        assertTrue(n.contains("part of Coucou by Louis Raillé"))
-        assertTrue(n.contains("https://github.com/Louis-CFM/coucou"))
-        assertTrue(n.contains("released under the MIT License"))
-        assertTrue(n.contains("NOT covered by the MIT License"))
-        assertTrue(n.contains("LICENSE-ASSETS.md"))
-        assertTrue(n.contains("written permission"))
+        assertTrue(n.contains("Copyright (c) 2026 Louis Raillé"))
+        assertTrue(n.contains("Android code Copyright (c) 2026 Rhytam Biswas"))
+        assertTrue(n.contains("distributed under the MIT License"))
+        assertTrue(n.contains("Coumpanion uses its own icon, status marks and sounds"))
+        assertEquals(ReferenceFiles.file("android/LICENSE").readText(), asset("MIT-Android.txt"))
         assertTrue(n.contains("ZXing Core 3.5.3") && n.contains("Apache License, Version 2.0"))
         assertTrue(n.contains("Android Open Source Project") && n.contains("JetBrains"))
     }
@@ -54,8 +53,8 @@ class LicencesTest {
         assertEquals("a new dependency needs a line in NOTICES.txt and in this list", covered, groups)
     }
 
-    @Test fun theScreenShowsTheThreeFilesInOrder() {
-        assertEquals(listOf("NOTICES.txt", "MIT.txt", "Apache-2.0.txt"), Licences.FILES)
+    @Test fun theScreenShowsTheNoticesAndLicencesInOrder() {
+        assertEquals(listOf("NOTICES.txt", "MIT.txt", "MIT-Android.txt", "Apache-2.0.txt"), Licences.FILES)
         for (f in Licences.FILES) assertTrue("$f is bundled", File("src/main/assets/licenses/$f").length() > 500)
         val text = Licences.FILES.joinToString("\n\n") { asset(it) }
         val p = Licences.paragraphs(text)

@@ -8,7 +8,7 @@ import com.coucou.android.core.QuietHours
 import com.coucou.android.core.UserSettings
 import com.coucou.android.link.ApprovalRequest
 import com.coucou.android.link.SessionInfo
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull

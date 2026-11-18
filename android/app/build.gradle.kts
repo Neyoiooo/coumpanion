@@ -19,7 +19,7 @@ android {
     namespace = "com.coucou.android"
     compileSdk = 35
     defaultConfig {
-        applicationId = "com.coucou.android"
+        applicationId = "app.coumpanion.android"
         minSdk = 30
         targetSdk = 35
         versionCode = 5
@@ -90,7 +90,7 @@ val verifyReleaseNoLogs by tasks.registering {
     doLast {
         val apks = apkDir.get().asFile.walkTopDown().filter { it.extension == "apk" }.toList()
         check(apks.size == 1) { "expected one release APK, found ${apks.size}" }
-        val leftovers = listOf("CoucouOverlay", "CoucouLaunch", "CoucouDiscovery", "CoucouIsland", "island failed", "cannot browse", "ignored an early tap")
+        val leftovers = listOf("CoumpanionOverlay", "CoumpanionLaunch", "CoumpanionDiscovery", "CoumpanionIsland", "island failed", "cannot browse", "ignored an early tap")
         ZipFile(apks.single()).use { zip ->
             for (entry in zip.entries().asSequence().filter { it.name.endsWith(".dex") }) {
                 val text = String(zip.getInputStream(entry).readBytes(), Charsets.ISO_8859_1)

@@ -4,7 +4,7 @@ import com.coucou.android.core.HomeText
 import com.coucou.android.core.SafeText
 import com.coucou.android.core.ToolLabels
 import com.coucou.android.link.SessionInfo
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

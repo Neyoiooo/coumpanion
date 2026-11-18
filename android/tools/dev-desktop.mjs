@@ -78,7 +78,7 @@ const log = (...a) => console.log(...a);
 
 // Details the way the real desktop adds them (hub.rs): only for a phone that asked and was offered them.
 const DETAILS = {
-  integration_claude: { steps: ["Read · README.md", "Grep · TODO", "Edit · src/app.ts", "Bash · npm test", "Edit · src/app.ts"], project: "coucou", color: "#2DD4BF" },
+  integration_claude: { steps: ["Read · README.md", "Grep · TODO", "Edit · src/app.ts", "Bash · npm test", "Edit · src/app.ts"], project: "demo-project", color: "#2DD4BF" },
   agent_codex: { steps: ["Search · the code", "Read · lib.rs"], project: "api-server", color: "#E879F9" },
   agent_gemini: { steps: [], project: "notes", color: "#8AB4F8" },
 };
@@ -377,5 +377,5 @@ server.listen(Number(arg("port", "47821")), "0.0.0.0", () => {
   const port = server.address().port;
   const link = `coucou://pair?v=${V}&host=${HOST}&port=${port}&fp=${certSha256}&token=${TOKEN}&name=${encodeURIComponent(NAME)}`;
   log(JSON.stringify({ listening: port, fp: certSha256, link }));
-  if (!flag("quiet")) console.error(`\nPairing link (paste it in Coucou for Android):\n${link}\n`);
+  if (!flag("quiet")) console.error(`\nPairing link (paste it in Coumpanion):\n${link}\n`);
 });

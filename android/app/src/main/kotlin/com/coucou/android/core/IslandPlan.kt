@@ -2,7 +2,7 @@ package com.coucou.android.core
 
 import com.coucou.android.link.ApprovalRequest
 import com.coucou.android.link.SessionInfo
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 
 /**
  * Which session the island is about, and whether it may show at all. Pure: the same inputs always

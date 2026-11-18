@@ -23,7 +23,7 @@ import com.coucou.android.core.SafeText
 import com.coucou.android.core.ToolLabels
 import com.coucou.android.core.VibrationChoice
 import com.coucou.android.link.ApprovalRequest
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 
 /**
  * Notifications: one quiet ongoing notification for the link, and a loud one per approval.
@@ -71,7 +71,7 @@ class Notifications(private val context: Context) {
     /**
      * The two Settings choices about a request: how it buzzes and whether it lights the screen. A channel's vibration cannot change
      * after it exists, so a new choice means a new channel id and the old channel is deleted. The channel stays IMPORTANCE_HIGH with
-     * Mochi's sound whatever is chosen: a request is never muted or hidden.
+     * the approval tone whatever is chosen: a request is never muted or hidden.
      */
     fun applyApprovalSettings(v: VibrationChoice, screenOff: Boolean) {
         keepScreenOff = screenOff
@@ -89,7 +89,7 @@ class Notifications(private val context: Context) {
                 } else {
                     enableVibration(false)
                 }
-                // Mochi's own approval sound, bundled in res/raw.
+                // The approval tone, bundled in res/raw.
                 setSound(
                     Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/${R.raw.approval}"),
                     AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build(),
@@ -122,7 +122,7 @@ class Notifications(private val context: Context) {
         val title = g?.headline ?: context.getString(R.string.status_connecting)
         val detail = g?.detail.orEmpty()
         val b = Notification.Builder(context, CH_LINK)
-            .setSmallIcon(R.drawable.ic_stat_mochi)
+            .setSmallIcon(R.drawable.ic_stat_coumpanion)
             .setContentTitle(title)
             .setContentText(detail)
             .setColor(g?.tone?.argb ?: GlanceTone.CALM.argb)
@@ -131,7 +131,7 @@ class Notifications(private val context: Context) {
             .setShowWhen(false)
             .setVisibility(Notification.VISIBILITY_PRIVATE)
             .setPublicVersion(
-                Notification.Builder(context, CH_LINK).setSmallIcon(R.drawable.ic_stat_mochi)
+                Notification.Builder(context, CH_LINK).setSmallIcon(R.drawable.ic_stat_coumpanion)
                     .setContentTitle(context.getString(R.string.app_name))
                     .setContentText(if (g?.connected == true) context.getString(R.string.status_connected) else context.getString(R.string.status_not_connected))
                     .build(),
@@ -160,16 +160,16 @@ class Notifications(private val context: Context) {
 
     fun showApproval(r: ApprovalRequest, agentName: String, alert: OverlayPolicy.ApprovalAlert = OverlayPolicy.ApprovalAlert.HEADS_UP) {
         val channel = if (alert == OverlayPolicy.ApprovalAlert.QUIET) CH_APPROVAL_QUIET else ApprovalChannels.id(vibration)
-        Log.d("CoucouOverlay", "approval notification: $alert")
+        Log.d("CoumpanionOverlay", "approval notification: $alert")
         val id = idFor(r.fingerprint)
         val deny = PendingIntent.getBroadcast(
             context, id, Intent(context, ActionReceiver::class.java).setAction(ACTION_DENY).putExtra(EXTRA_FP, r.fingerprint),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val publicVersion = Notification.Builder(context, channel)
-            .setSmallIcon(R.drawable.ic_stat_mochi).setContentTitle(context.getString(R.string.approval_title)).setContentText(context.getString(R.string.notif_unlock)).build()
+            .setSmallIcon(R.drawable.ic_stat_coumpanion).setContentTitle(context.getString(R.string.approval_title)).setContentText(context.getString(R.string.notif_unlock)).build()
         val n = Notification.Builder(context, channel)
-            .setSmallIcon(R.drawable.ic_stat_mochi)
+            .setSmallIcon(R.drawable.ic_stat_coumpanion)
             .setContentTitle(agentName)
             .setSubText(context.getString(R.string.approval_title))
             // A label and at most the program's name: the exact command is on the approval sheet, behind a tap.
@@ -204,7 +204,7 @@ class Notifications(private val context: Context) {
 
     fun cancelApproval(fp: String) = nm.cancel(idFor(fp))
 
-    /** An agent finished, failed, hit a limit or asks something. Quiet: Mochi's own sound and the pill are the alerts. */
+    /** An agent finished, failed, hit a limit or asks something. Quiet: the app's tone and the pill are the alerts. */
     fun showStatus(pillId: String, agentName: String, state: BotState, statusText: String) {
         val what = context.getString(
             when (state) {
@@ -215,14 +215,14 @@ class Notifications(private val context: Context) {
             },
         )
         val n = Notification.Builder(context, CH_UPDATES)
-            .setSmallIcon(R.drawable.ic_stat_mochi)
+            .setSmallIcon(R.drawable.ic_stat_coumpanion)
             .setContentTitle(agentName)
             .setContentText(what)
             .setSubText(ToolLabels.label(statusText).takeIf { it.isNotBlank() })
             .setCategory(Notification.CATEGORY_STATUS)
             .setVisibility(Notification.VISIBILITY_PRIVATE)
             .setPublicVersion(
-                Notification.Builder(context, CH_UPDATES).setSmallIcon(R.drawable.ic_stat_mochi)
+                Notification.Builder(context, CH_UPDATES).setSmallIcon(R.drawable.ic_stat_coumpanion)
                     .setContentTitle(context.getString(R.string.app_name)).setContentText(what).build(),
             )
             .setAutoCancel(true)
@@ -242,12 +242,12 @@ class Notifications(private val context: Context) {
 
     /** Opens the app on the biometric prompt for this request (the same as tapping Allow in the notification). */
     fun openAllow(fp: String) {
-        Log.d("CoucouLaunch", "open the app on Allow (tap on the pill)")
+        Log.d("CoumpanionLaunch", "open the app on Allow (tap on the pill)")
         runCatching { open(fp, true, idFor(fp) + 1).send() }
     }
 
     fun openApp() {
-        Log.d("CoucouLaunch", "open the app (tap on the pill)")
+        Log.d("CoumpanionLaunch", "open the app (tap on the pill)")
         runCatching { open(null, false, 0).send() }
     }
 

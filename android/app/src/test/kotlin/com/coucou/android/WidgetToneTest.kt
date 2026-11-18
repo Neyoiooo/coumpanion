@@ -8,7 +8,7 @@ import com.coucou.android.core.mood
 import com.coucou.android.core.WidgetContent
 import com.coucou.android.core.WidgetTile
 import com.coucou.android.core.WidgetTone
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

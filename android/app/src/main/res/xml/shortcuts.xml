@@ -11,7 +11,7 @@
         android:shortcutLongLabel="@string/shortcut_chat_long">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.coucou.android"
+            android:targetPackage="app.coumpanion.android"
             android:targetClass="com.coucou.android.app.LaunchActivity">
             <extra android:name="screen" android:value="chat" />
         </intent>
@@ -24,7 +24,7 @@
         android:shortcutLongLabel="@string/shortcut_recent_long">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.coucou.android"
+            android:targetPackage="app.coumpanion.android"
             android:targetClass="com.coucou.android.app.LaunchActivity">
             <extra android:name="screen" android:value="recent" />
         </intent>
@@ -37,7 +37,7 @@
         android:shortcutLongLabel="@string/shortcut_pair_long">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.coucou.android"
+            android:targetPackage="app.coumpanion.android"
             android:targetClass="com.coucou.android.app.LaunchActivity">
             <extra android:name="screen" android:value="pair" />
         </intent>

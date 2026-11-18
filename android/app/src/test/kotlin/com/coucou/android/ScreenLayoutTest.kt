@@ -17,18 +17,18 @@ class ScreenLayoutTest {
     private val settings get() = src("ui/SettingsScreens.kt")
     private val homePanel get() = src("ui/HomePanel.kt")
 
-    @Test fun settingsHoldsDisconnectGalleryOverlayAndTheRequiredNotice() {
+    @Test fun settingsShowsDisconnectOverlayAndTheLicenceNotice() {
         for (s in listOf(
-            "R.string.action_unpair", "R.string.demo_leave", "R.string.gallery", "R.string.overlay_title",
+            "R.string.action_unpair", "R.string.demo_leave", "R.string.overlay_title",
             "R.string.about_credit", "R.string.about_repo", "R.string.about_assets", "R.string.settings_section_about",
         )) assertTrue("Settings must carry $s", settings.contains(s))
     }
 
-    @Test fun theNoticeNamesTheOriginalAuthorAndHisRepository() {
+    @Test fun theAboutScreenShowsTheForkAndItsLicence() {
         val xml = File("src/main/res/values/strings.xml").readText()
-        assertTrue(xml.contains("Coucou for Android, by Rhytam Biswas. Part of Coucou by Louis Raillé"))
-        assertTrue(xml.contains("github.com/Louis-CFM/coucou"))
-        assertTrue(xml.contains("© Louis Raillé"))
+        assertTrue(xml.contains("<string name=\"about_credit\">Coumpanion</string>"))
+        assertTrue(xml.contains("github.com/Neyoiooo/coumpanion"))
+        assertTrue(xml.contains("© Rhytam Biswas"))
         assertTrue(xml.contains("MIT License"))
     }
 

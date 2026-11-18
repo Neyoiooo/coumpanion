@@ -1,6 +1,6 @@
 package com.coucou.android.core
 
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 
 /** What the island shows. [pillId] is the session it is about (or the request's pill). */
 data class IslandSpec(

@@ -1,6 +1,5 @@
 package com.coucou.android.link
 
-import com.coucou.android.mochi.outfit.Wardrobe
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -10,7 +9,7 @@ import org.junit.Test
 
 class ProtocolPrefsTest {
     @Test fun everyWardrobeValueIsRead() {
-        for (v in Wardrobe.SELECTIONS) {
+        for (v in Protocol.OUTFIT_VALUES) {
             assertEquals(ServerMsg.Prefs(v), Wire.decodeServer("""{"type":"prefs","outfit":"$v"}"""))
         }
     }

@@ -8,7 +8,7 @@ import com.coucou.android.core.KeyValueStore
 import com.coucou.android.core.QuietHours
 import com.coucou.android.core.StatusPolicy
 import com.coucou.android.core.UserSettings
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -165,21 +165,5 @@ class UserSettingsTest {
         val groups = HistoryDays.group(list, now, zone)
         assertEquals(listOf(HistoryDays.Day.TODAY, HistoryDays.Day.YESTERDAY, HistoryDays.Day.OTHER), groups.map { it.first.first })
         assertEquals(listOf(2, 1, 1), groups.map { it.second.size })
-    }
-    @Test fun theOutfitChoiceIsKeptAndDefaultsToTheComputers() {
-        val m = Memory()
-        assertEquals("computer", UserSettings.load(m).outfit)
-        UserSettings.save(m, UserSettings(outfit = "crown"))
-        assertEquals("crown", UserSettings.load(m).outfit)
-        UserSettings.save(m, UserSettings(outfit = "auto"))
-        assertEquals("auto", UserSettings.load(m).outfit)
-    }
-
-    @Test fun anOutfitChoiceNoBuildKnowsFollowsTheComputer() {
-        val m = Memory()
-        m.map["outfit_choice"] = "topHat"
-        assertEquals("computer", UserSettings.load(m).outfit)
-        UserSettings.save(m, UserSettings(outfit = "<script>"))
-        assertEquals("computer", m.map["outfit_choice"])
     }
 }

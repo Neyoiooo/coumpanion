@@ -12,7 +12,7 @@ import com.coucou.android.link.UsageSnapshot
 import com.coucou.android.core.PlanUsageLook
 import com.coucou.android.core.UsageRing
 import com.coucou.android.core.WidgetTone
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
-import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -25,7 +24,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
@@ -35,16 +33,13 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -56,7 +51,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.lazy.rememberLazyListState
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,10 +79,7 @@ import com.coucou.android.link.ApprovalRequest
 import com.coucou.android.link.QuestionRequest
 import com.coucou.android.link.LinkState
 import com.coucou.android.link.PairingPayload
-import com.coucou.android.mochi.BotEmote
-import com.coucou.android.mochi.BotState
-import com.coucou.android.mochi.MochiEngine
-import com.coucou.android.mochi.MochiView
+import com.coucou.android.core.BotState
 import com.coucou.android.ui.Panel
 import com.coucou.android.ui.c
 import com.coucou.android.ui.style
@@ -115,7 +106,6 @@ import com.coucou.android.ui.QuestionSheet
 import com.coucou.android.ui.ServicesPanel
 import com.coucou.android.ui.UsagePanel
 import com.coucou.android.ui.RecapPanel
-import com.coucou.android.ui.WardrobeScreen
 import com.coucou.android.ui.HeroCard
 import com.coucou.android.ui.RecentPanel
 import com.coucou.android.ui.BarClearance
@@ -124,13 +114,11 @@ import com.coucou.android.ui.PairConfirm
 import com.coucou.android.ui.ScanScreen
 import com.coucou.android.ui.SessionScreen
 import com.coucou.android.ui.ChatScreen
-import com.coucou.android.ui.MochiTouch
 import com.coucou.android.ui.HistoryScreen
 import com.coucou.android.ui.SettingsScreen
 import com.coucou.android.ui.StatusColors
 import com.coucou.android.ui.Gap
 import com.coucou.android.ui.Gutter
-import com.coucou.android.ui.ScreenTitle
 import com.coucou.android.ui.SectionTitle
 import com.coucou.android.ui.linkDotColor
 import com.coucou.android.ui.linkStatusText
@@ -181,14 +169,12 @@ class MainActivity : ComponentActivity() {
                             )
                             Screen.CHAT -> ChatScreen(model, onHome = { screen = Screen.HOME }, onSettings = { screen = Screen.SETTINGS })
                             Screen.SESSION -> SessionScreen(model, detailPill.orEmpty(), onBack = { screen = Screen.HOME })
-                            Screen.GALLERY -> Gallery(onBack = { screen = Screen.SETTINGS })
                             Screen.SETTINGS -> SettingsScreen(
                                 model, onHistory = { screen = Screen.HISTORY },
-                                onGallery = { screen = Screen.GALLERY }, onWardrobe = { screen = Screen.WARDROBE }, onOverlay = ::setOverlay,
+                                onOverlay = ::setOverlay,
                                 onDiagnostics = { screen = Screen.DIAGNOSTICS }, onLicences = { screen = Screen.LICENCES },
                             )
                             Screen.LICENCES -> LicencesScreen(onBack = { screen = Screen.SETTINGS })
-                            Screen.WARDROBE -> WardrobeScreen(model, onBack = { screen = Screen.SETTINGS })
                             Screen.DIAGNOSTICS -> DiagnosticsScreen(model, onBack = { screen = Screen.SETTINGS })
                             Screen.HISTORY -> HistoryScreen(model, onBack = { screen = Screen.SETTINGS })
                             Screen.HOME -> if (model.mode == Mode.NONE) PairingScreen(model, onScan = { screen = Screen.SCAN }, onAbout = { screen = Screen.SETTINGS }) else Home(
@@ -261,7 +247,7 @@ class MainActivity : ComponentActivity() {
     /** A coucou://pair link (from the camera app or a browser) or a tap on an approval notification. */
     private fun handle(i: Intent?) {
         i ?: return
-        Log.d("CoucouLaunch", "MainActivity intent: action=${i.action} data=${i.data != null}")
+        Log.d("CoumpanionLaunch", "MainActivity intent: action=${i.action} data=${i.data != null}")
         i.data?.let { uri ->
             if (uri.scheme == "coucou") {
                 // Opened from the camera app or a browser: never paired without the user's OK.
@@ -328,10 +314,6 @@ private fun Home(
     model: AppModel, onApprove: (ApprovalRequest) -> Unit, onOverlay: (Boolean) -> Unit, onSession: (String) -> Unit,
     onScan: () -> Unit, onHistory: () -> Unit, onReview: () -> Unit, onQuestion: (String) -> Unit, onDiagnostics: () -> Unit,
 ) {
-    val engines = remember { HashMap<String, MochiEngine>() }
-    val miniEngines = remember { HashMap<String, MochiEngine>() }
-    val touches = remember { HashMap<String, MochiTouch>() }
-    val clock = remember { { SystemClock.elapsedRealtimeNanos() / 1e6 } }
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
     var addressOpen by rememberSaveable { mutableStateOf(false) }
@@ -347,19 +329,6 @@ private fun Home(
 
     // The PC's Home panel: the agent that matters in a big card, the others as pills.
     val focus = HomePanel.focus(model.sessions, selected)
-    val key = focus?.pillId ?: HOME_KEY
-    val engine = engines.getOrPut(key) { MochiEngine(clock, sound = model.sounds) }
-    val touch = touches.getOrPut(key) { MochiTouch(engine, model.sounds) { model.sessions.firstOrNull { it.pillId == key }?.state ?: BotState.IDLE } }
-    val state = focus?.state ?: BotState.SLEEPING // no agent: a sleeping Mochi
-    if (engine.state != state && !touch.dizzy) engine.setState(state)
-
-    // The hero wears what the computer says, or what the user picked here (a new engine starts dressed, a change animates).
-    val dressed = remember { HashSet<MochiEngine>() }
-    model.dress().let { outfit -> if (dressed.add(engine)) engine.setOutfit(outfit, animated = false) else engine.setOutfit(outfit) }
-
-    // The hero's Mochi wears its agent's colour, like the small ones (never white by default).
-    engine.bodyColor = focus?.let { HomePanel.colorHex(it) }?.let { HomePanel.rgb(it) }
-
     val pair = HomePanel.link(model.isPaired, model.mode == Mode.DEMO, hasApproval = model.approvals.isNotEmpty())
     // Items, in order: the hero, [message], then the other agents, ask, recent.
     val others = HomePanel.others(model.sessions, focus)
@@ -371,7 +340,7 @@ private fun Home(
     ) {
         item {
             HeroCard(
-                focus, engine, touch.modifier, pair, HomeText.running(model.sessions),
+                focus, pair, HomeText.running(model.sessions),
                 linkDot = linkDotColor(model), linkText = linkStatusText(model),
                 onDetails = if (focus != null && HomePanel.hasDetails(focus)) ({ onSession(focus.pillId) }) else null,
                 onQuestion = if (focus != null && focus.state == BotState.QUESTION) ({ onQuestion(focus.pillId) }) else null,
@@ -404,17 +373,6 @@ private fun Home(
                 Box(Modifier.padding(horizontal = Gutter)) {
                     AgentRows(
                         others,
-                        engineFor = { s ->
-                            miniEngines.getOrPut(s.pillId) {
-                                MochiEngine(clock).apply {
-                                    isMini = true
-                                    bodyColor = HomePanel.colorHex(s)?.let { HomePanel.rgb(it) }
-                                }
-                            }.also {
-                                it.bodyColor = HomePanel.colorHex(s)?.let { hex -> HomePanel.rgb(hex) }
-                                if (it.state != s.state) it.setState(s.state)
-                            }
-                        },
                         onPick = { selected = it.pillId },
                     )
                 }
@@ -434,8 +392,6 @@ private fun Home(
     if (addressOpen) AddressSheet(model) { addressOpen = false }
 }
 
-private const val HOME_KEY = "home"
-
 @Composable
 private fun OverlayHint(onOverlay: (Boolean) -> Unit) {
     Panel {
@@ -446,32 +402,6 @@ private fun OverlayHint(onOverlay: (Boolean) -> Unit) {
                 Modifier.heightIn(min = 48.dp).clickable(role = Role.Button) { onOverlay(true) }.padding(horizontal = 16.dp, vertical = 14.dp),
                 style = TypeScale.LABEL.style(tokens().text.c()), maxLines = 1,
             )
-        }
-    }
-}
-
-/** Every state and emote, drawn live. Handy to check the port by eye. */
-@Composable
-private fun Gallery(onBack: () -> Unit) {
-    val clock = remember { { SystemClock.elapsedRealtimeNanos() / 1e6 } }
-    val states = remember { BotState.entries.map { s -> s to MochiEngine(clock).apply { setState(s, force = true) } } }
-    val emotes = remember { BotEmote.entries.map { e -> e to MochiEngine(clock).apply { setPermanentEmote(e) } } }
-    Column(Modifier.padding(horizontal = Gutter)) {
-        ScreenTitle(stringResource(R.string.gallery), onBack)
-        Spacer(Modifier.height(Gap))
-        LazyVerticalGrid(GridCells.Fixed(3), horizontalArrangement = Arrangement.spacedBy(Gap), verticalArrangement = Arrangement.spacedBy(Gap)) {
-            gridItems(states) { (s, e) -> GalleryCell(s.key, e) }
-            gridItems(emotes) { (m, e) -> GalleryCell(m.key, e) }
-        }
-    }
-}
-
-@Composable
-private fun GalleryCell(label: String, engine: MochiEngine) {
-    Box(Modifier.fillMaxWidth()) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            MochiView(engine, Modifier.fillMaxWidth().aspectRatio(1f))
-            Text(label, style = MaterialTheme.typography.labelSmall)
         }
     }
 }

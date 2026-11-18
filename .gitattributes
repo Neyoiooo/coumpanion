@@ -4,3 +4,12 @@ design/** linguist-documentation
 android/gradlew text eol=lf
 android/**/*.sh text eol=lf
 android/**/*.mjs text eol=lf
+
+# Keep upstream artwork out of the Android release's source archives.
+NotchBuddy/Assets.xcassets/** export-ignore
+NotchBuddy/PhoneAssets.xcassets/** export-ignore
+NotchBuddy/Resources/sounds/** export-ignore
+docs/media/** export-ignore
+design/** export-ignore
+windows/screenshots/** export-ignore
+windows/src-tauri/icons/** export-ignore

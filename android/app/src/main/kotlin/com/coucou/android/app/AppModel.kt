@@ -58,7 +58,7 @@ import com.coucou.android.link.ReconnectPolicy
 import com.coucou.android.link.Wake
 import com.coucou.android.link.SessionInfo
 import com.coucou.android.sound.SoundPlayer
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 
 enum class Mode { NONE, DEMO, PAIRED }
 
@@ -66,7 +66,7 @@ enum class Mode { NONE, DEMO, PAIRED }
 class AppModel(private val context: Context) : LinkListener {
     private val main = Handler(Looper.getMainLooper())
     private val store = SecureStore(context)
-    val sounds = SoundPlayer(context)
+    private val sounds = SoundPlayer(context)
     val notifier = Notifications(context)
 
     /** Set only by LaunchActivity (not exported), read by MainActivity: see [com.coucou.android.core.PendingLaunch]. */
@@ -227,18 +227,6 @@ class AppModel(private val context: Context) : LinkListener {
         watchDnd()
     }
 
-    /** What the computer says Mochi wears ("auto" or an outfit); the last one it told, kept for when it is away. */
-    var computerOutfit by mutableStateOf(com.coucou.android.mochi.outfit.Wardrobe.parse(kv.getString("computer_outfit", "")))
-        private set
-
-    /** The selection in force: the phone's own choice, or the computer's when the phone follows it. */
-    val outfitSelection: String
-        get() = com.coucou.android.mochi.outfit.Wardrobe.choose(settings.outfit, computerOutfit)
-
-    /** What Mochi wears today ("auto" resolved with the phone's calendar). */
-    fun dress(today: java.time.LocalDate = java.time.LocalDate.now()): com.coucou.android.mochi.outfit.Outfit =
-        com.coucou.android.mochi.outfit.Wardrobe.resolve(outfitSelection, today)
-
     /** The phone's own list of decisions. Never sent anywhere. */
     private val decisionLog = DecisionLog(kv)
     var decisions by mutableStateOf(decisionLog.all()); private set
@@ -349,7 +337,7 @@ class AppModel(private val context: Context) : LinkListener {
     }
 
     private val choice = OverlayChoice(object : WishStore {
-        override fun read() = prefs.getBoolean("overlay", false)
+        override fun read() = prefs.getBoolean("overlay", true)
         // commit(): a tiny file, and it must survive the process being killed while the user is in Settings.
         override fun write(on: Boolean) { prefs.edit().putBoolean("overlay", on).commit() }
     })
@@ -393,9 +381,6 @@ class AppModel(private val context: Context) : LinkListener {
 
     fun overlayPermitted() = overlay.permitted()
 
-    /** What the switch shows: wished and allowed by the system. */
-    val overlayOn: Boolean get() = overlayWished && overlayPermission
-
     fun refreshOverlayPermission() { overlayPermission = overlay.permitted() }
 
     /** The user tapped the switch: remember the choice right now (see [OverlayChoice]). */
@@ -411,7 +396,7 @@ class AppModel(private val context: Context) : LinkListener {
         val silenced = OverlayPolicy.silenced(settings.hideIslandInDnd, settings.hideIslandInDnd && dndOn())
         val why = OverlayPolicy.blocker(choice.wished, overlay.permitted(), inForeground, silenced)
             ?: if (!connected) "not connected to a computer" else null
-        if (why != null) Log.d("CoucouOverlay", "no island: $why")
+        if (why != null) Log.d("CoumpanionOverlay", "no island: $why")
         return why == null
     }
 
@@ -546,7 +531,7 @@ class AppModel(private val context: Context) : LinkListener {
     /** A computer matching the paired fingerprint answered with the pinned certificate (checked by a bare TLS handshake). */
     private fun onAddressFound(host: String, port: Int) {
         if (mode != Mode.PAIRED || currentPairing == null) return
-        Log.d("CoucouDiscovery", "address updated")
+        Log.d("CoumpanionDiscovery", "address updated")
         useAddress(host, port)
     }
 
@@ -787,16 +772,6 @@ class AppModel(private val context: Context) : LinkListener {
         main.post { services = cards }
     }
 
-    override fun onPrefs(outfit: String) {
-        main.post { applyComputerOutfit(outfit) }
-    }
-
-    fun applyComputerOutfit(outfit: String) {
-        val v = com.coucou.android.mochi.outfit.Wardrobe.parse(outfit)
-        computerOutfit = v
-        kv.put("computer_outfit", v)
-    }
-
     override fun onChatModels(models: List<ChatModel>) {
         main.post {
             chatModels = models
@@ -825,7 +800,7 @@ class AppModel(private val context: Context) : LinkListener {
                 // A task just finished (not one already finished when the link came back), on a real computer: the demo loops and never counts.
                 if (mode == Mode.PAIRED && prev != null && prev != BotState.FINISHED && s.state == BotState.FINISHED) todayCounter.increment()
                 val name = agentName(s.pillId)
-                val sound = com.coucou.android.mochi.MochiConst.STATE_SOUND[s.state]
+                val sound = SoundPlayer.stateSounds[s.state]
                 if (sound != null && StatusPolicy.stateSoundWanted(prev, s.state, settings)) sounds.play(sound)
                 val a = StatusPolicy.announce(prev, s.state, settings, minute, inForeground, s.pillId)
                 if (a.sound && sound != null) sounds.play(sound)

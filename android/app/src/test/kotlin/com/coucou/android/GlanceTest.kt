@@ -5,7 +5,7 @@ import com.coucou.android.core.GlanceBuilder
 import com.coucou.android.core.GlanceTone
 import com.coucou.android.link.LinkState
 import com.coucou.android.link.SessionInfo
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

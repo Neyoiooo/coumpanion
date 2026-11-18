@@ -12,17 +12,17 @@ import com.coucou.android.core.WidgetSample
  *
  * Put the Widgets on the home screen, then, from a computer with the phone connected:
  *
- *   adb shell am broadcast -n com.coucou.android/.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state disconnected
- *   adb shell am broadcast -n com.coucou.android/.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state empty
- *   adb shell am broadcast -n com.coucou.android/.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state working
- *   adb shell am broadcast -n com.coucou.android/.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state waiting
- *   adb shell am broadcast -n com.coucou.android/.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state done
- *   adb shell am broadcast -n com.coucou.android/.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state live
+ *   adb shell am broadcast -n app.coumpanion.android/com.coucou.android.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state disconnected
+ *   adb shell am broadcast -n app.coumpanion.android/com.coucou.android.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state empty
+ *   adb shell am broadcast -n app.coumpanion.android/com.coucou.android.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state working
+ *   adb shell am broadcast -n app.coumpanion.android/com.coucou.android.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state waiting
+ *   adb shell am broadcast -n app.coumpanion.android/com.coucou.android.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state done
+ *   adb shell am broadcast -n app.coumpanion.android/com.coucou.android.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state live
  *
  * Optional `--ei usage <percent>` sets Claude's plan usage on Mochi Big and the Usage Ring (it resets in 2 h, shown as a clock time), to see the near-limit look
  * (red from 90, large rate, "Near limit", "resets at 14:30"). Without `--es state` it uses `working`; ignored for `disconnected` and `live`:
  *
- *   adb shell am broadcast -n com.coucou.android/.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state working --ei usage 92
+ *   adb shell am broadcast -n app.coumpanion.android/com.coucou.android.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state working --ei usage 92
  *
  * `live` goes back to the real state. A chosen state stays on the Widgets (real changes wait) until `live` or until the app
  * process is killed. The states are made up by [WidgetSample]; nothing is read from, or sent to, a computer.

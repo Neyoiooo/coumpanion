@@ -362,7 +362,7 @@ class DevDesktopInteropTest {
             assertEquals(setOf("details"), rec.caps.poll(10, TimeUnit.SECONDS))
             val s = claudeSession(rec)
             assertTrue(s.steps.isNotEmpty() && s.steps.first().startsWith("Read"))
-            assertEquals("coucou", s.project)
+            assertEquals("demo-project", s.project)
             assertEquals("#2DD4BF", s.color)
         } finally {
             client.stop()

@@ -3,7 +3,7 @@ package com.coucou.android
 import com.coucou.android.core.AgentMute
 import com.coucou.android.core.StatusPolicy
 import com.coucou.android.core.UserSettings
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -38,11 +38,9 @@ import com.coucou.android.core.SpokenLabels
 import com.coucou.android.core.Spacing
 import com.coucou.android.core.TypeScale
 import com.coucou.android.link.SessionInfo
-import com.coucou.android.mochi.BotState
-import com.coucou.android.mochi.MochiConst
-import com.coucou.android.mochi.MochiEngine
-import com.coucou.android.mochi.MochiView
-import com.coucou.android.mochi.Rgb
+import com.coucou.android.core.BotState
+import com.coucou.android.core.StatePalette
+import com.coucou.android.core.Rgb
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -64,20 +62,21 @@ internal fun stateLabel(state: BotState): Int = when (state) {
 
 internal fun rgbColor(c: Rgb) = Color(c.r.toFloat(), c.g.toFloat(), c.b.toFloat())
 
+private fun agentTint(session: SessionInfo): Color? = HomePanel.colorHex(session)?.let(HomePanel::rgb)?.let(::rgbColor)
+
 
 /** The colour of an agent's state (Louis's state colours), for dots and glows. */
 internal fun stateColor(state: BotState): Color =
-    if (state == BotState.IDLE) StatusColors.online else MochiConst.STATES[state]?.color?.let(::rgbColor) ?: StatusColors.offline
+    if (state == BotState.IDLE) StatusColors.online else rgbColor(StatePalette.color(state))
 
 /**
  * The hero of Home: Louis's island grown to full width and hanging from the top edge of the screen. It
- * holds the agent that matters most, with its own Mochi in its own colour (the one you chose on the
- * computer), its name, one plain sentence, and at most two buttons. Black, with a soft
+ * holds the agent that matters most, with a mark in the agent's colour, its name, one plain sentence, and at most two buttons. Black, with a soft
  * glow in the state's colour. No step counter: the computer cannot know how many steps are left.
  */
 @Composable
 fun HeroCard(
-    focus: SessionInfo?, engine: MochiEngine, touch: Modifier, link: HomePanel.Link, running: Int,
+    focus: SessionInfo?, link: HomePanel.Link, running: Int,
     linkDot: Color, linkText: String, onLink: () -> Unit, onDetails: (() -> Unit)?,
     /** Opens the question sheet; non-null only while the agent has a question. */
     onQuestion: (() -> Unit)? = null,
@@ -85,7 +84,7 @@ fun HeroCard(
     canAnswer: Boolean = false,
 ) {
     val state = focus?.state ?: BotState.SLEEPING
-    val wash = MochiConst.STATES[state]?.color?.let(::rgbColor)
+    val wash = rgbColor(StatePalette.color(state))
     val dim = Color(tokens().heroTextDim)
     val white = Color(tokens().heroText)
     HeroPanel(wash = wash) {
@@ -101,7 +100,7 @@ fun HeroCard(
             }
             if (focus == null) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    MochiView(engine, Modifier.size(112.dp).then(touch))
+                    StatusMark(state, Modifier.size(112.dp))
                     Text(stringResource(R.string.home_empty_title), style = TypeScale.TITLE.style(white))
                     Text(stringResource(R.string.home_empty_hint), style = TypeScale.SECONDARY.style(dim), maxLines = 3)
                 }
@@ -113,7 +112,7 @@ fun HeroCard(
                     Modifier.semantics(mergeDescendants = true) { contentDescription = spoken },
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    MochiView(engine, Modifier.size(108.dp).then(touch))
+                    StatusMark(state, Modifier.size(108.dp), agentTint(focus))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(name, style = TypeScale.TITLE.style(white), maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Text(
@@ -148,9 +147,9 @@ fun HeroCard(
     }
 }
 
-/** The other agents, one full-width row each: its small Mochi in its colour, its name and one plain line. Tap to make it the main one. */
+/** The other agents, one full-width row each: its status mark, its name and one plain line. Tap to make it the main one. */
 @Composable
-fun AgentRows(others: List<SessionInfo>, engineFor: (SessionInfo) -> MochiEngine, onPick: (SessionInfo) -> Unit) {
+fun AgentRows(others: List<SessionInfo>, onPick: (SessionInfo) -> Unit) {
     val t = tokens()
     Panel {
         others.forEachIndexed { i, s ->
@@ -165,7 +164,7 @@ fun AgentRows(others: List<SessionInfo>, engineFor: (SessionInfo) -> MochiEngine
                     .padding(horizontal = Spacing.INSIDE.dp, vertical = 12.dp).semantics(mergeDescendants = true) { contentDescription = spoken },
                 horizontalArrangement = Arrangement.spacedBy(Spacing.GAP.dp), verticalAlignment = Alignment.CenterVertically,
             ) {
-                MochiView(engineFor(s), Modifier.size(40.dp))
+                StatusMark(s.state, Modifier.size(40.dp), agentTint(s))
                 Column(Modifier.weight(1f)) {
                     Text(name, style = TypeScale.BODY.style(t.text.c()).copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(line ?: state, style = TypeScale.SECONDARY.style(t.textDim.c()), maxLines = 2, overflow = TextOverflow.Ellipsis)

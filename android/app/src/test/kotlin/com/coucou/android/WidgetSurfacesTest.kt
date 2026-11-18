@@ -14,7 +14,7 @@ class WidgetSurfacesTest {
 
     /** Every widget source: the providers, the hub, the pictures, the pure logic and the day's count. */
     private val widgets = listOf(
-        "SoloWidget" to "coucou_solo_widget_info", "ListWidget" to "coucou_list_widget_info", "MochiBigWidget" to "coucou_big_widget_info",
+        "SoloWidget" to "coucou_solo_widget_info", "ListWidget" to "coucou_list_widget_info", "AgentOverviewWidget" to "coucou_big_widget_info",
         "StatusPillWidget" to "coucou_pill_widget_info", "WaitingAlertWidget" to "coucou_alert_widget_info",
         "UsageRingWidget" to "coucou_ring_widget_info", "TodayWidget" to "coucou_today_widget_info", "MoodWidget" to "coucou_mood_widget_info",
         "TeamWidget" to "coucou_team_widget_info",
@@ -23,7 +23,7 @@ class WidgetSurfacesTest {
     )
     private val sources = (
         widgets.map { "app/${it.first}.kt" } +
-            listOf("app/WidgetHub.kt", "app/TeamStore.kt", "core/TeamChoice.kt", "app/MochiBitmap.kt", "app/RingBitmap.kt", "app/BarBitmap.kt", "app/TodayStore.kt", "core/WidgetData.kt", "core/TodayCounter.kt", "core/LaunchScreen.kt")
+            listOf("app/WidgetHub.kt", "app/TeamStore.kt", "core/TeamChoice.kt", "app/StatusMarkBitmap.kt", "app/RingBitmap.kt", "app/BarBitmap.kt", "app/TodayStore.kt", "core/WidgetData.kt", "core/TodayCounter.kt", "core/LaunchScreen.kt")
         ).associateWith { read(main + it) }
 
     @Test fun theWidgetsAreRegisteredAndNeverWakeOnATimer() {
@@ -100,7 +100,7 @@ class WidgetSurfacesTest {
     }
 
     @Test fun theImageAndTheBadgeAreDescribed() {
-        assertTrue(sources.getValue("app/SoloWidget.kt").contains("setContentDescription(R.id.solo_mochi"))
+        assertTrue(sources.getValue("app/SoloWidget.kt").contains("setContentDescription(R.id.solo_mark"))
         assertTrue(sources.getValue("app/SoloWidget.kt").contains("setContentDescription(R.id.solo_badge"))
         assertTrue(sources.getValue("app/ListWidget.kt").contains("setContentDescription(R.id.list_badge"))
         // Every Widget with a picture describes it; every layout image that is not decoration has a description or is hidden from it.
@@ -199,7 +199,7 @@ class WidgetSurfacesTest {
         for (state in listOf("disconnected", "empty", "working", "waiting", "done", "live")) {
             assertTrue(state, src.contains("--es state $state"))
         }
-        assertTrue(src.contains("adb shell am broadcast -n com.coucou.android/.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE"))
+        assertTrue(src.contains("adb shell am broadcast -n app.coumpanion.android/com.coucou.android.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE"))
         assertTrue(src.contains("DEBUG BUILDS ONLY"))
         assertTrue(src.contains("--ei usage 92"))
         // It only redraws Widgets with a made-up state.
@@ -281,7 +281,7 @@ class WidgetSurfacesTest {
         assertFalse(texts.contains("Wedge", ignoreCase = true))
         // The picker names: short, and the same ones in the README.
         val readme = File("../README.md").readText()
-        for (w in listOf("Mochi at a glance", "All your agents", "Mochi, big", "One-line status", "Approvals waiting", "Plan usage", "Finished today", "Mochi's mood")) {
+        for (w in listOf("Agent at a glance", "All your agents", "Agent overview", "One-line status", "Approvals waiting", "Plan usage", "Finished today", "Status indicator")) {
             assertTrue(w, strings.contains(w))
             assertTrue("$w is not in the README", readme.contains(w))
         }

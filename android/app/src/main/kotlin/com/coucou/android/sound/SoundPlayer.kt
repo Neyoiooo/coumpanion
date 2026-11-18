@@ -4,13 +4,13 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
 import com.coucou.android.R
-import com.coucou.android.mochi.SoundSink
+import com.coucou.android.core.BotState
 
 /**
- * Plays Mochi's sounds (the .wav files in res/raw, (c) Louis Raillé, used with permission) through a
+ * Plays Coumpanion's short alert tones through a
  * SoundPool. Short clips, no streaming; a sound that is not found is silently ignored.
  */
-class SoundPlayer(private val context: Context) : SoundSink {
+class SoundPlayer(private val context: Context) {
     var enabled = true
     var volume = SoundVolume.DEFAULT
         set(v) { field = SoundVolume.clamp(v) }
@@ -29,6 +29,7 @@ class SoundPlayer(private val context: Context) : SoundSink {
 
     init {
         pool.setOnLoadCompleteListener { _, id, status -> if (status == 0) ready.add(id) }
+        RAW.keys.forEach(::load)
     }
 
     private fun load(name: String): Int? = ids.getOrPut(name) {
@@ -36,28 +37,29 @@ class SoundPlayer(private val context: Context) : SoundSink {
         pool.load(context, res, 1)
     }
 
-    override fun play(name: String) {
+    fun play(name: String) {
         if (!enabled || volume <= 0f) return
         val id = load(name) ?: return
         if (id in ready) pool.play(id, volume, volume, 1, 0, 1f)
     }
 
-    fun release() = pool.release()
+    companion object {
+        val stateSounds: Map<BotState, String> = mapOf(
+            BotState.WORKING to "work", BotState.THINKING to "think", BotState.SEARCHING to "search",
+            BotState.APPROVAL to "approval", BotState.QUESTION to "question", BotState.ERROR to "error",
+            BotState.FINISHED to "finish", BotState.RATELIMIT to "rate", BotState.SLEEPING to "sleep",
+            BotState.DIZZY to "dizzy",
+        )
 
-    private companion object {
         /** Every bundled sound, by file name (an explicit table: no resource reflection). */
-        val RAW: Map<String, Int> = mapOf(
-            "annoyed" to R.raw.annoyed,
+        private val RAW: Map<String, Int> = mapOf(
             "approval" to R.raw.approval,
             "dizzy" to R.raw.dizzy,
             "error" to R.raw.error,
             "finish" to R.raw.finish,
-            "greet" to R.raw.greet,
-            "love" to R.raw.love,
             "question" to R.raw.question,
             "rate" to R.raw.rate,
             "search" to R.raw.search,
-            "slap" to R.raw.slap,
             "sleep" to R.raw.sleep,
             "think" to R.raw.think,
             "work" to R.raw.work,

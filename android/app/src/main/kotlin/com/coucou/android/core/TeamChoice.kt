@@ -1,6 +1,6 @@
 package com.coucou.android.core
 
-import com.coucou.android.mochi.BotState
+import com.coucou.android.core.BotState
 
 /**
  * The Team widget: the user picks which agents it shows (up to [MAX]), one choice per widget. This is the pure part: what can be picked, how

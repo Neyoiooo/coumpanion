@@ -1,6 +1,5 @@
 package com.coucou.android.ui
 
-import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.spring
@@ -65,10 +64,8 @@ import com.coucou.android.core.Spacing
 import com.coucou.android.core.SpokenLabels
 import com.coucou.android.core.TypeScale
 import com.coucou.android.link.ApprovalRequest
-import com.coucou.android.mochi.BotState
-import com.coucou.android.mochi.MochiConst
-import com.coucou.android.mochi.MochiEngine
-import com.coucou.android.mochi.MochiView
+import com.coucou.android.core.BotState
+import com.coucou.android.core.StatePalette
 import kotlinx.coroutines.delay
 
 /**
@@ -113,15 +110,13 @@ fun BottomSheetHost(onDismiss: () -> Unit, wash: Color? = null, announce: String
     }
 }
 
-/** The colour of an agent for its Mochi: the user's choice on the computer, else the catalog's, else none. */
+/** The colour of an agent for its status mark: the user's choice on the computer, else the catalog's, else none. */
 private fun agentColour(model: AppModel, pillId: String) =
     (model.sessions.firstOrNull { it.pillId == pillId }?.let { HomePanel.colorHex(it) } ?: Pills.byId(pillId)?.colorHex)?.let { HomePanel.rgb(it) }
 
 @Composable
-private fun SheetMochi(state: BotState, colour: com.coucou.android.mochi.Rgb?) {
-    val engine = remember { MochiEngine({ SystemClock.elapsedRealtimeNanos() / 1e6 }).apply { setState(state, force = true) } }
-    engine.bodyColor = colour
-    MochiView(engine, Modifier.size(84.dp))
+private fun SheetMark(state: BotState, colour: com.coucou.android.core.Rgb?) {
+    StatusMark(state, Modifier.size(84.dp), colour?.let(::rgbColor))
 }
 
 /**
@@ -136,13 +131,13 @@ fun ApprovalSheet(model: AppModel, r: ApprovalRequest, onAllow: (ApprovalRequest
     var showCommand by remember(r.fingerprint) { mutableStateOf(false) }
     val white = Color(tokens().heroText)
     val dim = Color(tokens().heroTextDim)
-    val wash = MochiConst.STATES[BotState.APPROVAL]?.color?.let(::rgbColor)
+    val wash = rgbColor(StatePalette.color(BotState.APPROVAL))
     val name = model.agentName(r.pillId)
     val kind = Pills.byId(r.pillId)?.name.orEmpty()
     val announce = SpokenLabels.approval(stringResource(R.string.approval_title), name, stringResource(R.string.approval_wants, ApprovalSheetPlan.action(r.tool)))
     BottomSheetHost(onDismiss, wash, announce) {
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            SheetMochi(BotState.APPROVAL, agentColour(model, r.pillId))
+            SheetMark(BotState.APPROVAL, agentColour(model, r.pillId))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(if (kind.isNotBlank() && kind != name) "$name · $kind" else name, style = TypeScale.SECONDARY.style(dim), maxLines = 2)
                 Text(stringResource(R.string.approval_wants, ApprovalSheetPlan.action(r.tool)), style = TypeScale.TITLE.style(white), maxLines = 3)
@@ -200,13 +195,13 @@ fun ApprovalSheet(model: AppModel, r: ApprovalRequest, onAllow: (ApprovalRequest
 fun QuestionSheet(model: AppModel, pillId: String, onDismiss: () -> Unit, onSend: (QuestionRequest, List<List<String>>) -> Unit) {
     val white = Color(tokens().heroText)
     val dim = Color(tokens().heroTextDim)
-    val wash = MochiConst.STATES[BotState.QUESTION]?.color?.let(::rgbColor)
+    val wash = rgbColor(StatePalette.color(BotState.QUESTION))
     val request = model.questionFor(pillId)
     val announce = stringResource(R.string.question_title, model.agentName(pillId))
     BottomSheetHost(onDismiss, wash, announce) {
         if (request == null) {
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                SheetMochi(BotState.QUESTION, agentColour(model, pillId))
+                SheetMark(BotState.QUESTION, agentColour(model, pillId))
                 Text(stringResource(R.string.question_title, model.agentName(pillId)), Modifier.weight(1f), style = TypeScale.TITLE.style(white), maxLines = 3)
             }
             Text(stringResource(R.string.question_body), Modifier.padding(top = 12.dp, bottom = 16.dp), style = TypeScale.BODY.style(dim))
@@ -218,7 +213,7 @@ fun QuestionSheet(model: AppModel, pillId: String, onDismiss: () -> Unit, onSend
         LaunchedEffect(request.fingerprint) { delay(ApprovalSheetPlan.GUARD_MS); armed = true }
         val q = request.questions[st.index.coerceIn(0, request.questions.lastIndex)]
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            SheetMochi(BotState.QUESTION, agentColour(model, pillId))
+            SheetMark(BotState.QUESTION, agentColour(model, pillId))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(stringResource(R.string.question_title, model.agentName(pillId)), style = TypeScale.SECONDARY.style(dim), maxLines = 2)
                 QuestionFlow.position(request.questions, st)?.let { (n, total) ->

@@ -128,12 +128,12 @@ class WidgetButtonsTest {
     // ── Mochi Big ───────────────────────────────────────────────────────────────────────────────────
 
     private val bigLayout get() = read(res + "layout/widget_big.xml")
-    private val bigSource get() = read(main + "app/MochiBigWidget.kt")
+    private val bigSource get() = read(main + "app/AgentOverviewWidget.kt")
     private fun byId(root: org.w3c.dom.Element, id: String) = root.descendants().first { it.getAttribute("android:id") == "@+id/$id" }
 
     @Test fun theSpeechBubbleIsGoneFromEverywhere() {
         val files = listOf(
-            res + "layout/widget_big.xml", res + "layout/widget_preview_big.xml", main + "app/MochiBigWidget.kt", main + "core/WidgetData.kt",
+            res + "layout/widget_big.xml", res + "layout/widget_preview_big.xml", main + "app/AgentOverviewWidget.kt", main + "core/WidgetData.kt",
             res + "values/strings.xml", res + "values/colors.xml", res + "values-notnight/colors.xml", "../i18n/app-strings.json",
         )
         for (f in files) assertFalse("$f still says bubble", read(f).contains("bubble", ignoreCase = true))
@@ -154,7 +154,7 @@ class WidgetButtonsTest {
         assertEquals(listOf("@+id/big_left", "@+id/big_right"), sides.map { it.getAttribute("android:id") })
         assertEquals("Mochi's side is about 45% of the width", listOf("45", "55"), sides.map { it.getAttribute("android:layout_weight") })
         val left = byId(root, "big_left").descendants().mapNotNull { it.getAttribute("android:id").takeIf { id -> id.isNotEmpty() } }
-        assertEquals(listOf("@+id/big_mochi", "@+id/big_row", "@+id/big_offline", "@+id/big_dot", "@+id/big_name", "@+id/big_state"), left)
+        assertEquals(listOf("@+id/big_mark", "@+id/big_row", "@+id/big_offline", "@+id/big_dot", "@+id/big_name", "@+id/big_state"), left)
         assertEquals("the badge stays in the top-right corner", "top|end", byId(root, "big_badge").getAttribute("android:layout_gravity"))
     }
 
@@ -277,14 +277,14 @@ class WidgetButtonsTest {
     // ── Nothing here can approve, deny or send ──────────────────────────────────────────────────────
 
     @Test fun everyButtonOpensAScreenOfTheClosedListAndNothingElse() {
-        for (f in listOf("app/StatusPillWidget.kt", "app/MochiBigWidget.kt")) {
+        for (f in listOf("app/StatusPillWidget.kt", "app/AgentOverviewWidget.kt")) {
             val src = read(main + f)
             for (word in listOf("PendingLaunch", "launch.request", "ActionReceiver", "approve", "Allow", "Deny", "decide", "send", "BiometricGate", "putExtra")) {
                 assertFalse("$f uses $word", src.contains(word, ignoreCase = word != "send" && word != "Allow" && word != "Deny"))
             }
         }
         // Every screen a button names is on the list.
-        val named = (read(main + "app/StatusPillWidget.kt") + read(main + "app/MochiBigWidget.kt"))
+        val named = (read(main + "app/StatusPillWidget.kt") + read(main + "app/AgentOverviewWidget.kt"))
         for (m in Regex("""LaunchScreen\.([A-Z]+)""").findAll(named)) assertTrue(m.groupValues[1], LaunchScreen.values().any { it.name == m.groupValues[1] })
     }
 }
