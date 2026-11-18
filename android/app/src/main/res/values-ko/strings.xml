@@ -171,6 +171,9 @@
     <string name="notif_ratelimit">사용 한도에 도달했어요</string>
     <string name="island_answer_on_pc">탭하여 Coumpanion를 열거나 컴퓨터에서 응답하세요</string>
     <string name="island_dismiss">아일랜드 닫기</string>
+    <string name="island_expand_details">아일랜드 세부정보 표시</string>
+    <string name="island_collapse_details">아일랜드 세부정보 접기</string>
+    <string name="island_open_app">자세히 보려면 Coumpanion 열기</string>
     <string name="state_ready">준비됨</string>
     <string name="state_working">작업 중</string>
     <string name="state_thinking">생각 중</string>

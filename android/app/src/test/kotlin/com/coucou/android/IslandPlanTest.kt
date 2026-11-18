@@ -96,40 +96,39 @@ class IslandPlanTest {
     @Test fun theIslandIsCentredOnTheCameraCutoutAndHangsBelowIt() {
         // Galaxy A12s: 720 px wide, a centred waterdrop about 70 px wide and 66 px tall.
         val box = IslandGeometry.place(720, 2f, PxRect(325, 0, 395, 66), statusBarH = 70)
-        assertEquals(0, box.centerOffsetX)
-        assertEquals("content starts under the cut-out", 66, box.topInset)
-        assertTrue(box.workingH > box.topInset)
+        assertEquals(360, box.anchorX)
+        assertEquals("the whole window starts below the status bar", 78, box.windowTop)
+        assertTrue(box.workingH > 0)
         assertTrue(box.cardH > box.workingH && box.approvalH > box.cardH)
         assertTrue(box.workingW <= 720 && box.approvalW <= 720)
     }
 
     @Test fun anOffCentreCutoutMovesTheIslandButItStaysOnScreen() {
         val left = IslandGeometry.place(720, 2f, PxRect(80, 0, 150, 60), statusBarH = 60)
-        assertTrue(left.centerOffsetX < 0)
-        val maxOffset = (720 - left.approvalW) / 2
-        assertTrue(left.centerOffsetX >= -maxOffset)
+        assertEquals(115, left.anchorX)
+        assertTrue(left.leftFor(left.approvalW) >= left.leftEdge)
     }
 
-    @Test fun onAScaledDownScreenTheCutoutsXIsNotTrusted() {
+    @Test fun aCentreCutoutReportedInPanelPixelsIsNormalised() {
         // Galaxy S20 set to FHD+ (1080 px on a 1440 px panel), Android 13: the centred hole is reported at
         // Rect(690, 0 - 750, 78), its centre still in panel pixels. Trusted, the island sat 78 px to the right.
         val s20 = PxRect(690, 0, 750, 78)
-        assertTrue(IslandGeometry.place(1080, 3f, s20, statusBarH = 78).centerOffsetX > 0)
-        val box = IslandGeometry.place(1080, 3f, s20, statusBarH = 78, displayScaled = true)
-        assertEquals(0, box.centerOffsetX)
-        assertEquals("content still starts under the hole", 78, box.topInset)
+        assertEquals(720, IslandGeometry.place(1080, 3f, s20, statusBarH = 78).anchorX)
+        val box = IslandGeometry.place(1080, 3f, s20, statusBarH = 78, panelWidth = 1440)
+        assertEquals(540, box.anchorX)
+        assertEquals("window still starts below the hole", 90, box.windowTop)
     }
 
     @Test fun withoutACutoutItHangsFromTheStatusBarAtTheCentre() {
         val box = IslandGeometry.place(1080, 3f, null, statusBarH = 72)
-        assertEquals(0, box.centerOffsetX)
-        assertEquals(72, box.topInset)
+        assertEquals(540, box.anchorX)
+        assertEquals(84, box.windowTop)
     }
 
     @Test fun anEmptyOrBrokenCutoutIsIgnored() {
         val box = IslandGeometry.place(720, 2f, PxRect(0, 0, 0, 0), statusBarH = 50)
-        assertEquals(50, box.topInset)
-        assertEquals(0, box.centerOffsetX)
+        assertEquals(58, box.windowTop)
+        assertEquals(360, box.anchorX)
     }
 
     @Test fun sizesFollowTheKindOfContent() {
@@ -138,6 +137,8 @@ class IslandPlanTest {
         assertEquals(box.approvalW to box.approvalH, IslandGeometry.sizeFor(box, IslandSpec.Kind.APPROVAL))
         assertEquals(box.cardW to box.cardH, IslandGeometry.sizeFor(box, IslandSpec.Kind.FINISHED))
         assertEquals(box.cardW to box.cardH, IslandGeometry.sizeFor(box, IslandSpec.Kind.QUESTION))
+        assertEquals(box.expandedW to box.expandedH, IslandGeometry.sizeFor(box, IslandSpec.Kind.WORKING, expanded = true))
+        assertEquals(box.approvalW to box.approvalH, IslandGeometry.sizeFor(box, IslandSpec.Kind.APPROVAL, expanded = true))
     }
 
     @Test fun theIslandSaysWhatTheAgentDoesNotTheRawToolName() {

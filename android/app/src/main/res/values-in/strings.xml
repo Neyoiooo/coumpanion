@@ -171,6 +171,9 @@
     <string name="notif_ratelimit">Mencapai batas pemakaian</string>
     <string name="island_answer_on_pc">Ketuk untuk membuka Coumpanion, atau jawab di komputermu</string>
     <string name="island_dismiss">Tutup pulau</string>
+    <string name="island_expand_details">Tampilkan detail pulau</string>
+    <string name="island_collapse_details">Ciutkan detail pulau</string>
+    <string name="island_open_app">Buka Coumpanion untuk melihat detail</string>
     <string name="state_ready">Siap</string>
     <string name="state_working">Bekerja</string>
     <string name="state_thinking">Berpikir</string>

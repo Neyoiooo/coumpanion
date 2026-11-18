@@ -171,6 +171,9 @@
     <string name="notif_ratelimit">A atteint une limite d\'utilisation</string>
     <string name="island_answer_on_pc">Touche pour ouvrir Coumpanion, ou réponds sur ton ordinateur</string>
     <string name="island_dismiss">Fermer l\'îlot</string>
+    <string name="island_expand_details">Afficher les détails de l’îlot</string>
+    <string name="island_collapse_details">Réduire les détails de l’îlot</string>
+    <string name="island_open_app">Ouvrir Coumpanion pour voir les détails</string>
     <string name="state_ready">Prêt</string>
     <string name="state_working">Au travail</string>
     <string name="state_thinking">Réfléchit</string>

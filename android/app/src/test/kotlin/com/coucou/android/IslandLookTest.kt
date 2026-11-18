@@ -4,6 +4,7 @@ import com.coucou.android.core.IslandGeometry
 import com.coucou.android.core.IslandPalette
 import com.coucou.android.core.PxRect
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -20,26 +21,26 @@ class IslandLookTest {
     private fun dp(px: Int) = px / density
 
     @Test fun theIslandIsCentredOnTheCameraHole() {
-        assertEquals(0, box.centerOffsetX)
-        assertEquals("content starts under the hole", 66, box.topInset)
+        assertEquals(360, box.anchorX)
+        assertEquals("the entire pill clears the camera and status bar", 77, box.windowTop)
     }
 
     @Test fun theWorkingStripIsNarrow() {
         assertTrue("working strip ${dp(box.workingW)} dp", dp(box.workingW) in 170f..180f)
-        assertTrue("short status strip below the cutout", dp(box.workingH - box.topInset) <= 38f)
+        assertTrue("short status strip below the cutout", dp(box.workingH) <= 36f)
     }
 
     @Test fun theResultAndRequestCardsAreWiderThanTheStrip() {
         assertTrue(box.cardW > box.workingW)
         assertTrue(box.approvalW >= box.cardW)
-        assertTrue("the result fits in a compact strip", dp(box.cardW) <= 200f && dp(box.cardH - box.topInset) <= 44f)
-        assertTrue("the approval fits in a smaller panel", dp(box.approvalW) <= 272f && dp(box.approvalH - box.topInset) <= 138f)
+        assertTrue("the result fits in a compact strip", dp(box.cardW) <= 200f && dp(box.cardH) <= 38f)
+        assertTrue("the approval fits in a smaller panel", dp(box.approvalW) <= 272f && dp(box.approvalH) <= 138f)
     }
 
-    @Test fun hiddenItIsJustAboveTheHoleSoItGrowsOutOfIt() {
-        assertTrue("notch ${dp(box.notchWidth)} dp", dp(box.notchWidth) in 40f..70f)
-        assertTrue(box.notchWidth > hole.width)
-        assertTrue(box.notchWidth < box.workingW / 2)
+    @Test fun theExpandedPanelGrowsDownwardsFromTheSameTop() {
+        assertTrue(box.expandedH > box.cardH && box.expandedW > box.workingW)
+        assertEquals(box.anchorX, box.leftFor(box.expandedW) + box.expandedW / 2)
+        assertTrue(box.seedWidth < box.workingW / 2)
     }
 
     @Test fun largerTextGetsMoreHeightWithoutCoveringMoreWidth() {
@@ -52,15 +53,26 @@ class IslandLookTest {
 
     @Test fun anOffCentreHoleStillKeepsTheWholeIslandOnScreen() {
         val right = IslandGeometry.place(720, density, PxRect(600, 0, 656, 66), statusBarH = 70)
-        assertTrue(right.centerOffsetX > 0)
-        assertTrue(right.centerOffsetX + right.approvalW / 2 <= 360)
+        assertEquals(628, right.anchorX)
+        assertTrue(right.leftFor(right.workingW) > right.leftFor(right.approvalW))
+        assertEquals(right.rightEdge, right.leftFor(right.approvalW) + right.approvalW)
     }
 
-    @Test fun theFlaresFitBesideTheIslandOnANarrowPhone() {
-        // 360 dp wide (1080 px at 3.0): island plus a flare on each side stays inside the screen with its margin.
-        val narrow = IslandGeometry.place(1080, 3.0f, PxRect(504, 0, 576, 90), statusBarH = 90)
-        val ear = (IslandGeometry.EAR_DP * 3.0f).toInt()
-        assertTrue(narrow.approvalW + 2 * ear <= 1080 - 2 * (IslandGeometry.MARGIN_DP * 3.0f).toInt())
+    @Test fun wideNotchesAndLandscapeSideCutoutsStayOutsideThePill() {
+        val wideNotch = IslandGeometry.place(1080, 3f, PxRect(290, 0, 790, 126), statusBarH = 90, safeTop = 126)
+        assertEquals(138, wideNotch.windowTop)
+        assertEquals(540, wideNotch.anchorX)
+
+        val landscape = IslandGeometry.place(1920, 2f, null, statusBarH = 46, safeLeft = 95, safeRight = 24)
+        assertTrue(landscape.leftFor(landscape.approvalW) >= 95)
+        assertTrue(landscape.leftFor(landscape.approvalW) + landscape.approvalW <= 1920 - 24)
+        assertEquals(995, landscape.anchorX)
+    }
+
+    @Test fun anOffCentreCutoutStaysAlignedOnAScaledScreen() {
+        val left = IslandGeometry.place(1080, 3f, PxRect(85, 20, 155, 96), statusBarH = 72, panelWidth = 1440)
+        assertEquals(120, left.anchorX)
+        assertEquals(108, left.windowTop)
     }
 
     @Test fun theGlowFollowsTheProviderAcrossAliases() {
@@ -69,5 +81,6 @@ class IslandLookTest {
         assertEquals(claude, IslandPalette.forAgent("session-a", "Claude Desktop"))
         assertEquals(IslandPalette.forAgent("agent_codex", "Codex"), IslandPalette.forAgent("session-b", "ChatGPT"))
         assertTrue(claude != IslandPalette.forAgent("session-c", "DeepSeek Flash"))
+        assertNotEquals(claude.pixels, IslandPalette.forAgent("agent_codex", "Codex").pixels)
     }
 }

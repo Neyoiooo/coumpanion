@@ -1,5 +1,6 @@
 package com.coucou.android.ui
 
+import android.annotation.SuppressLint
 import android.content.ComponentCallbacks
 import android.content.Context
 import android.content.res.Configuration
@@ -14,25 +15,28 @@ import android.view.Gravity
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -50,12 +54,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.ComposeView
@@ -83,6 +85,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.coucou.android.R
+import com.coucou.android.core.BotState
 import com.coucou.android.core.IconKind
 import com.coucou.android.core.IslandBox
 import com.coucou.android.core.IslandGeometry
@@ -96,16 +99,15 @@ import com.coucou.android.core.OverlayPolicy
 import com.coucou.android.core.PxRect
 import com.coucou.android.core.Tokens
 import com.coucou.android.core.Tracked
-import com.coucou.android.core.TypeScale
 import kotlinx.coroutines.delay
-import kotlin.math.max
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /**
- * The notch of the desktop, for the phone: a black island hanging from the top of the screen,
- * centred on the camera cut-out, over whatever app is open. It drops while an agent works, shows
- * how it ended for 10 s, then goes back up with the PC's motion (spring when it grows, a 340 ms
- * curve when it shrinks). A permission request or a question keeps it open.
+ * A pill over other apps, aligned to the camera but drawn below Android's cutout and status bar.
+ * Hold a status to reveal its details. Results still have the timeline's 10-second hold, and
+ * approval buttons stay available as soon as a request appears.
  *
  * When it opens and closes is decided by [IslandTimeline] (pure, tested); this class only draws it
  * and keeps one timer, for the next deadline. Nothing exists while it is hidden: the window is added
@@ -131,6 +133,7 @@ class IslandOverlay(
     private var shownAt = 0.0
 
     private var spec by mutableStateOf<IslandSpec?>(null)
+    private var expanded by mutableStateOf(false)
     private var approvalContentHeight by mutableIntStateOf(0)
     private var glowMotion by mutableStateOf(false)
     private val width = Tracked(0.0)
@@ -165,7 +168,7 @@ class IslandOverlay(
         sync()
     }
 
-    /** The user swiped the island up (or chose "Dismiss" in TalkBack): it goes back into the notch until something new happens. */
+    /** The user swiped up or chose "Dismiss" in TalkBack. */
     fun swipeAway() = safely {
         val shown = timeline.current?.takeIf { timeline.phase == IslandTimeline.Phase.OPEN }
         timeline.swipeAway()
@@ -215,26 +218,29 @@ class IslandOverlay(
         if (!ensureView()) return
         val b = box ?: return
         if (spec?.kind != current.kind || spec?.fingerprint != current.fingerprint) shownAt = clock()
+        if (spec?.kind != current.kind || spec?.pillId != current.pillId || spec?.fingerprint != current.fingerprint) {
+            expanded = false
+        }
         spec = current
         val now = clock()
         if (opening) {
-            width.jump(b.notchWidth.toDouble()); height.jump(0.0); radius.jump(b.cornerSmall.toDouble())
+            width.jump(b.seedWidth.toDouble()); height.jump(0.0); radius.jump(b.panelCorner.toDouble())
         }
         val reduced = reducedMotion()
         glowMotion = !reduced && phase == IslandTimeline.Phase.OPEN
         if (phase == IslandTimeline.Phase.OPEN) {
-            val w = IslandGeometry.sizeFor(b, current.kind).first
+            val w = IslandGeometry.sizeFor(b, current.kind, expanded).first
             val h = targetHeight(b, current.kind)
-            val corner = (if (current.kind == IslandSpec.Kind.APPROVAL) b.cornerLarge else b.cornerSmall).toDouble()
+            val corner = (if (expanded || current.kind == IslandSpec.Kind.APPROVAL) b.panelCorner else h / 2).toDouble()
             // "Remove animations": no spring, the island simply appears at its size.
             if (reduced) { width.jump(w.toDouble()); height.jump(h.toDouble()); radius.jump(corner) }
             else { width.goTo(w.toDouble(), now); height.goTo(h.toDouble(), now); radius.goTo(corner, now) }
         } else if (reduced) {
-            width.jump(b.notchWidth.toDouble()); height.jump(0.0); radius.jump(b.cornerSmall.toDouble())
+            width.jump(b.seedWidth.toDouble()); height.jump(0.0); radius.jump(b.panelCorner.toDouble())
         } else {
-            // Back up into the notch: same curve as the PC.
-            width.curveTowards(b.notchWidth.toDouble(), now); height.curveTowards(0.0, now); radius.curveTowards(b.cornerSmall.toDouble(), now)
+            width.curveTowards(b.seedWidth.toDouble(), now); height.curveTowards(0.0, now); radius.curveTowards(b.panelCorner.toDouble(), now)
         }
+        positionWindow()
         motionKey++
         timeline.nextDeadline()?.let { main.postDelayed(deadline, (it - clock()).toLong().coerceAtLeast(0)) }
     }
@@ -245,8 +251,14 @@ class IslandOverlay(
     )
 
     private fun targetHeight(b: IslandBox, kind: IslandSpec.Kind): Int =
-        if (kind == IslandSpec.Kind.APPROVAL && approvalContentHeight > 0) b.topInset + approvalContentHeight
-        else IslandGeometry.sizeFor(b, kind).second
+        if (kind == IslandSpec.Kind.APPROVAL && approvalContentHeight > 0) approvalContentHeight
+        else IslandGeometry.sizeFor(b, kind, expanded).second
+
+    private fun toggleDetails() = safely {
+        if (timeline.phase != IslandTimeline.Phase.OPEN || spec?.kind == IslandSpec.Kind.APPROVAL) return@safely
+        expanded = !expanded
+        sync()
+    }
 
     /** Fit the translated request, buttons and lock hint to the measured content. */
     private fun measureApproval(pixels: Int) = safely {
@@ -262,14 +274,24 @@ class IslandOverlay(
 
     /** The screen changed under the open island: new box, same window moved to the new centre, then the usual sync. */
     private fun remeasure() = safely {
-        val v = view ?: return@safely
+        if (view == null) return@safely
         val b = measure()
         if (b == box) return@safely
         box = b
-        val params = v.layoutParams as? WindowManager.LayoutParams ?: return@safely
-        params.x = b.centerOffsetX
-        wm.updateViewLayout(v, params)
         sync()
+    }
+
+    private fun visibleWidth(b: IslandBox): Int = width.value.roundToInt().coerceIn(1, b.maxWidth)
+
+    private fun positionWindow() {
+        val v = view ?: return
+        val b = box ?: return
+        val params = v.layoutParams as? WindowManager.LayoutParams ?: return
+        val left = b.leftFor(visibleWidth(b))
+        if (params.x == left && params.y == b.windowTop) return
+        params.x = left
+        params.y = b.windowTop
+        wm.updateViewLayout(v, params)
     }
 
     private fun removeView() {
@@ -283,6 +305,7 @@ class IslandOverlay(
         owner?.destroy()
         owner = null
         spec = null
+        expanded = false
         approvalContentHeight = 0
     }
 
@@ -290,17 +313,26 @@ class IslandOverlay(
         val density = context.resources.displayMetrics.density
         val metrics = wm.currentWindowMetrics
         val insets = metrics.windowInsets
-        val cutout = insets.displayCutout?.boundingRectTop?.let { PxRect(it.left, it.top, it.right, it.bottom) }
+        val cutout = insets.displayCutout
+        val topCutout = cutout?.boundingRectTop?.let { PxRect(it.left, it.top, it.right, it.bottom) }
         val statusBar = insets.getInsetsIgnoringVisibility(WindowInsets.Type.statusBars()).top
-            .takeIf { it > 0 } ?: (24 * density).toInt()
-        // The panel's own resolution, to tell when the screen is set lower (then the cut-out's x may be in panel pixels).
-        val scaled = runCatching {
+        val screenWidth = metrics.bounds.width()
+        val panelWidth = runCatching {
             val mode = context.getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY).mode
-            max(mode.physicalWidth, mode.physicalHeight) != max(metrics.bounds.width(), metrics.bounds.height())
-        }.getOrDefault(false)
-        return IslandGeometry.place(metrics.bounds.width(), density, cutout, statusBar, scaled, context.resources.configuration.fontScale)
+            if (screenWidth <= metrics.bounds.height()) minOf(mode.physicalWidth, mode.physicalHeight)
+            else maxOf(mode.physicalWidth, mode.physicalHeight)
+        }.getOrDefault(screenWidth)
+        return IslandGeometry.place(
+            screenWidth, density, topCutout, statusBar,
+            safeTop = cutout?.safeInsetTop ?: 0,
+            safeLeft = cutout?.safeInsetLeft ?: 0,
+            safeRight = cutout?.safeInsetRight ?: 0,
+            panelWidth = panelWidth,
+            fontScale = context.resources.configuration.fontScale,
+        )
     }
 
+    @SuppressLint("RtlHardcoded") // x is a physical display coordinate.
     private fun ensureView(): Boolean {
         if (view != null) return true
         val b = measure()
@@ -308,17 +340,17 @@ class IslandOverlay(
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            // Not focusable and not modal: touches outside the island go to the app underneath. It may
-            // extend into the display cut-out so its black merges with the camera hole.
+            // Position in display coordinates. The measured x and y keep the pill clear of cutouts.
+            // Touches outside this non-modal window go to the app underneath.
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT,
         ).apply {
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            x = b.centerOffsetX
-            y = 0
+            gravity = Gravity.TOP or Gravity.LEFT
+            x = b.leftFor(b.seedWidth)
+            y = b.windowTop
             layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
         }
         val lifecycleOwner = Owner()
@@ -353,28 +385,19 @@ class IslandOverlay(
 
     // ── What is drawn ────────────────────────────────────────────────────────
 
-    // Leave the area around the camera black, with a soft tint across the body below it.
-    private val ink = Color(IslandSurface.BLACK)
     private val dim = Color(IslandSurface.TEXT_DIM)
     private val foreground = Color(IslandSurface.TEXT)
 
-    private fun Modifier.islandBackground(topInset: Dp, palette: IslandPalette, sweep: () -> Float) = drawWithCache {
-        val top = topInset.toPx()
-        val fill = Brush.verticalGradient(
-            colors = listOf(ink, Color(0xFF11121B)),
-            startY = top,
-            endY = size.height.coerceAtLeast(top + 1f),
-        )
-        val glow = listOf(Color(palette.glow).copy(alpha = 0.36f), Color(palette.glow).copy(alpha = 0f))
-        val trail = listOf(Color(palette.trail).copy(alpha = 0.27f), Color(palette.trail).copy(alpha = 0f))
+    private fun Modifier.islandBackground(palette: IslandPalette, sweep: () -> Float) = drawWithCache {
+        val fill = Brush.verticalGradient(listOf(Color(0xFF191A22), Color(0xFF0D0E14)))
+        val glow = listOf(Color(palette.glow).copy(alpha = 0.16f), Color(palette.glow).copy(alpha = 0f))
+        val trail = listOf(Color(palette.trail).copy(alpha = 0.10f), Color(palette.trail).copy(alpha = 0f))
         onDrawBehind {
             drawRect(fill)
-            if (size.height > top && size.width > 0f) {
+            if (size.height > 0f && size.width > 0f) {
                 val travel = sweep()
-                clipRect(top = top) {
-                    drawRect(Brush.radialGradient(trail, Offset(size.width * (1f - travel), top), size.width * 0.61f))
-                    drawRect(Brush.radialGradient(glow, Offset(size.width * travel, size.height + 4.dp.toPx()), size.width * 0.62f))
-                }
+                drawRect(Brush.radialGradient(trail, Offset(size.width * (1f - travel), 0f), size.width * 0.65f))
+                drawRect(Brush.radialGradient(glow, Offset(size.width * travel, size.height * 0.8f), size.width * 0.62f))
             }
         }
     }
@@ -407,6 +430,7 @@ class IslandOverlay(
                     last = ns
                     val now = clock()
                     width.step(dt, now); height.step(dt, now); radius.step(dt, now)
+                    safely { positionWindow() }
                     frame = ns
                 }
             }
@@ -420,100 +444,65 @@ class IslandOverlay(
         val s = spec ?: return
         val density = LocalDensity.current
         fun px(v: Double): Dp = with(density) { v.toFloat().toDp() }
-        val topInset = px(b.topInset.toDouble())
-        val targetW = IslandGeometry.sizeFor(b, s.kind).first
-        val targetH = targetHeight(b, s.kind)
-        val contentHeight = px((targetH - b.topInset).toDouble())
-        // The content fades in as the island opens and out as it goes up.
-        val open = ((height.value / targetH.toDouble()) - 0.35) / 0.55
-        val corner = px(radius.value)
-        val ear = IslandGeometry.EAR_DP.dp
+        val approval = s.kind == IslandSpec.Kind.APPROVAL
+        val (compactW, compactH) = IslandGeometry.sizeFor(b, s.kind)
+        val shownHeight = height.value.coerceAtLeast(0.0)
+        val reveal = if (approval) 0f else ((shownHeight - compactH) / (b.expandedH - compactH).coerceAtLeast(1))
+            .coerceIn(0.0, 1.0).toFloat()
+        val open = ((shownHeight / compactH.coerceAtLeast(1)) - 0.28) / 0.52
+        val corner = minOf(radius.value, shownHeight / 2).coerceAtLeast(0.0)
         val palette = remember(s.pillId, s.agent) { IslandPalette.forAgent(s.pillId, s.agent) }
         val accent = Color(palette.label)
-        val shape = RoundedCornerShape(bottomStart = corner, bottomEnd = corner)
-        val borderBrush = Brush.verticalGradient(listOf(Color.Transparent, accent.copy(alpha = 0.34f)))
+        val shape = RoundedCornerShape(px(corner))
+        val borderBrush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.22f), accent.copy(alpha = 0.14f)))
         CompositionLocalProvider(LocalTokens provides Tokens.DARK) {
-            // The island plus a concave flare on each side: its top is flush with the screen's edge and
-            // merges with the camera hole, instead of hanging as a bar below it.
-            Box(Modifier.width(px(width.value) + ear * 2).height(px(height.value))) {
-                Canvas(Modifier.matchParentSize()) { drawFlares(ear.toPx().coerceAtMost(size.height), ink) }
-                val dismissLabel = stringResource(R.string.island_dismiss)
-                val swipeThreshold = with(density) { SWIPE_UP_DP.dp.toPx() }
-                Box(
-                    Modifier.align(Alignment.TopCenter).width(px(width.value)).fillMaxHeight()
-                        .clip(shape).islandBackground(topInset, palette) { if (glowMotion) sweep else 0.25f }
-                        .border(1.dp, borderBrush, shape)
-                        // A swipe up sends the island back into the notch (taps on its buttons are not touched: a drag starts only after the touch slop).
-                        .pointerInput(s.kind, s.fingerprint) {
-                            var travelled = 0f
-                            detectVerticalDragGestures(
-                                onDragStart = { travelled = 0f },
-                                onDragEnd = { if (travelled <= -swipeThreshold) swipeAway() },
-                                onDragCancel = { travelled = 0f },
-                            ) { _, dy -> travelled += dy }
-                        }
-                        .semantics { customActions = listOf(CustomAccessibilityAction(dismissLabel) { swipeAway(); true }) },
-                ) {
-                    Box(
-                        Modifier.fillMaxWidth().padding(top = topInset).alpha(open.coerceIn(0.0, 1.0).toFloat()),
-                        contentAlignment = Alignment.TopCenter,
-                    ) {
-                        // TalkBack reads what the island shows when it appears: a request at once, the rest when it is quiet.
-                        Box(
-                            Modifier.requiredWidth(px(targetW.toDouble())).wrapContentHeight(Alignment.Top, unbounded = true)
-                                .semantics { liveRegion = if (s.kind == IslandSpec.Kind.APPROVAL) LiveRegionMode.Assertive else LiveRegionMode.Polite },
-                        ) {
-                            when (s.kind) {
-                                IslandSpec.Kind.WORKING -> WorkingStrip(s, accent, Modifier.height(contentHeight))
-                                IslandSpec.Kind.APPROVAL -> RequestCard(s, accent, Modifier.onSizeChanged { measureApproval(it.height) })
-                                else -> ResultCard(s, accent, Modifier.height(contentHeight))
-                            }
-                        }
+            val dismissLabel = stringResource(R.string.island_dismiss)
+            val swipeThreshold = with(density) { SWIPE_UP_DP.dp.toPx() }
+            Box(
+                Modifier.width(px(visibleWidth(b).toDouble())).height(px(shownHeight))
+                    .clip(shape).islandBackground(palette) { if (glowMotion) sweep else 0.25f }
+                    .border(1.dp, borderBrush, shape)
+                    .pointerInput(s.kind, s.fingerprint) {
+                        var travelled = 0f
+                        detectVerticalDragGestures(
+                            onDragStart = { travelled = 0f },
+                            onDragEnd = { if (travelled <= -swipeThreshold) swipeAway() },
+                            onDragCancel = { travelled = 0f },
+                        ) { _, dy -> travelled += dy }
                     }
+                    .semantics { customActions = listOf(CustomAccessibilityAction(dismissLabel) { swipeAway(); true }) },
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                val content = Modifier.wrapContentHeight(Alignment.Top, unbounded = true)
+                    .alpha(open.coerceIn(0.0, 1.0).toFloat())
+                    .semantics { liveRegion = if (approval) LiveRegionMode.Assertive else LiveRegionMode.Polite }
+                if (approval) {
+                    RequestCard(s, accent, content.requiredWidth(px(compactW.toDouble())).onSizeChanged { measureApproval(it.height) })
+                } else {
+                    StatusStrip(s, palette, px(compactH.toDouble()), reveal, content) { if (glowMotion) sweep else null }
                 }
             }
         }
     }
 
-    /** The two flares: each is the square beside the island minus a quarter circle, so the black curves out to the screen's top edge. */
-    private fun DrawScope.drawFlares(e: Float, color: Color) {
-        if (e <= 0f) return
-        val w = size.width
-        val left = Path().apply {
-            moveTo(0f, 0f); lineTo(e, 0f); lineTo(e, e)
-            arcTo(Rect(Offset(0f, e), e), 0f, -90f, false)
-            close()
-        }
-        val right = Path().apply {
-            moveTo(w, 0f); lineTo(w - e, 0f); lineTo(w - e, e)
-            arcTo(Rect(Offset(w, e), e), 180f, 90f, false)
-            close()
-        }
-        drawPath(left, color)
-        drawPath(right, color)
-    }
-
     @Composable
-    private fun IslandStatus(kind: IslandSpec.Kind, accent: Color, modifier: Modifier = Modifier) {
+    private fun AgentPixels(palette: IslandPalette, sweep: () -> Float?) {
+        val accent = Color(palette.label)
         Box(
-            modifier.clip(CircleShape).background(accent.copy(alpha = 0.12f))
-                .border(1.dp, accent.copy(alpha = 0.22f), CircleShape),
+            Modifier.size(23.dp).background(accent.copy(alpha = 0.10f), RoundedCornerShape(7.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            val icon = when (kind) {
-                IslandSpec.Kind.FINISHED -> IconKind.CHECK
-                IslandSpec.Kind.ERROR -> IconKind.CLOSE
-                IslandSpec.Kind.QUESTION -> IconKind.CHAT
-                IslandSpec.Kind.APPROVAL -> IconKind.LOCK
-                IslandSpec.Kind.WORKING, IslandSpec.Kind.RATELIMIT -> null
-            }
-            if (icon != null) {
-                CoucouIcon(icon, tint = accent, size = 16.dp)
-            } else {
-                Canvas(Modifier.size(16.dp)) {
-                    val gap = size.width * 0.3f
-                    for (dot in -1..1) {
-                        drawCircle(accent, radius = 1.4.dp.toPx(), center = Offset(center.x + dot * gap, center.y))
+            Canvas(Modifier.size(14.dp)) {
+                val cell = size.width / 5
+                val pixel = cell * 0.72f
+                val inset = (cell - pixel) / 2
+                val light = sweep()?.let { (it * 10).roundToInt() - 1 }
+                palette.pixels.forEachIndexed { y, row ->
+                    repeat(5) { x ->
+                        if ((row and (1 shl (4 - x))) != 0) {
+                            val alpha = if (light == null || abs(x + y - light) <= 1) 1f else 0.46f
+                            drawRect(accent.copy(alpha = alpha), Offset(x * cell + inset, y * cell + inset), Size(pixel, pixel))
+                        }
                     }
                 }
             }
@@ -521,42 +510,49 @@ class IslandOverlay(
     }
 
     @Composable
-    private fun WorkingStrip(s: IslandSpec, accent: Color, modifier: Modifier) {
-        Row(
-            modifier.fillMaxWidth().clickable { tap("the working strip") { onOpen() } }.padding(horizontal = 10.dp, vertical = 3.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IslandStatus(s.kind, accent, Modifier.size(22.dp))
-            Spacer(Modifier.width(7.dp))
-            Column(Modifier.weight(1f)) {
-                Text(s.agent, color = foreground, fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (s.text.isNotBlank()) Text(s.text, color = dim, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    @OptIn(ExperimentalFoundationApi::class)
+    private fun StatusStrip(s: IslandSpec, palette: IslandPalette, headerHeight: Dp, reveal: Float, modifier: Modifier, sweep: () -> Float?) {
+        val status = stringResource(when (s.kind) {
+            IslandSpec.Kind.WORKING -> when (s.state) {
+                BotState.THINKING -> R.string.state_thinking
+                BotState.SEARCHING -> R.string.state_searching
+                else -> R.string.state_working
             }
-        }
-    }
-
-    @Composable
-    private fun ResultCard(s: IslandSpec, accent: Color, modifier: Modifier) {
-        val label = when (s.kind) {
             IslandSpec.Kind.ERROR -> R.string.notif_error
             IslandSpec.Kind.RATELIMIT -> R.string.notif_ratelimit
             IslandSpec.Kind.QUESTION -> R.string.notif_question
             else -> R.string.notif_finished
-        }
-        Row(
-            modifier.fillMaxWidth().clickable { tap("the result card") { onOpen() } }.padding(horizontal = 10.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        })
+        val accent = Color(palette.label)
+        Column(
+            modifier.fillMaxWidth().combinedClickable(
+                onClick = { tap("the status strip") { onOpen() } },
+                onLongClick = { tap("the island long press") { toggleDetails() } },
+                onLongClickLabel = stringResource(if (expanded) R.string.island_collapse_details else R.string.island_expand_details),
+            ),
         ) {
-            IslandStatus(s.kind, accent, Modifier.size(24.dp))
-            Spacer(Modifier.width(7.dp))
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(s.agent, color = foreground, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                    Spacer(Modifier.width(5.dp))
-                    Text(stringResource(label), style = TypeScale.LABEL.style(accent), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            Row(
+                Modifier.fillMaxWidth().height(headerHeight).padding(horizontal = 11.dp),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AgentPixels(palette, sweep)
+                Text(s.agent, Modifier.weight(1f), color = foreground, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(status, Modifier.widthIn(max = 74.dp), color = accent, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            if (expanded || reveal > 0f) {
+                val detail = when {
+                    s.kind == IslandSpec.Kind.QUESTION -> stringResource(R.string.island_answer_on_pc)
+                    s.text.isBlank() -> stringResource(R.string.island_open_app)
+                    else -> s.text
                 }
-                val detail = if (s.kind == IslandSpec.Kind.QUESTION) stringResource(R.string.island_answer_on_pc) else s.text
-                if (detail.isNotBlank()) Text(detail, color = dim, fontSize = 11.sp, lineHeight = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Column(Modifier.fillMaxWidth().graphicsLayer {
+                    alpha = reveal
+                    translationY = -(1f - reveal) * 8.dp.toPx()
+                }.padding(horizontal = 13.dp)) {
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
+                    Text(detail, Modifier.padding(vertical = 9.dp), color = foreground, fontSize = 13.sp, lineHeight = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
     }
@@ -566,7 +562,9 @@ class IslandOverlay(
         val fingerprint = s.fingerprint ?: return
         Column(modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 7.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.clickable { tap("the request header") { onOpen() } }, verticalAlignment = Alignment.CenterVertically) {
-                IslandStatus(s.kind, accent, Modifier.size(24.dp))
+                Box(Modifier.size(24.dp).background(accent.copy(alpha = 0.10f), CircleShape), contentAlignment = Alignment.Center) {
+                    CoucouIcon(IconKind.LOCK, tint = accent, size = 15.dp)
+                }
                 Spacer(Modifier.width(7.dp))
                 Column(Modifier.weight(1f)) {
                     Text(s.agent, color = dim, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

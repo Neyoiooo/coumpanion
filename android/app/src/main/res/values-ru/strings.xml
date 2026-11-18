@@ -171,6 +171,9 @@
     <string name="notif_ratelimit">Достиг лимита использования</string>
     <string name="island_answer_on_pc">Нажми, чтобы открыть Coumpanion, или ответь на компьютере</string>
     <string name="island_dismiss">Скрыть остров</string>
+    <string name="island_expand_details">Показать сведения об островке</string>
+    <string name="island_collapse_details">Свернуть сведения об островке</string>
+    <string name="island_open_app">Открыть Coumpanion для просмотра сведений</string>
     <string name="state_ready">Готов</string>
     <string name="state_working">Работает</string>
     <string name="state_thinking">Думает</string>

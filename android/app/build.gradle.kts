@@ -22,7 +22,7 @@ android {
         applicationId = "app.coumpanion.android"
         minSdk = 30
         targetSdk = 35
-        versionCode = 6
+        versionCode = 7
         versionName = "0.5.0"
         // The app's languages (English and the translations in i18n/translations); the libraries' other languages are left out of the app.
         resourceConfigurations += listOf("en", "fr", "es", "pt-rBR", "b+zh+Hans", "hi", "bn", "ru", "in", "ar", "tr", "de", "ja", "ko", "b+zh+Hant", "th", "it")

@@ -171,6 +171,9 @@
     <string name="notif_ratelimit">Hit a usage limit</string>
     <string name="island_answer_on_pc">Tap to open Coumpanion, or answer on your computer</string>
     <string name="island_dismiss">Dismiss the island</string>
+    <string name="island_expand_details">Show island details</string>
+    <string name="island_collapse_details">Collapse island details</string>
+    <string name="island_open_app">Open Coumpanion for details</string>
     <string name="state_ready">Ready</string>
     <string name="state_working">Working</string>
     <string name="state_thinking">Thinking</string>

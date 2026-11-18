@@ -171,6 +171,9 @@
     <string name="notif_ratelimit">بلغ حدّ الاستخدام</string>
     <string name="island_answer_on_pc">اضغط لفتح Coumpanion، أو أجب على حاسوبك</string>
     <string name="island_dismiss">إغلاق الجزيرة</string>
+    <string name="island_expand_details">عرض تفاصيل الجزيرة</string>
+    <string name="island_collapse_details">طي تفاصيل الجزيرة</string>
+    <string name="island_open_app">افتح Coumpanion لعرض التفاصيل</string>
     <string name="state_ready">جاهز</string>
     <string name="state_working">يعمل</string>
     <string name="state_thinking">يفكّر</string>

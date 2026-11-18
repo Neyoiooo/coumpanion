@@ -171,6 +171,9 @@
     <string name="notif_ratelimit">Kullanım sınırına ulaştı</string>
     <string name="island_answer_on_pc">Coumpanion\'yu açmak için dokun veya bilgisayarında yanıtla</string>
     <string name="island_dismiss">Adayı kapat</string>
+    <string name="island_expand_details">Ada ayrıntılarını göster</string>
+    <string name="island_collapse_details">Ada ayrıntılarını daralt</string>
+    <string name="island_open_app">Ayrıntılar için Coumpanion’ı aç</string>
     <string name="state_ready">Hazır</string>
     <string name="state_working">Çalışıyor</string>
     <string name="state_thinking">Düşünüyor</string>
