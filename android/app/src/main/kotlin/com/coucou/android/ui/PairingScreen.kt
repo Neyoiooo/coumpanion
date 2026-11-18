@@ -1,5 +1,6 @@
 package com.coucou.android.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
@@ -42,10 +44,9 @@ import com.coucou.android.core.Spacing
 import com.coucou.android.core.Tokens
 import com.coucou.android.core.TypeScale
 import com.coucou.android.link.PairingPayload
-import com.coucou.android.core.BotState
 
 /**
- * The first thing a new user sees: one clear action. A muted status mark, a sentence, "Scan QR code" as the main
+ * The first thing a new user sees: one clear action. The Coumpanion firefly, a sentence, "Scan QR code" as the main
  * pill, and two quiet ones: paste the link (in a sheet, so no field sits on the screen) and try the demo.
  */
 @Composable
@@ -58,7 +59,7 @@ fun PairingScreen(model: AppModel, onScan: () -> Unit, onAbout: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.size(48.dp))
-        StatusMark(BotState.SLEEPING, Modifier.size(132.dp))
+        Image(painterResource(R.drawable.coumpanion_firefly), contentDescription = null, modifier = Modifier.size(132.dp))
         Spacer(Modifier.size(24.dp))
         Text(stringResource(R.string.pairing_headline), style = TypeScale.DISPLAY.style(t.text.c()).copy(textAlign = TextAlign.Center))
         Text(

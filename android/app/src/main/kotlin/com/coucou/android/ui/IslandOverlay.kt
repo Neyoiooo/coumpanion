@@ -13,28 +13,17 @@ import android.view.Display
 import android.view.Gravity
 import android.view.WindowInsets
 import android.view.WindowManager
-import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import com.coucou.android.core.IconKind
-import com.coucou.android.core.MotionPolicy
-import com.coucou.android.core.MotionSpec
-import com.coucou.android.core.MotionState
-import com.coucou.android.core.IslandSurface
-import com.coucou.android.core.Tokens
-import com.coucou.android.core.TypeScale
-import kotlin.math.max
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -44,13 +33,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -60,15 +48,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.customActions
@@ -89,14 +83,23 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.coucou.android.R
+import com.coucou.android.core.IconKind
 import com.coucou.android.core.IslandBox
 import com.coucou.android.core.IslandGeometry
+import com.coucou.android.core.IslandPalette
 import com.coucou.android.core.IslandSpec
+import com.coucou.android.core.IslandSurface
 import com.coucou.android.core.IslandTimeline
+import com.coucou.android.core.MotionPolicy
+import com.coucou.android.core.MotionState
 import com.coucou.android.core.OverlayPolicy
 import com.coucou.android.core.PxRect
+import com.coucou.android.core.Tokens
 import com.coucou.android.core.Tracked
-import com.coucou.android.core.BotState
+import com.coucou.android.core.TypeScale
+import kotlinx.coroutines.delay
+import kotlin.math.max
+import kotlin.math.sin
 
 /**
  * The notch of the desktop, for the phone: a black island hanging from the top of the screen,
@@ -128,6 +131,8 @@ class IslandOverlay(
     private var shownAt = 0.0
 
     private var spec by mutableStateOf<IslandSpec?>(null)
+    private var approvalContentHeight by mutableIntStateOf(0)
+    private var glowMotion by mutableStateOf(false)
     private val width = Tracked(0.0)
     private val height = Tracked(0.0)
     private val radius = Tracked(0.0)
@@ -215,10 +220,12 @@ class IslandOverlay(
         if (opening) {
             width.jump(b.notchWidth.toDouble()); height.jump(0.0); radius.jump(b.cornerSmall.toDouble())
         }
-        val reduced = MotionPolicy.reduced(MotionState.choice, Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f))
+        val reduced = reducedMotion()
+        glowMotion = !reduced && phase == IslandTimeline.Phase.OPEN
         if (phase == IslandTimeline.Phase.OPEN) {
-            val (w, h) = IslandGeometry.sizeFor(b, current.kind)
-            val corner = (if (current.kind == IslandSpec.Kind.WORKING) b.cornerSmall else b.cornerLarge).toDouble()
+            val w = IslandGeometry.sizeFor(b, current.kind).first
+            val h = targetHeight(b, current.kind)
+            val corner = (if (current.kind == IslandSpec.Kind.APPROVAL) b.cornerLarge else b.cornerSmall).toDouble()
             // "Remove animations": no spring, the island simply appears at its size.
             if (reduced) { width.jump(w.toDouble()); height.jump(h.toDouble()); radius.jump(corner) }
             else { width.goTo(w.toDouble(), now); height.goTo(h.toDouble(), now); radius.goTo(corner, now) }
@@ -230,6 +237,27 @@ class IslandOverlay(
         }
         motionKey++
         timeline.nextDeadline()?.let { main.postDelayed(deadline, (it - clock()).toLong().coerceAtLeast(0)) }
+    }
+
+    private fun reducedMotion() = MotionPolicy.reduced(
+        MotionState.choice,
+        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f),
+    )
+
+    private fun targetHeight(b: IslandBox, kind: IslandSpec.Kind): Int =
+        if (kind == IslandSpec.Kind.APPROVAL && approvalContentHeight > 0) b.topInset + approvalContentHeight
+        else IslandGeometry.sizeFor(b, kind).second
+
+    /** Fit the translated request, buttons and lock hint to the measured content. */
+    private fun measureApproval(pixels: Int) = safely {
+        val b = box ?: return@safely
+        if (pixels == 0 || approvalContentHeight == pixels || spec?.kind != IslandSpec.Kind.APPROVAL) return@safely
+        approvalContentHeight = pixels
+        if (timeline.phase == IslandTimeline.Phase.OPEN) {
+            val h = targetHeight(b, IslandSpec.Kind.APPROVAL).toDouble()
+            if (reducedMotion()) height.jump(h) else height.goTo(h, clock())
+            motionKey++
+        }
     }
 
     /** The screen changed under the open island: new box, same window moved to the new centre, then the usual sync. */
@@ -255,6 +283,7 @@ class IslandOverlay(
         owner?.destroy()
         owner = null
         spec = null
+        approvalContentHeight = 0
     }
 
     private fun measure(): IslandBox {
@@ -269,7 +298,7 @@ class IslandOverlay(
             val mode = context.getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY).mode
             max(mode.physicalWidth, mode.physicalHeight) != max(metrics.bounds.width(), metrics.bounds.height())
         }.getOrDefault(false)
-        return IslandGeometry.place(metrics.bounds.width(), density, cutout, statusBar, scaled)
+        return IslandGeometry.place(metrics.bounds.width(), density, cutout, statusBar, scaled, context.resources.configuration.fontScale)
     }
 
     private fun ensureView(): Boolean {
@@ -324,14 +353,52 @@ class IslandOverlay(
 
     // ── What is drawn ────────────────────────────────────────────────────────
 
-    // The island is black: it is the camera hole grown. Colours are the shared always-dark ones.
+    // Leave the area around the camera black, with a soft tint across the body below it.
     private val ink = Color(IslandSurface.BLACK)
     private val dim = Color(IslandSurface.TEXT_DIM)
+    private val foreground = Color(IslandSurface.TEXT)
+
+    private fun Modifier.islandBackground(topInset: Dp, palette: IslandPalette, sweep: () -> Float) = drawWithCache {
+        val top = topInset.toPx()
+        val fill = Brush.verticalGradient(
+            colors = listOf(ink, Color(0xFF11121B)),
+            startY = top,
+            endY = size.height.coerceAtLeast(top + 1f),
+        )
+        val glow = listOf(Color(palette.glow).copy(alpha = 0.36f), Color(palette.glow).copy(alpha = 0f))
+        val trail = listOf(Color(palette.trail).copy(alpha = 0.27f), Color(palette.trail).copy(alpha = 0f))
+        onDrawBehind {
+            drawRect(fill)
+            if (size.height > top && size.width > 0f) {
+                val travel = sweep()
+                clipRect(top = top) {
+                    drawRect(Brush.radialGradient(trail, Offset(size.width * (1f - travel), top), size.width * 0.61f))
+                    drawRect(Brush.radialGradient(glow, Offset(size.width * travel, size.height + 4.dp.toPx()), size.width * 0.62f))
+                }
+            }
+        }
+    }
 
     @Composable
     private fun Island() {
         var frame by remember { mutableLongStateOf(0L) }
-        // Runs only while something is moving; when it stops, nothing redraws and nothing is scheduled.
+        var sweep by remember { mutableFloatStateOf(0.25f) }
+        LaunchedEffect(glowMotion) {
+            if (!glowMotion) return@LaunchedEffect
+            val start = clock()
+            var nextVisibilityCheck = start
+            var visible = true
+            while (true) {
+                val now = clock()
+                if (now >= nextVisibilityCheck) {
+                    visible = seenByUser()
+                    nextVisibilityCheck = now + 1_000
+                }
+                if (visible) sweep = 0.5f + 0.34f * sin((now - start) / 770.0).toFloat()
+                delay(if (visible) 42 else 1_000)
+            }
+        }
+        // The window's shape only needs frame callbacks while it is growing or retracting.
         LaunchedEffect(motionKey) {
             var last = 0L
             while (width.animating || height.animating || radius.animating) {
@@ -354,11 +421,17 @@ class IslandOverlay(
         val density = LocalDensity.current
         fun px(v: Double): Dp = with(density) { v.toFloat().toDp() }
         val topInset = px(b.topInset.toDouble())
-        val (targetW, targetH) = IslandGeometry.sizeFor(b, s.kind)
+        val targetW = IslandGeometry.sizeFor(b, s.kind).first
+        val targetH = targetHeight(b, s.kind)
+        val contentHeight = px((targetH - b.topInset).toDouble())
         // The content fades in as the island opens and out as it goes up.
         val open = ((height.value / targetH.toDouble()) - 0.35) / 0.55
         val corner = px(radius.value)
         val ear = IslandGeometry.EAR_DP.dp
+        val palette = remember(s.pillId, s.agent) { IslandPalette.forAgent(s.pillId, s.agent) }
+        val accent = Color(palette.label)
+        val shape = RoundedCornerShape(bottomStart = corner, bottomEnd = corner)
+        val borderBrush = Brush.verticalGradient(listOf(Color.Transparent, accent.copy(alpha = 0.34f)))
         CompositionLocalProvider(LocalTokens provides Tokens.DARK) {
             // The island plus a concave flare on each side: its top is flush with the screen's edge and
             // merges with the camera hole, instead of hanging as a bar below it.
@@ -368,7 +441,8 @@ class IslandOverlay(
                 val swipeThreshold = with(density) { SWIPE_UP_DP.dp.toPx() }
                 Box(
                     Modifier.align(Alignment.TopCenter).width(px(width.value)).fillMaxHeight()
-                        .clip(RoundedCornerShape(bottomStart = corner, bottomEnd = corner)).background(ink)
+                        .clip(shape).islandBackground(topInset, palette) { if (glowMotion) sweep else 0.25f }
+                        .border(1.dp, borderBrush, shape)
                         // A swipe up sends the island back into the notch (taps on its buttons are not touched: a drag starts only after the touch slop).
                         .pointerInput(s.kind, s.fingerprint) {
                             var travelled = 0f
@@ -390,9 +464,9 @@ class IslandOverlay(
                                 .semantics { liveRegion = if (s.kind == IslandSpec.Kind.APPROVAL) LiveRegionMode.Assertive else LiveRegionMode.Polite },
                         ) {
                             when (s.kind) {
-                                IslandSpec.Kind.WORKING -> WorkingStrip(s)
-                                IslandSpec.Kind.APPROVAL -> RequestCard(s)
-                                else -> ResultCard(s)
+                                IslandSpec.Kind.WORKING -> WorkingStrip(s, accent, Modifier.height(contentHeight))
+                                IslandSpec.Kind.APPROVAL -> RequestCard(s, accent, Modifier.onSizeChanged { measureApproval(it.height) })
+                                else -> ResultCard(s, accent, Modifier.height(contentHeight))
                             }
                         }
                     }
@@ -420,22 +494,49 @@ class IslandOverlay(
     }
 
     @Composable
-    private fun WorkingStrip(s: IslandSpec) {
-        Row(
-            Modifier.fillMaxWidth().clickable { tap("the working strip") { onOpen() } }.padding(horizontal = 18.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    private fun IslandStatus(kind: IslandSpec.Kind, accent: Color, modifier: Modifier = Modifier) {
+        Box(
+            modifier.clip(CircleShape).background(accent.copy(alpha = 0.12f))
+                .border(1.dp, accent.copy(alpha = 0.22f), CircleShape),
+            contentAlignment = Alignment.Center,
         ) {
-            StatusMark(s.state, Modifier.size(34.dp))
-            Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) {
-                Text(s.agent, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (s.text.isNotBlank()) Text(s.text, color = dim, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val icon = when (kind) {
+                IslandSpec.Kind.FINISHED -> IconKind.CHECK
+                IslandSpec.Kind.ERROR -> IconKind.CLOSE
+                IslandSpec.Kind.QUESTION -> IconKind.CHAT
+                IslandSpec.Kind.APPROVAL -> IconKind.LOCK
+                IslandSpec.Kind.WORKING, IslandSpec.Kind.RATELIMIT -> null
+            }
+            if (icon != null) {
+                CoucouIcon(icon, tint = accent, size = 16.dp)
+            } else {
+                Canvas(Modifier.size(16.dp)) {
+                    val gap = size.width * 0.3f
+                    for (dot in -1..1) {
+                        drawCircle(accent, radius = 1.4.dp.toPx(), center = Offset(center.x + dot * gap, center.y))
+                    }
+                }
             }
         }
     }
 
     @Composable
-    private fun ResultCard(s: IslandSpec) {
+    private fun WorkingStrip(s: IslandSpec, accent: Color, modifier: Modifier) {
+        Row(
+            modifier.fillMaxWidth().clickable { tap("the working strip") { onOpen() } }.padding(horizontal = 10.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IslandStatus(s.kind, accent, Modifier.size(22.dp))
+            Spacer(Modifier.width(7.dp))
+            Column(Modifier.weight(1f)) {
+                Text(s.agent, color = foreground, fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (s.text.isNotBlank()) Text(s.text, color = dim, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+
+    @Composable
+    private fun ResultCard(s: IslandSpec, accent: Color, modifier: Modifier) {
         val label = when (s.kind) {
             IslandSpec.Kind.ERROR -> R.string.notif_error
             IslandSpec.Kind.RATELIMIT -> R.string.notif_ratelimit
@@ -443,34 +544,34 @@ class IslandOverlay(
             else -> R.string.notif_finished
         }
         Row(
-            Modifier.fillMaxWidth().clickable { tap("the result card") { onOpen() } }.padding(horizontal = 18.dp, vertical = 8.dp),
+            modifier.fillMaxWidth().clickable { tap("the result card") { onOpen() } }.padding(horizontal = 10.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            StatusMark(s.state, Modifier.size(52.dp))
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            IslandStatus(s.kind, accent, Modifier.size(24.dp))
+            Spacer(Modifier.width(7.dp))
+            Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(s.agent, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(label), color = dim, fontSize = 12.sp, maxLines = 1)
+                    Text(s.agent, color = foreground, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Spacer(Modifier.width(5.dp))
+                    Text(stringResource(label), style = TypeScale.LABEL.style(accent), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                 }
-                val text = if (s.kind == IslandSpec.Kind.QUESTION) stringResource(R.string.island_answer_on_pc) else s.text
-                if (text.isNotBlank()) Text(text, color = Color.White, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                val detail = if (s.kind == IslandSpec.Kind.QUESTION) stringResource(R.string.island_answer_on_pc) else s.text
+                if (detail.isNotBlank()) Text(detail, color = dim, fontSize = 11.sp, lineHeight = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
 
     @Composable
-    private fun RequestCard(s: IslandSpec) {
+    private fun RequestCard(s: IslandSpec, accent: Color, modifier: Modifier) {
         val fingerprint = s.fingerprint ?: return
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 7.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.clickable { tap("the request header") { onOpen() } }, verticalAlignment = Alignment.CenterVertically) {
-                StatusMark(BotState.APPROVAL, Modifier.size(40.dp))
-                Spacer(Modifier.width(10.dp))
+                IslandStatus(s.kind, accent, Modifier.size(24.dp))
+                Spacer(Modifier.width(7.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(s.agent, style = TypeScale.SECONDARY.style(dim), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(s.agent, color = dim, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     // What kind of action, never the command: the exact text is in the app and in the lock prompt.
-                    Text(stringResource(R.string.approval_wants, s.text), style = TypeScale.HEADLINE.style(Color.White), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(stringResource(R.string.approval_wants, s.text), color = foreground, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -482,7 +583,7 @@ class IslandOverlay(
                     )
                 }
             }
-            Text(stringResource(if (s.canAllow) R.string.approval_hint else R.string.approval_on_computer), style = TypeScale.LABEL.style(dim), maxLines = 2)
+            Text(stringResource(if (s.canAllow) R.string.approval_hint else R.string.approval_on_computer), color = dim, fontSize = 11.sp, lineHeight = 14.sp)
         }
     }
 

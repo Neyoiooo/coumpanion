@@ -1,6 +1,7 @@
 package com.coucou.android
 
 import com.coucou.android.core.IslandGeometry
+import com.coucou.android.core.IslandPalette
 import com.coucou.android.core.PxRect
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -24,13 +25,15 @@ class IslandLookTest {
     }
 
     @Test fun theWorkingStripIsNarrow() {
-        assertTrue("working strip ${dp(box.workingW)} dp", dp(box.workingW) in 220f..260f)
+        assertTrue("working strip ${dp(box.workingW)} dp", dp(box.workingW) in 170f..180f)
+        assertTrue("short status strip below the cutout", dp(box.workingH - box.topInset) <= 38f)
     }
 
     @Test fun theResultAndRequestCardsAreWiderThanTheStrip() {
         assertTrue(box.cardW > box.workingW)
         assertTrue(box.approvalW >= box.cardW)
-        assertTrue("fits the screen with a margin", box.cardW <= 720 - 2 * (12 * density).toInt())
+        assertTrue("the result fits in a compact strip", dp(box.cardW) <= 200f && dp(box.cardH - box.topInset) <= 44f)
+        assertTrue("the approval fits in a smaller panel", dp(box.approvalW) <= 272f && dp(box.approvalH - box.topInset) <= 138f)
     }
 
     @Test fun hiddenItIsJustAboveTheHoleSoItGrowsOutOfIt() {
@@ -39,9 +42,12 @@ class IslandLookTest {
         assertTrue(box.notchWidth < box.workingW / 2)
     }
 
-    @Test fun cornersAreThePCsFourteenAndTwentyTwo() {
-        assertEquals(14, Math.round(dp(box.cornerSmall)))
-        assertEquals(22, Math.round(dp(box.cornerLarge)))
+    @Test fun largerTextGetsMoreHeightWithoutCoveringMoreWidth() {
+        val large = IslandGeometry.place(720, density, hole, statusBarH = 70, fontScale = 1.5f)
+        assertEquals(box.workingW, large.workingW)
+        assertTrue(large.workingH > box.workingH)
+        assertTrue(large.cardH > box.cardH)
+        assertTrue(large.approvalH > box.approvalH)
     }
 
     @Test fun anOffCentreHoleStillKeepsTheWholeIslandOnScreen() {
@@ -55,6 +61,13 @@ class IslandLookTest {
         val narrow = IslandGeometry.place(1080, 3.0f, PxRect(504, 0, 576, 90), statusBarH = 90)
         val ear = (IslandGeometry.EAR_DP * 3.0f).toInt()
         assertTrue(narrow.approvalW + 2 * ear <= 1080 - 2 * (IslandGeometry.MARGIN_DP * 3.0f).toInt())
-        assertEquals(14, IslandGeometry.EAR_DP) // the PC's flare
+    }
+
+    @Test fun theGlowFollowsTheProviderAcrossAliases() {
+        val claude = IslandPalette.forAgent("integration_claude", "Editing")
+        assertEquals(0xFFFF9A68, claude.glow)
+        assertEquals(claude, IslandPalette.forAgent("session-a", "Claude Desktop"))
+        assertEquals(IslandPalette.forAgent("agent_codex", "Codex"), IslandPalette.forAgent("session-b", "ChatGPT"))
+        assertTrue(claude != IslandPalette.forAgent("session-c", "DeepSeek Flash"))
     }
 }

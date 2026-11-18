@@ -2,9 +2,9 @@
 
 Start an AI task, then go back to scrolling. Coumpanion puts a small island over your other Android apps so you can see when your assistant is working, done, or waiting for your approval. The goal is to keep the task running on your server even when you switch apps or lose your connection.
 
-[![Download the Coumpanion APK](https://img.shields.io/badge/Download-Coumpanion%20APK-146c5b?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.5.0-preview.1/Coumpanion-debug.apk)
+[![Download the Coumpanion APK](https://img.shields.io/badge/Download-Coumpanion%20APK-146c5b?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.5.0-preview.2/Coumpanion-debug.apk)
 
-**Android 11 or later.** This preview has an offline demo you can try without a computer. The phone-only AI server is in development. [Release notes](https://github.com/Neyoiooo/coumpanion/releases/tag/coumpanion-v0.5.0-preview.1)
+**Android 11 or later.** Preview 2 adds a smaller island, a glow that follows your AI provider’s colors, and Glint the firefly as the launcher icon. You can try the offline demo without a computer. The phone-only AI server is in development. [Release notes](https://github.com/Neyoiooo/coumpanion/releases/tag/coumpanion-v0.5.0-preview.2)
 
 ## Try it on your phone
 

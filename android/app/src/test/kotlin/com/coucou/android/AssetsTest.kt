@@ -47,6 +47,10 @@ class AssetsTest {
     }
 
     @Test fun launcherIconIsPresent() {
-        assertTrue(File(res, "mipmap-anydpi/ic_launcher.xml").readText().contains("<vector"))
+        val icon = File(res, "mipmap-anydpi/ic_launcher.xml").readText()
+        assertTrue(icon.contains("<adaptive-icon"))
+        val layers = Regex("""android:drawable="@drawable/(\w+)"""").findAll(icon).map { it.groupValues[1] }.toList()
+        assertEquals(listOf("coumpanion_icon_background", "coumpanion_icon_foreground"), layers)
+        layers.forEach { assertTrue(File(res, "drawable/$it.xml").isFile) }
     }
 }

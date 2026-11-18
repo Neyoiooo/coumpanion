@@ -26,14 +26,15 @@ data class IslandBox(
 /**
  * The island is centred on the camera cut-out (a centred waterdrop on the Galaxy A12s), its black
  * merges with the hole, and its content starts under it. With no cut-out it hangs from the
- * status bar, centred on the screen. Sizes follow the PC (working strip, card, request card).
+ * status bar, centred on the screen. Approval controls have more room than status messages.
  */
 object IslandGeometry {
     const val MARGIN_DP = 12
     /** The concave flare on each side where the island meets the top edge of the screen (the PC's `#island::before/after`). */
-    const val EAR_DP = 14
-    const val MAX_W_DP = 340
-    const val WORKING_W_DP = 240 // narrow: it should look like it grows out of the camera hole
+    const val EAR_DP = 8
+    const val WORKING_W_DP = 176
+    const val RESULT_W_DP = 200
+    const val APPROVAL_W_DP = 272
     const val MIN_NOTCH_DP = 44
     const val HOLE_PAD_DP = 10
 
@@ -42,24 +43,29 @@ object IslandGeometry {
      * panel). Some builds then report the cut-out's x in the panel's pixels (a Galaxy S20 at 1080 px
      * wide says the centred hole is at x = 720), so its x is not trusted and the island is centred.
      */
-    fun place(screenW: Int, density: Float, cutoutTop: PxRect?, statusBarH: Int, displayScaled: Boolean = false): IslandBox {
+    fun place(
+        screenW: Int, density: Float, cutoutTop: PxRect?, statusBarH: Int,
+        displayScaled: Boolean = false, fontScale: Float = 1f,
+    ): IslandBox {
         fun dp(v: Int) = (v * density).toInt()
-        // The flares sit outside the island's width, so they come off the room it may use.
-        val maxW = min(screenW - 2 * dp(MARGIN_DP) - 2 * dp(EAR_DP), dp(MAX_W_DP))
+        val margin = dp(MARGIN_DP) + dp(EAR_DP)
+        val maxW = (screenW - 2 * margin).coerceAtLeast(1)
         val cut = cutoutTop?.takeIf { it.width > 0 && it.bottom > 0 }
         val top = max(cut?.bottom ?: statusBarH, 0)
-        // Keep the island on screen even when the cut-out is off-centre.
-        val rawOffset = cut?.takeUnless { displayScaled }?.let { it.centerX - screenW / 2 } ?: 0
-        val room = max(screenW / 2 - maxW / 2, 0)
-        val offset = rawOffset.coerceIn(-room, room)
-        // Hidden, the island is just a little wider than the camera hole, so it appears to grow out of it.
         val notch = min(max((cut?.width ?: 0) + dp(HOLE_PAD_DP), dp(MIN_NOTCH_DP)), maxW)
+        fun width(limit: Int) = dp(limit).coerceIn(notch, maxW)
+        val approvalW = width(APPROVAL_W_DP)
+        val extraTextHeight = (fontScale.coerceAtLeast(1f) - 1f) * density
+        // Leave room for the flares when keeping the widest state close to an off-centre camera.
+        val rawOffset = cut?.takeUnless { displayScaled }?.let { it.centerX - screenW / 2 } ?: 0
+        val room = (screenW / 2 - approvalW / 2 - margin).coerceAtLeast(0)
+        val offset = rawOffset.coerceIn(-room, room)
         return IslandBox(
             centerOffsetX = offset, topInset = top, notchWidth = notch,
-            workingW = min(dp(WORKING_W_DP), maxW), workingH = top + dp(52),
-            cardW = maxW, cardH = top + dp(96),
-            approvalW = maxW, approvalH = top + dp(168),
-            cornerSmall = dp(14), cornerLarge = dp(22),
+            workingW = width(WORKING_W_DP), workingH = top + dp(38) + (32 * extraTextHeight).toInt(),
+            cardW = width(RESULT_W_DP), cardH = top + dp(44) + (34 * extraTextHeight).toInt(),
+            approvalW = approvalW, approvalH = top + dp(138) + (76 * extraTextHeight).toInt(),
+            cornerSmall = dp(16), cornerLarge = dp(19),
         )
     }
 
