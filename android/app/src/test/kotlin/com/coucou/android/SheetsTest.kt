@@ -81,6 +81,25 @@ class SheetsTest {
         assertTrue(send.contains("if (confirming) return"))
     }
 
+    @Test fun allowAndAnswerUseDeviceCredentialsWithoutBiometrics() {
+        val gate = src("app/BiometricGate.kt")
+        assertTrue(gate.contains("AUTH = BiometricManager.Authenticators.DEVICE_CREDENTIAL"))
+        assertTrue(gate.contains(".setAllowedAuthenticators(AUTH)"))
+        assertFalse(gate.contains("BIOMETRIC_STRONG") || gate.contains("BIOMETRIC_WEAK"))
+    }
+
+    @Test fun approvalsReuseTheUnlockUntilScreenOffAndExternalTapsOnlyOpenReview() {
+        val gate = src("app/BiometricGate.kt")
+        assertTrue(gate.indexOf("if (!unlocked(activity))") in 0 until gate.indexOf("if (verified)"))
+        assertTrue(gate.contains("if (!on) reset()"))
+        assertTrue(gate.contains("generation != screenGeneration"))
+        assertTrue(gate.contains("verified = canReuse"))
+        val launch = main.substringAfter("private fun handle(").substringBefore("private fun sendAnswer(")
+        assertTrue(launch.contains("reviewApproval = launch.fingerprint"))
+        assertFalse(launch.contains("approve(") || launch.contains("model.decide("))
+        assertTrue(sheets.contains("var showCommand by remember(r.fingerprint) { mutableStateOf(true) }"))
+    }
+
     @Test fun thePicksAreNeverLoggedOrStored() {
         val send = main.substringAfter("private fun sendAnswer").substringBefore("/** Allow:")
         assertFalse(send.contains("Log."))

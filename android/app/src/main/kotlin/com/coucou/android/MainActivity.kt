@@ -45,7 +45,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -130,6 +129,7 @@ class MainActivity : ComponentActivity() {
     private var detailPill by mutableStateOf<String?>(null)
     /** The approval the user closed without deciding (the sheet stays down for it), and the session whose question is open. */
     private var closedApproval by mutableStateOf<String?>(null)
+    private var reviewApproval by mutableStateOf<String?>(null)
     private var questionPill by mutableStateOf<String?>(null)
     private var confirming = false
     override fun attachBaseContext(newBase: Context) {
@@ -178,7 +178,7 @@ class MainActivity : ComponentActivity() {
                             Screen.DIAGNOSTICS -> DiagnosticsScreen(model, onBack = { screen = Screen.SETTINGS })
                             Screen.HISTORY -> HistoryScreen(model, onBack = { screen = Screen.SETTINGS })
                             Screen.HOME -> if (model.mode == Mode.NONE) PairingScreen(model, onScan = { screen = Screen.SCAN }, onAbout = { screen = Screen.SETTINGS }) else Home(
-                                model, onApprove = ::approve, onOverlay = ::setOverlay,
+                                model, onOverlay = ::setOverlay,
                                 onSession = { detailPill = it; screen = Screen.SESSION },
                                 onScan = { screen = Screen.SCAN }, onReview = { closedApproval = null }, onQuestion = { questionPill = it },
                                 onHistory = { screen = Screen.HISTORY }, onDiagnostics = { screen = Screen.DIAGNOSTICS },
@@ -192,7 +192,8 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         // A request for permission rises over whatever is on screen until it is decided or closed.
-                        val pending = ApprovalSheetPlan.next(model.approvals, closedApproval)
+                        val pending = model.approvals.firstOrNull { it.fingerprint == reviewApproval && it.fingerprint != closedApproval }
+                            ?: ApprovalSheetPlan.next(model.approvals, closedApproval)
                         if (pending != null && screen != Screen.SCAN) ApprovalSheet(model, pending, onAllow = ::approve, onDismiss = { closedApproval = pending.fingerprint })
                         questionPill?.let { QuestionSheet(model, it, onDismiss = { questionPill = null }, onSend = ::sendAnswer) }
                         DiffSheet(model)
@@ -266,21 +267,17 @@ class MainActivity : ComponentActivity() {
         // Text shared to Coucou from another app (ShareActivity, which only keeps cleaned text): it waits in the model for the chat box.
         if (model.shareDraft.pending()) screen = Screen.CHAT
         val launch = model.launch.take() ?: return
-        val fp = launch.fingerprint
-        if (launch.allow) {
-            val request = model.approvals.firstOrNull { it.fingerprint == fp }
-            when {
-                request != null -> approve(request)
-                // The app was closed: the desktop offers the request again once the link is back.
-                model.linkState != LinkState.CONNECTED -> model.wantAllow = fp
-                else -> model.message = getString(R.string.msg_not_pending)
-            }
+        // Both notification and island taps open the exact request for review. Only the sheet can send Allow.
+        reviewApproval = launch.fingerprint
+        closedApproval = null
+        if (screen == Screen.SCAN) screen = Screen.HOME
+        if (model.linkState == LinkState.CONNECTED && model.approvals.none { it.fingerprint == reviewApproval }) {
+            model.message = getString(R.string.msg_not_pending)
         }
     }
 
     /**
-     * An answer to a question: only after the same screen-lock check as Allow. The lock prompt shows what is about to be
-     * sent (the labels picked); nothing about it is logged or stored.
+     * An answer uses the same unlocked session as Allow. The selected labels are never logged or stored.
      */
     private fun sendAnswer(request: QuestionRequest, picks: List<List<String>>) {
         if (confirming) return
@@ -296,7 +293,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    /** Allow: only after the biometric / screen-lock check. */
+    /** Allow: only after the screen-lock check. */
     private fun approve(r: ApprovalRequest) {
         if (confirming) return // a second tap must not open a second prompt
         if (!ApprovalSheetPlan.canAllowHere(r)) { model.message = getString(R.string.approval_on_computer); return }
@@ -311,21 +308,12 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun Home(
-    model: AppModel, onApprove: (ApprovalRequest) -> Unit, onOverlay: (Boolean) -> Unit, onSession: (String) -> Unit,
+    model: AppModel, onOverlay: (Boolean) -> Unit, onSession: (String) -> Unit,
     onScan: () -> Unit, onHistory: () -> Unit, onReview: () -> Unit, onQuestion: (String) -> Unit, onDiagnostics: () -> Unit,
 ) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
     var addressOpen by rememberSaveable { mutableStateOf(false) }
-
-    // Allow tapped on a notification before the link was back: open the prompt once the request is here.
-    LaunchedEffect(model.approvals, model.wantAllow) {
-        val fp = model.wantAllow ?: return@LaunchedEffect
-        model.approvals.firstOrNull { it.fingerprint == fp }?.let {
-            model.wantAllow = null
-            onApprove(it)
-        }
-    }
 
     // The PC's Home panel: the agent that matters in a big card, the others as pills.
     val focus = HomePanel.focus(model.sessions, selected)

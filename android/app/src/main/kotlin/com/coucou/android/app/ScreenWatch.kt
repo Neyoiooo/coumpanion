@@ -15,8 +15,8 @@ class ScreenWatch(context: Context, private val onChange: (on: Boolean) -> Unit)
     private var receiver: BroadcastReceiver? = null
 
     @Synchronized
-    fun start() {
-        if (receiver != null) return
+    fun start(): Boolean {
+        if (receiver != null) return true
         val r = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 when (intent.action) {
@@ -25,13 +25,16 @@ class ScreenWatch(context: Context, private val onChange: (on: Boolean) -> Unit)
                 }
             }
         }
-        receiver = r
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_USER_PRESENT)
         }
-        runCatching { ContextCompat.registerReceiver(app, r, filter, ContextCompat.RECEIVER_NOT_EXPORTED) }
+        return runCatching {
+            ContextCompat.registerReceiver(app, r, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+            receiver = r
+            true
+        }.getOrDefault(false)
     }
 
     @Synchronized

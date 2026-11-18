@@ -2,7 +2,7 @@
 
 Coumpanion shows your agents, lets you answer approval requests and supports chat through a compatible link. The Android app is based on [Coucou](https://github.com/Louis-CFM/coucou) by Louis Raillé and the Android port by Rhytam Biswas. The code remains [MIT-licensed](LICENSE).
 
-The offline demo runs on Android 11 or later. The server is a later step. The existing desktop link can still be used to test pairing and chat.
+The offline demo runs on Android 11 or later. [Coumpanion Server](server/README.md) provides a real DeepSeek connection over a private network. Compatible desktop links can also be used for pairing and chat.
 
 ## Build and test
 
@@ -19,7 +19,7 @@ A release build (R8 shrinking and obfuscation, resources shrunk, `android.util.L
 `~/.gradle/gradle.properties`. Without them the release APK is unsigned (it cannot be installed), never signed with a debug key. Keep
 `app/build/outputs/mapping/release/mapping.txt` with the build you ship. Nothing is published from here.
 
-Without a computer, open the app and tap **Try demo mode**. Tap **Allow** next to the overlay permission notice on Home and enable **Display over other apps** for Coumpanion. Return to Coumpanion, then switch to another app while the demo runs. The island shows progress and the demo approval. **Allow** uses your fingerprint or screen lock. **Deny** takes effect without it.
+Without a computer, open the app and tap **Try demo mode**. Tap **Allow** next to the overlay permission notice on Home and enable **Display over other apps** for Coumpanion. Return to Coumpanion, then switch to another app while the demo runs. The island shows progress and the demo approval. Tap **Review request** to see the exact command. The first **Allow** or **Send answer** uses your PIN, pattern, or password. That check is shared while the screen stays on. **Deny** works directly.
 
 For a separate test over Wi-Fi, run the fake desktop:
 
@@ -40,7 +40,7 @@ The desktop side is in `windows/src-tauri/src/phone_link`; the protocol is `docs
 - **Accessibility**: TalkBack says an agent as "Claude Code, waiting for your OK" (name, state in words, then the line), a tab with an alert as "Home, a request is waiting", and a request sheet or the island is announced when it appears (`core/SpokenLabels.kt`, `core/WidgetSpoken.kt`: every tapped area of every Widget speaks one sentence built from what it shows). Every control is at least 48 dp, sheets scroll and status lines may wrap so the app holds at a font scale of 1.3, and Settings > Display > *Reduce motion* (System, On, Off; System follows Android's "Remove animations") turns the island's and sheets' springs into a fade (`core/MotionPolicy.kt`).
 - **Request alerts** (Settings > Permission requests): *Don't wake the screen for a request* (off by default, the screen wakes as before) and the vibration (Standard is the old pattern, Short, or Off). A request is never muted or hidden by either: it still arrives with an approval tone and its notification. The vibration is a notification channel setting that Android cannot change later, so each choice has its own channel id and the old one is deleted (`core/ApprovalAlerts.kt`).
 - **Home says why the link was lost** (not on Wi-Fi, the computer closed the connection, or it cannot be reached: Coucou closed there, phone link off, another network), and the ongoing notification is posted again only when its text changes (`core/OngoingGate.kt`). Predictive back is on (`enableOnBackInvokedCallback`).
-- **Requests**: a sheet rises over any screen. Allow needs the fingerprint or screen lock, Deny does not, taps in the first 600 ms
+- **Requests**: a sheet rises over any screen. Allow uses the screen-lock check once while the screen stays on, Deny works directly, taps in the first 600 ms
   are ignored, and each request expires after 120 s. Questions from Claude Code can be answered the same way (the computer must allow it).
 - **Island over other apps** (on by default, with an option to turn it off): a black island from the camera cut-out drops while an agent works, shows
   the result for 10 s and goes back up with the computer's motion. Needs Android's "Display over other apps". Rules are pure and
@@ -65,7 +65,7 @@ The desktop side is in `windows/src-tauri/src/phone_link`; the protocol is `docs
   - *Status indicator* (1x1): the most urgent agent’s status colour.
   - *Your team* (Team, 4x2): up to four agents you pick (a choice screen opens when you add it, and again from its long-press menu "Reconfigure"; skip it and it shows the busiest ones), two by two, each with status mark, name and state word; an agent you picked that is not running says "Not running". The choice is kept per Widget on the phone only (`app/TeamStore.kt`, `core/TeamChoice.kt`) and goes with the Widget. A tap opens that agent, or the app.
 
-  The buttons only open a screen of the app, from a closed list (`core/LaunchScreen.kt`) through the non-exported `LaunchActivity`; none approves, denies or sends anything, and `MainActivity` still reads no intent extra. A tap on Solo, Agent overview, Status Pill, Status indicator or a List row opens that agent in the app. A request is still decided in the app, behind the fingerprint, never from a Widget. Widgets show agent names, state words and colours only, are redrawn when something changes (`updatePeriodMillis` stays 0) and a redraw that would look the same is skipped. On Android 12 and later they adapt to their size (small, medium, large). Code: `core/WidgetData.kt` (pure, tested), `app/WidgetHub.kt`, one class per Widget in `app/`, `app/StatusMarkBitmap.kt`, `app/RingBitmap.kt`.
+  The buttons only open a screen of the app, from a closed list (`core/LaunchScreen.kt`) through the non-exported `LaunchActivity`; none approves, denies or sends anything, and `MainActivity` still reads no intent extra. A tap on Solo, Agent overview, Status Pill, Status indicator or a List row opens that agent in the app. A request is decided in the app. Widgets show agent names, state words and colours only, are redrawn when something changes (`updatePeriodMillis` stays 0) and a redraw that would look the same is skipped. On Android 12 and later they adapt to their size (small, medium, large). Code: `core/WidgetData.kt` (pure, tested), `app/WidgetHub.kt`, one class per Widget in `app/`, `app/StatusMarkBitmap.kt`, `app/RingBitmap.kt`.
 - **History**: *Weekly recap* (optional, needs Coucou with the `recap` capability on the computer; Settings → Android phone → "Show my weekly recap on the phone", off by default): a card on Home with last week's time with agents, sessions, files, lines, commands, permissions allowed and denied and the agent used most, counts only (`link/Protocol.kt`, `core/RecapText.kt`, `ui/RecapPanel.kt`; held in memory, never stored). *Activity* (Settings > More) has a search box and *Export as text*, which shares the same wording the list shows (never the commands) through Android's share sheet (`core/HistoryExport.kt`). Settings > Notices > *Mute an agent's notices* silences the finished / failed / limit notices of the agents you pick; requests and questions are never muted (`core/AgentMute.kt`, rule in `StatusPolicy.announce`).
 - **Quick actions**: long-press the app icon for *Chat*, *Recent decisions* and *Pair again* (`res/xml/shortcuts.xml`). They start the private `LaunchActivity` with the key of one screen of the closed list, like the Widget buttons: they only open a screen. *Share to Coumpanion*: in another app, Share > Coumpanion chat puts the text in the chat box as a draft, cut to the chat's limit and stripped of control characters (`core/ShareDraft.kt`, `app/ShareActivity.kt`). It is never sent by itself; if the computer does not offer chat the text is dropped with a short message, and while the computer is not reachable yet it waits for up to two minutes.
 - **Looking at every state without a computer** (debug builds only): `adb shell am broadcast -n app.coumpanion.android/com.coucou.android.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state <disconnected|empty|working|waiting|done|live>`; `live` goes back to the real state. The receiver is in `app/src/debug` and does not exist in a release build.
@@ -107,13 +107,13 @@ For testing without a cable once the phone has been connected by USB once: `adb 
 4. Optional, each with its own switch on the same page: session details, answers to Claude Code's questions, plan usage. Chat, file
    changes, services, the weekly recap and the relay are not available from a Mac yet.
 
-Allow still asks for your fingerprint or screen lock on the phone, and only the request still waiting on the Mac can be answered.
+The first Allow or Answer uses your screen lock on the phone. Turning the screen off or restarting the app resets that check. Only the request still waiting on the Mac can be answered.
 Turning the switch off stops the listener and the announcement at once. As on Windows, Claude Code must be in a mode that asks for
 permission, or nothing reaches the phone.
 
 ## Security rules the tests guard
 
-Certificate pinning and the pairing token; approval fingerprints, 120 s expiry and decide-once; the biometric gate for Allow;
+Certificate pinning and the pairing token; approval fingerprints, 120 s expiry and decide-once; the unlocked approval session for Allow and Answer;
 `MainActivity` ignores intent extras (only the non-exported `LaunchActivity` can ask for the Allow prompt); `FLAG_SECURE` on pairing,
 chat, approval and question screens; secrets only in the Android Keystore blob; no logging of tokens, answers or relay keys; no ad,
 billing or analytics library.

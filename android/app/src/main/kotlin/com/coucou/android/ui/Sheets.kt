@@ -120,15 +120,14 @@ private fun SheetMark(state: BotState, colour: com.coucou.android.core.Rgb?) {
 }
 
 /**
- * A request for permission, in words: who, and what kind of action ("Wants to run a command"). The exact command is one tap
- * away ("Show exact command") and is always repeated by the lock prompt, so Allow is never blind. Allow needs the lock;
- * Deny does not. Taps in the first 600 ms are ignored.
+ * A request for permission, with the exact command visible for review. Allow uses the phone's
+ * unlocked approval session. Deny works right away once the 600 ms tap guard has passed.
  */
 @Composable
 fun ApprovalSheet(model: AppModel, r: ApprovalRequest, onAllow: (ApprovalRequest) -> Unit, onDismiss: () -> Unit) {
     var armed by remember(r.fingerprint) { mutableStateOf(false) }
     LaunchedEffect(r.fingerprint) { delay(ApprovalSheetPlan.GUARD_MS); armed = true }
-    var showCommand by remember(r.fingerprint) { mutableStateOf(false) }
+    var showCommand by remember(r.fingerprint) { mutableStateOf(true) }
     val white = Color(tokens().heroText)
     val dim = Color(tokens().heroTextDim)
     val wash = rgbColor(StatePalette.color(BotState.APPROVAL))

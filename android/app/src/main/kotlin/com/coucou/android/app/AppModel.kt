@@ -431,12 +431,6 @@ class AppModel(private val context: Context) : LinkListener {
         overlay.setActive(IslandPlan.active(sessions, approvals, allowed = true, this::agentName))
     }
 
-    /**
-     * Allow was tapped on a notification before the link was back (the app had been closed): the
-     * desktop offers the request again as soon as it reconnects, and the biometric prompt opens then.
-     */
-    var wantAllow by mutableStateOf<String?>(null)
-
     private val expiry = HashMap<String, Runnable>()
     private var link: DesktopLink? = null
     private val lastState = HashMap<String, BotState>()
@@ -679,12 +673,11 @@ class AppModel(private val context: Context) : LinkListener {
         sessions = emptyList()
         dropApprovals()
         chatLinkLost()
-        wantAllow = null
         lastState.clear()
         notifier.cancelAllStatus()
     }
 
-    /** True if the decision was sent (or applied to the demo). Allow is gated by the biometric prompt in the UI. */
+    /** True if the decision was sent (or applied to the demo). Allow is gated by the screen lock in the UI. */
     fun decide(fingerprint: String, allow: Boolean): Boolean {
         val request = approvals.firstOrNull { it.fingerprint == fingerprint }
         if (allow && request != null && !com.coucou.android.core.ApprovalSheetPlan.canAllowHere(request)) {
@@ -896,7 +889,6 @@ class AppModel(private val context: Context) : LinkListener {
         main.post {
             removeQuestion(fingerprint)
             removeApproval(fingerprint)
-            if (wantAllow == fingerprint) wantAllow = null
         }
     }
 

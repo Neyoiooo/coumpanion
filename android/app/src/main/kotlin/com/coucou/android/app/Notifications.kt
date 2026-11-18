@@ -27,8 +27,8 @@ import com.coucou.android.core.BotState
 
 /**
  * Notifications: one quiet ongoing notification for the link, and a loud one per approval.
- * Deny acts straight from the notification. Allow always opens the app for the biometric
- * check first, and the command is hidden on the lock screen.
+ * Deny acts straight from the notification. Review opens the full command in the app. The
+ * command stays hidden on the lock screen.
  */
 class Notifications(private val context: Context) {
     private val nm = context.getSystemService(NotificationManager::class.java)
@@ -183,7 +183,7 @@ class Notifications(private val context: Context) {
             .addAction(Notification.Action.Builder(null, context.getString(R.string.action_deny), deny).build())
             .apply {
                 // A command the phone cannot show in full is answered on the computer: no Allow here.
-                if (ApprovalSheetPlan.canAllowHere(r)) addAction(Notification.Action.Builder(null, context.getString(R.string.action_allow), open(r.fingerprint, true, id + 1)).build())
+                if (ApprovalSheetPlan.canAllowHere(r)) addAction(Notification.Action.Builder(null, context.getString(R.string.link_approval), open(r.fingerprint, true, id + 1)).build())
             }
             .build()
         runCatching { nm.notify(id, n) } // POST_NOTIFICATIONS may be denied: the in-app card still works
@@ -240,7 +240,7 @@ class Notifications(private val context: Context) {
 
     private fun statusId(pillId: String) = pillId.hashCode() and 0x3fffffff
 
-    /** Opens the app on the biometric prompt for this request (the same as tapping Allow in the notification). */
+    /** Opens the request in the app for review. */
     fun openAllow(fp: String) {
         Log.d("CoumpanionLaunch", "open the app on Allow (tap on the pill)")
         runCatching { open(fp, true, idFor(fp) + 1).send() }
@@ -266,7 +266,7 @@ class Notifications(private val context: Context) {
     }
 }
 
-/** Handles the Deny button. Denying needs no biometric check: it can only make things safer. */
+/** Handles the Deny button. Deny works directly from the notification. */
 class ActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Notifications.ACTION_DENY) return

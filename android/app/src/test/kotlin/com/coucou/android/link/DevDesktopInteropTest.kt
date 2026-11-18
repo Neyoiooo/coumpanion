@@ -1,8 +1,11 @@
 package com.coucou.android.link
 
 import com.coucou.android.ReferenceFiles
+import com.coucou.android.core.BotState
 import java.io.BufferedReader
+import java.io.File
 import java.io.InputStreamReader
+import java.nio.file.Files
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import org.json.JSONObject
@@ -29,17 +32,21 @@ class DevDesktopInteropTest {
         ProcessBuilder(cmd, versionArg).redirectErrorStream(true).start().also { it.inputStream.readBytes() }.waitFor() == 0
     } catch (_: Exception) { false }
 
-    private fun startDesktop(vararg extra: String): JSONObject {
+    private fun startDesktop(vararg extra: String): JSONObject = startNode(
+        "android/tools/dev-desktop.mjs", "--host", "127.0.0.1", "--port", "0", "--quiet", "--step", "300", *extra,
+    )
+
+    private fun startNode(relativeScript: String, vararg args: String): JSONObject {
         assumeTrue("node not available", have("node"))
         assumeTrue("openssl not available", have("openssl", "version"))
-        val script = ReferenceFiles.file("android/tools/dev-desktop.mjs").absolutePath
-        proc = ProcessBuilder(listOf("node", script, "--host", "127.0.0.1", "--port", "0", "--quiet", "--step", "300") + extra)
-            .redirectErrorStream(true).start()
+        val script = ReferenceFiles.file(relativeScript).absolutePath
+        val process = ProcessBuilder(listOf("node", script) + args).redirectErrorStream(true).start()
+        proc = process
         Thread {
-            BufferedReader(InputStreamReader(proc!!.inputStream)).forEachLine { lines.add(it) }
+            BufferedReader(InputStreamReader(process.inputStream)).forEachLine { lines.add(it) }
         }.apply { isDaemon = true; start() }
         val first = lines.poll(20, TimeUnit.SECONDS)
-        assertNotNull("dev desktop did not start", first)
+        assertNotNull("Node link server did not start", first)
         return JSONObject(first!!)
     }
 
@@ -88,6 +95,39 @@ class DevDesktopInteropTest {
 
     private fun chatClient(info: JSONObject, rec: Rec, caps: List<String> = Protocol.CAPABILITIES): LinkClient =
         LinkClient(PairingPayload.parse(info.getString("link"))!!, "Interop Pixel", rec, readTimeoutMs = 5_000, caps = caps)
+
+    @Test fun serverPairsStreamsAnAnswerAndReportsWorkingThenFinished() {
+        val state = Files.createTempDirectory("coumpanion-interop-").toFile()
+        try {
+            val info = startNode("android/server/run.mjs", "--port", "0", "--state-dir", state.absolutePath, "--fake")
+            require(info.getBoolean("fake"))
+            val pairing = PairingPayload.parse(File(info.getString("pairingFile")).readText())!!
+            assertTrue(!info.toString().contains(pairing.token))
+            val rec = Rec()
+            val client = LinkClient(pairing, "Interop Pixel", rec)
+            try {
+                client.start()
+                assertEquals("Coumpanion Server", rec.welcome.poll(10, TimeUnit.SECONDS))
+                assertEquals(setOf("chat"), rec.caps.poll(10, TimeUnit.SECONDS))
+                assertTrue(rec.sessions.poll(10, TimeUnit.SECONDS)!!.isEmpty())
+                assertEquals("models:deepseek/deepseek-flash", rec.chat.poll(10, TimeUnit.SECONDS))
+                assertTrue(client.chatSend("server1", "deepseek/deepseek-flash", "Summarise this short test."))
+                assertEquals(BotState.WORKING, rec.sessions.poll(10, TimeUnit.SECONDS)!!.single().state)
+                assertEquals(BotState.FINISHED, rec.sessions.poll(10, TimeUnit.SECONDS)!!.single().state)
+                val (text, end) = rec.answer("server1")
+                assertTrue(text.startsWith("Fake test answer from Coumpanion."))
+                assertEquals("done:-", end)
+                val saved = JSONObject(File(state, "session.json").readText())
+                assertEquals("finished", saved.getString("state"))
+                assertTrue(!saved.toString().contains("Summarise"))
+            } finally {
+                client.stop()
+            }
+        } finally {
+            proc?.destroyForcibly()?.waitFor(5, TimeUnit.SECONDS)
+            state.deleteRecursively()
+        }
+    }
 
     @Test fun pairsReceivesSessionsAndApprovalAndDecides() {
         val info = startDesktop("--once")

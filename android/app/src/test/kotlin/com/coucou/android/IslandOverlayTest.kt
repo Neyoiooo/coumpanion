@@ -18,7 +18,7 @@ class IslandOverlayTest {
     }
 
     @Test fun everyTapStillGoesThroughTheEarlyTapGuard() {
-        for (what in listOf("tap(\"Deny\")", "tap(\"Allow\")", "tap(\"the request header\")", "tap(\"the status strip\")", "tap(\"the island long press\")")) {
+        for (what in listOf("tap(\"Deny\")", "tap(\"Review\")", "tap(\"the request header\")", "tap(\"the status strip\")", "tap(\"the island long press\")")) {
             assertTrue(what, src.contains(what))
         }
     }
