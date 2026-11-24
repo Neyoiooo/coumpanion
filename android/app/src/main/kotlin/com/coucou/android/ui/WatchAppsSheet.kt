@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.coucou.android.R
 import com.coucou.android.app.AppModel
 import com.coucou.android.app.NotificationWatchAccess
+import com.coucou.android.core.AvatarMood
 import com.coucou.android.core.Tokens
 import com.coucou.android.core.TypeScale
 import com.coucou.android.core.WatchedAiApp
@@ -37,7 +38,7 @@ internal fun WatchAppsSheet(model: AppModel, onDismiss: () -> Unit, onAccess: ()
                     Panel {
                         model.installedWatchApps.forEachIndexed { index, app ->
                             if (index > 0) RowDivider()
-                            SettingSwitch(app.label, null, app.packageName in model.watchedPackages) { model.setWatched(app, it) }
+                            ProviderSwitch(app, app.packageName in model.watchedPackages, AvatarMood.IDLE) { model.setWatched(app, it) }
                         }
                     }
                 }

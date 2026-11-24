@@ -71,7 +71,7 @@ class TeamWidget : AppWidgetProvider() {
                     return@forEachIndexed
                 }
                 v.setViewVisibility(cell.cell, View.VISIBLE)
-                v.setImageViewBitmap(cell.face, StatusMarkBitmap.of(tile.state, face))
+                v.setImageViewBitmap(cell.face, StatusMarkBitmap.avatar(context, tile, tile.state, face))
                 v.setTextViewText(cell.name, tile.name)
                 v.setTextViewText(cell.state, tile.stateWord)
                 v.setInt(cell.dot, "setColorFilter", tile.tone.argb)

@@ -83,7 +83,7 @@ class ListWidget : AppWidgetProvider() {
                 }
                 v.setViewVisibility(r.row, View.VISIBLE)
                 v.setInt(r.stripe, "setColorFilter", tile.tone.argb)
-                v.setImageViewBitmap(r.face, StatusMarkBitmap.of(tile.state, face))
+                v.setImageViewBitmap(r.face, StatusMarkBitmap.avatar(context, tile, tile.state, face))
                 v.setContentDescription(r.face, context.getString(R.string.widget_mark_description, tile.stateWord.lowercase()))
                 v.setTextViewText(r.name, tile.name)
                 v.setTextViewText(r.state, tile.stateWord)

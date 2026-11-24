@@ -16,4 +16,5 @@
     <string name="island_position_left">Left</string>
     <string name="island_position_right">Right</string>
     <string name="island_plain">Solid island background</string>
+    <string name="animated_ai_avatars">Animated AI avatars</string>
 </resources>

@@ -54,7 +54,7 @@ class AgentOverviewWidget : AppWidgetProvider() {
             val small = size == WidgetHub.Size.SMALL
 
             // Left: the status mark and its glow, then the agent and its state word.
-            v.setImageViewBitmap(R.id.big_mark, StatusMarkBitmap.of(c.mood, WidgetHub.px(context, if (large) 170 else if (small) 120 else 140), glow = true, tone = c.look))
+            v.setImageViewBitmap(R.id.big_mark, StatusMarkBitmap.avatar(context, c.top, c.mood, WidgetHub.px(context, if (large) 170 else if (small) 120 else 140), glow = true, tone = c.look))
             v.setContentDescription(R.id.big_mark, context.getString(R.string.widget_mark_description, (top?.stateWord ?: c.headline).lowercase()))
             // Not connected: the "not connected" icon instead of the dot, and the headline instead of an agent.
             v.setViewVisibility(R.id.big_offline, if (c.connected) View.GONE else View.VISIBLE)

@@ -1,5 +1,6 @@
 package com.coucou.android.app
 
+import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -11,6 +12,8 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import com.coucou.android.core.ProviderAppearance
+import com.coucou.android.core.WidgetTile
 import com.coucou.android.core.WidgetTone
 import com.coucou.android.core.BotState
 import com.coucou.android.core.StatePalette
@@ -37,6 +40,18 @@ object StatusMarkBitmap {
         val key = Key(state, sizePx, glow, tone)
         return cache.getOrPut(key) { draw(state, sizePx, glow, tone) }
     }
+
+    /** Provider artwork is static on RemoteViews. Keep the status mark for empty widget states. */
+    fun avatar(
+        context: Context,
+        tile: WidgetTile?,
+        state: BotState,
+        sizePx: Int,
+        glow: Boolean = false,
+        tone: WidgetTone = WidgetTone.of(state),
+    ): Bitmap = tile?.let {
+        AvatarArtwork.widget(context, ProviderAppearance.resolve(it.pillId, it.name), sizePx)
+    } ?: of(state, sizePx, glow, tone)
 
     private fun draw(state: BotState, sizePx: Int, glow: Boolean, tone: WidgetTone): Bitmap {
         val image = ImageBitmap(sizePx, sizePx)

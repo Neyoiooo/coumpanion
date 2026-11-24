@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,7 +23,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import com.coucou.android.R
 import com.coucou.android.app.AppModel
+import com.coucou.android.core.AvatarMood
 import com.coucou.android.core.ManualAiSession
+import com.coucou.android.core.WatchedAiApp
 import com.coucou.android.core.TypeScale
 import kotlinx.coroutines.delay
 
@@ -38,7 +41,10 @@ internal fun ManualTrackingPanel(model: AppModel, onOverlay: () -> Unit, showPic
             Panel {
                 model.installedWatchApps.forEachIndexed { index, app ->
                     if (index > 0) RowDivider()
-                    SettingSwitch(app.label, null, active.any { it.app == app }) { model.setManualTracking(app, it) }
+                    val tracking = active.any { it.app == app }
+                    ProviderSwitch(app, tracking, if (tracking) AvatarMood.TRACKING else AvatarMood.IDLE) {
+                        model.setManualTracking(app, it)
+                    }
                 }
             }
         } else if (active.isNotEmpty()) {
@@ -49,7 +55,9 @@ internal fun ManualTrackingPanel(model: AppModel, onOverlay: () -> Unit, showPic
                     Row(
                         Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                        ProviderAvatar(session.app.packageName, session.app.label, AvatarMood.TRACKING, Modifier.size(44.dp))
                         Column(Modifier.weight(1f)) {
                             Text(session.app.label, style = TypeScale.BODY.style(t.text.c()))
                             Text(elapsedTracking(session, now), style = TypeScale.SECONDARY.style(t.textDim.c()))
@@ -63,6 +71,15 @@ internal fun ManualTrackingPanel(model: AppModel, onOverlay: () -> Unit, showPic
             PillButton(stringResource(R.string.watch_apps_island), onOverlay, Modifier.fillMaxWidth())
         }
     }
+}
+
+@Composable
+internal fun ProviderSwitch(app: WatchedAiApp, checked: Boolean, mood: AvatarMood, onChange: (Boolean) -> Unit) {
+    ListRow(
+        app.label,
+        leading = { ProviderAvatar(app.packageName, app.label, mood, Modifier.size(42.dp)) },
+        trailing = { CoucouSwitch(checked, onChange, label = app.label) },
+    )
 }
 
 /** A visible panel updates once per displayed minute. There is no background timer or write. */

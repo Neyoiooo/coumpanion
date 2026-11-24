@@ -52,6 +52,7 @@ data class UserSettings(
     val hideIslandInDnd: Boolean = false,
     val islandPosition: IslandPosition = IslandPosition.CAMERA,
     val plainIsland: Boolean = false,
+    val animatedAvatars: Boolean = true,
 ) {
     companion object {
         private const val SOUND = "sound_on"
@@ -68,6 +69,7 @@ data class UserSettings(
         private const val DYNAMIC = "dynamic_colour"
         private const val MUTED = "muted_agents"
         private const val ISLAND_POSITION = "island_position"
+        private const val ANIMATED_AVATARS = "animated_ai_avatars"
         private const val PLAIN_ISLAND = "island_plain"
         private const val HIDE_IN_DND = "island_hide_in_dnd"
 
@@ -94,6 +96,7 @@ data class UserSettings(
                 islandPosition = IslandPosition.entries.firstOrNull { it.name == islandPosition }
                     ?: d.islandPosition,
                 plainIsland = store.getBoolean(PLAIN_ISLAND, d.plainIsland),
+                animatedAvatars = store.getBoolean(ANIMATED_AVATARS, d.animatedAvatars),
             )
         }
 
@@ -114,6 +117,7 @@ data class UserSettings(
             store.put(HIDE_IN_DND, s.hideIslandInDnd)
             store.put(ISLAND_POSITION, s.islandPosition.name)
             store.put(PLAIN_ISLAND, s.plainIsland)
+            store.put(ANIMATED_AVATARS, s.animatedAvatars)
         }
     }
 }

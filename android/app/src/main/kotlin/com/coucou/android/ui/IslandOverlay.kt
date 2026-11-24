@@ -14,7 +14,6 @@ import android.view.Display
 import android.view.Gravity
 import android.view.WindowInsets
 import android.view.WindowManager
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,7 +44,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,7 +56,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -90,6 +87,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.coucou.android.R
+import com.coucou.android.core.AvatarMood
 import com.coucou.android.core.BotState
 import com.coucou.android.core.IconKind
 import com.coucou.android.core.IslandBox
@@ -106,8 +104,6 @@ import com.coucou.android.core.PxRect
 import com.coucou.android.core.Tokens
 import com.coucou.android.core.Tracked
 import com.coucou.android.core.WatchedAiApp
-import kotlinx.coroutines.delay
-import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
@@ -133,6 +129,7 @@ class IslandOverlay(
     private val onStopTracking: (WatchedAiApp) -> Unit,
     private val position: () -> IslandPosition,
     private val plain: () -> Boolean,
+    private val animatedAvatars: () -> Boolean,
 ) {
     private val wm = context.getSystemService(WindowManager::class.java)
     private val main = Handler(Looper.getMainLooper())
@@ -148,6 +145,7 @@ class IslandOverlay(
     private var approvalContentHeight by mutableIntStateOf(0)
     private var sessionsContentHeight by mutableIntStateOf(0)
     private var glowMotion by mutableStateOf(false)
+    private var avatarMotionVisible by mutableStateOf(false)
     private val width = Tracked(0.0)
     private val height = Tracked(0.0)
     private val radius = Tracked(0.0)
@@ -254,6 +252,7 @@ class IslandOverlay(
             width.jump(b.seedWidth.toDouble()); height.jump(0.0); radius.jump(b.panelCorner.toDouble())
         }
         val reduced = reducedMotion()
+        avatarMotionVisible = phase == IslandTimeline.Phase.OPEN
         glowMotion = !reduced && !plain() && !current.manualTracking && current.kind != IslandSpec.Kind.APP_UPDATE && phase == IslandTimeline.Phase.OPEN
         if (phase == IslandTimeline.Phase.OPEN) {
             val w = IslandGeometry.sizeFor(b, current.kind, expanded).first
@@ -452,22 +451,6 @@ class IslandOverlay(
     @Composable
     private fun Island() {
         var frame by remember { mutableLongStateOf(0L) }
-        var sweep by remember { mutableFloatStateOf(0.25f) }
-        LaunchedEffect(glowMotion) {
-            if (!glowMotion) return@LaunchedEffect
-            val start = clock()
-            var nextVisibilityCheck = start
-            var visible = true
-            while (true) {
-                val now = clock()
-                if (now >= nextVisibilityCheck) {
-                    visible = seenByUser()
-                    nextVisibilityCheck = now + 1_000
-                }
-                if (visible) sweep = 0.5f + 0.34f * sin((now - start) / 770.0).toFloat()
-                delay(if (visible) 42 else 1_000)
-            }
-        }
         // The window's shape only needs frame callbacks while it is growing or retracting.
         LaunchedEffect(motionKey) {
             var last = 0L
@@ -504,67 +487,50 @@ class IslandOverlay(
         val accent = Color(palette.label)
         val shape = RoundedCornerShape(px(corner))
         val borderBrush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.22f), accent.copy(alpha = 0.14f)))
-        CompositionLocalProvider(LocalTokens provides Tokens.DARK) {
-            val dismissLabel = stringResource(R.string.island_dismiss)
-            val swipeThreshold = with(density) { SWIPE_UP_DP.dp.toPx() }
-            Box(
-                Modifier.width(px(visibleWidth(b).toDouble())).height(px(shownHeight))
-                    .clip(shape).then(
-                        if (plain()) Modifier.background(Color(0xFF0D0E14))
-                        else Modifier.islandBackground(palette) { if (glowMotion) sweep else 0.25f }
-                    )
-                    .border(1.dp, borderBrush, shape)
-                    .pointerInput(s.kind, s.fingerprint, sessionList && expanded) {
-                        if (sessionList && expanded) return@pointerInput
-                        var travelled = 0f
-                        detectVerticalDragGestures(
-                            onDragStart = { travelled = 0f },
-                            onDragEnd = { if (travelled <= -swipeThreshold) swipeAway() },
-                            onDragCancel = { travelled = 0f },
-                        ) { _, dy -> travelled += dy }
-                    }
-                    .semantics { customActions = listOf(CustomAccessibilityAction(dismissLabel) { swipeAway(); true }) },
-                contentAlignment = Alignment.TopCenter,
-            ) {
-                val content = Modifier.wrapContentHeight(Alignment.Top, unbounded = true)
-                    .alpha(open.coerceIn(0.0, 1.0).toFloat())
-                    .semantics { liveRegion = if (approval) LiveRegionMode.Assertive else LiveRegionMode.Polite }
-                if (approval) {
-                    RequestCard(s, accent, content.requiredWidth(px(compactW.toDouble())).onSizeChanged { measureApproval(it.height) })
-                } else if (sessionList) {
-                    val maxListHeight = remember(b, compactH) {
-                        val metrics = wm.currentWindowMetrics
-                        val bottom = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()).bottom
-                        (metrics.bounds.height() - b.windowTop - bottom - compactH).coerceAtLeast(0)
-                    }
-                    val listWidth = if (expanded) b.expandedW else compactW
-                    SessionStrip(s, palette, px(compactH.toDouble()), px(maxListHeight.toDouble()),
-                        content.requiredWidth(px(listWidth.toDouble())))
-                } else {
-                    StatusStrip(s, palette, px(compactH.toDouble()), reveal, content) { if (glowMotion) sweep else null }
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun AgentPixels(palette: IslandPalette, sweep: () -> Float?) {
-        val accent = Color(palette.label)
-        Box(
-            Modifier.size(23.dp).background(accent.copy(alpha = 0.10f), RoundedCornerShape(7.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Canvas(Modifier.size(14.dp)) {
-                val cell = size.width / 5
-                val pixel = cell * 0.72f
-                val inset = (cell - pixel) / 2
-                val light = sweep()?.let { (it * 10).roundToInt() - 1 }
-                palette.pixels.forEachIndexed { y, row ->
-                    repeat(5) { x ->
-                        if ((row and (1 shl (4 - x))) != 0) {
-                            val alpha = if (light == null || abs(x + y - light) <= 1) 1f else 0.46f
-                            drawRect(accent.copy(alpha = alpha), Offset(x * cell + inset, y * cell + inset), Size(pixel, pixel))
+        AvatarMotionHost(animatedAvatars(), MotionState.choice, avatarMotionVisible, animateBackground = glowMotion) {
+            CompositionLocalProvider(LocalTokens provides Tokens.DARK) {
+                val avatarClock = LocalAvatarSurface.current?.clock
+                val dismissLabel = stringResource(R.string.island_dismiss)
+                val swipeThreshold = with(density) { SWIPE_UP_DP.dp.toPx() }
+                Box(
+                    Modifier.width(px(visibleWidth(b).toDouble())).height(px(shownHeight))
+                        .clip(shape).then(
+                            if (plain()) Modifier.background(Color(0xFF0D0E14))
+                            else Modifier.islandBackground(palette) {
+                                if (glowMotion && avatarClock?.running == true) {
+                                    0.5f + 0.34f * sin(avatarClock.millis / 770.0).toFloat()
+                                } else 0.25f
+                            }
+                        )
+                        .border(1.dp, borderBrush, shape)
+                        .pointerInput(s.kind, s.fingerprint, sessionList && expanded) {
+                            if (sessionList && expanded) return@pointerInput
+                            var travelled = 0f
+                            detectVerticalDragGestures(
+                                onDragStart = { travelled = 0f },
+                                onDragEnd = { if (travelled <= -swipeThreshold) swipeAway() },
+                                onDragCancel = { travelled = 0f },
+                            ) { _, dy -> travelled += dy }
                         }
+                        .semantics { customActions = listOf(CustomAccessibilityAction(dismissLabel) { swipeAway(); true }) },
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    val content = Modifier.wrapContentHeight(Alignment.Top, unbounded = true)
+                        .alpha(open.coerceIn(0.0, 1.0).toFloat())
+                        .semantics { liveRegion = if (approval) LiveRegionMode.Assertive else LiveRegionMode.Polite }
+                    if (approval) {
+                        RequestCard(s, accent, content.requiredWidth(px(compactW.toDouble())).onSizeChanged { measureApproval(it.height) })
+                    } else if (sessionList) {
+                        val maxListHeight = remember(b, compactH) {
+                            val metrics = wm.currentWindowMetrics
+                            val bottom = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()).bottom
+                            (metrics.bounds.height() - b.windowTop - bottom - compactH).coerceAtLeast(0)
+                        }
+                        val listWidth = if (expanded) b.expandedW else compactW
+                        SessionStrip(s, palette, px(compactH.toDouble()), px(maxListHeight.toDouble()),
+                            content.requiredWidth(px(listWidth.toDouble())))
+                    } else {
+                        StatusStrip(s, palette, px(compactH.toDouble()), reveal, content)
                     }
                 }
             }
@@ -607,7 +573,7 @@ class IslandOverlay(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                AgentPixels(palette) { null }
+                ProviderAvatar(s.pillId, s.agent, AvatarMood.forIsland(s), Modifier.size(27.dp))
                 Text(label, Modifier.weight(1f), color = foreground, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(status, color = Color(palette.label), fontSize = 11.sp, maxLines = 1)
                 CoucouIcon(IconKind.CHEVRON, Modifier.rotate(if (expanded) -90f else 90f), tint = dim, size = 12.dp, mirror = false)
@@ -620,6 +586,8 @@ class IslandOverlay(
                     sessions.forEach { session ->
                         HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            ProviderAvatar(session.app.packageName, session.app.label, AvatarMood.TRACKING, Modifier.size(32.dp))
+                            Spacer(Modifier.width(6.dp))
                             Column(
                                 Modifier.weight(1f).heightIn(min = 56.dp).clickable(role = Role.Button) {
                                     tap("a tracked app") { onOpenWatchedApp(session.app.packageName) }
@@ -639,7 +607,7 @@ class IslandOverlay(
 
     @Composable
     @OptIn(ExperimentalFoundationApi::class)
-    private fun StatusStrip(s: IslandSpec, palette: IslandPalette, headerHeight: Dp, reveal: Float, modifier: Modifier, sweep: () -> Float?) {
+    private fun StatusStrip(s: IslandSpec, palette: IslandPalette, headerHeight: Dp, reveal: Float, modifier: Modifier) {
         val status = statusText(s)
         val accent = Color(palette.label)
         Column(
@@ -658,7 +626,7 @@ class IslandOverlay(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                AgentPixels(palette, sweep)
+                ProviderAvatar(s.pillId, s.agent, AvatarMood.forIsland(s), Modifier.size(27.dp))
                 Text(s.agent, Modifier.weight(1f), color = foreground, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(status, Modifier.widthIn(max = 74.dp), color = accent, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
@@ -686,8 +654,10 @@ class IslandOverlay(
         val fingerprint = s.fingerprint ?: return
         Column(modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 7.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.clickable { tap("the request header") { onOpen() } }, verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(24.dp).background(accent.copy(alpha = 0.10f), CircleShape), contentAlignment = Alignment.Center) {
-                    CoucouIcon(IconKind.LOCK, tint = accent, size = 15.dp)
+                ProviderAvatar(s.pillId, s.agent, AvatarMood.WAITING, Modifier.size(27.dp)) {
+                    Box(Modifier.size(24.dp).background(accent.copy(alpha = 0.10f), CircleShape), contentAlignment = Alignment.Center) {
+                        CoucouIcon(IconKind.LOCK, tint = accent, size = 15.dp)
+                    }
                 }
                 Spacer(Modifier.width(7.dp))
                 Column(Modifier.weight(1f)) {

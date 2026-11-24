@@ -34,7 +34,7 @@ class SoloWidget : AppWidgetProvider() {
             val large = size == WidgetHub.Size.LARGE
             val small = size == WidgetHub.Size.SMALL
 
-            v.setImageViewBitmap(R.id.solo_mark, StatusMarkBitmap.of(c.mood, WidgetHub.px(context, if (large) 150 else if (small) 72 else 104), glow = true, tone = c.look))
+            v.setImageViewBitmap(R.id.solo_mark, StatusMarkBitmap.avatar(context, top, c.mood, WidgetHub.px(context, if (large) 150 else if (small) 72 else 104), glow = true, tone = c.look))
             val word = top?.stateWord ?: c.headline
             v.setContentDescription(R.id.solo_mark, context.getString(R.string.widget_mark_description, word.lowercase()))
             // The tapped card says who and what, in one sentence.

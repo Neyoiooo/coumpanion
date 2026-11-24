@@ -93,6 +93,7 @@ import com.coucou.android.ui.CoucouTheme
 import com.coucou.android.core.HomePanel
 import com.coucou.android.link.DiscoveryState
 import com.coucou.android.ui.AddressSheet
+import com.coucou.android.ui.AvatarMotionHost
 import com.coucou.android.ui.BatteryCard
 import com.coucou.android.ui.DiagnosticsScreen
 import com.coucou.android.ui.LicencesScreen
@@ -156,84 +157,86 @@ class MainActivity : ComponentActivity() {
                     requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
                 }
             }
-            CoucouTheme(model.settings.theme, model.settings.dynamicColour) {
-                // Dark icons on a light page; the camera screen is black in both themes, so its icons are light.
-                val lightPage = !tokens().isDark && screen != Screen.SCAN
-                SideEffect {
-                    val bars = WindowCompat.getInsetsController(window, window.decorView)
-                    bars.isAppearanceLightStatusBars = lightPage
-                    bars.isAppearanceLightNavigationBars = lightPage
-                }
-                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    Box(Modifier.fillMaxSize().windowInsetsPadding(if (screen == Screen.HOME || screen == Screen.SCAN) WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom) else WindowInsets.safeDrawing)) {
-                        val tabs = Nav.tabs()
-                        val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-                        val pairingPasteVisible = pastePairing && screen == Screen.HOME && model.mode == Mode.NONE
-                        val barVisible = Nav.barVisible(screen, keyboardOpen) && !pairingPasteVisible && !watchAppsOpen
-                        BackHandler(enabled = Nav.back(screen) != null) { Nav.back(screen)?.let { screen = it } }
-                        // Chat keeps its message box above the bar; Home and Settings scroll under it (their own bottom padding).
-                        Box(Modifier.fillMaxSize().padding(bottom = if (barVisible && screen == Screen.CHAT) BarClearance else 0.dp)) {
-                        when (screen) {
-                            Screen.SCAN -> ScanScreen(
-                                onBack = { screen = Screen.HOME },
-                                // True if it was a pairing code: the camera is released and the user is asked to confirm.
-                                onText = { text -> model.requestPairing(text).also { if (it) screen = Screen.HOME } },
-                            )
-                            Screen.CHAT -> ChatScreen(
-                                model, onHome = { showPairing = true; screen = Screen.HOME }, onSettings = { screen = Screen.SETTINGS },
-                            )
-                            Screen.SESSION -> SessionScreen(model, detailPill.orEmpty(), onBack = { screen = Screen.HOME })
-                            Screen.SETTINGS -> SettingsScreen(
-                                model, onHistory = { screen = Screen.HISTORY },
-                                onOverlay = { setOverlay(it) },
-                                onDiagnostics = { screen = Screen.DIAGNOSTICS }, onLicences = { screen = Screen.LICENCES },
-                                onWatchApps = { watchAppsOpen = true },
-                            )
-                            Screen.LICENCES -> LicencesScreen(onBack = { screen = Screen.SETTINGS })
-                            Screen.DIAGNOSTICS -> DiagnosticsScreen(model, onBack = { screen = Screen.SETTINGS })
-                            Screen.HISTORY -> HistoryScreen(model, onBack = { screen = Screen.SETTINGS })
-                            Screen.HOME -> if (model.mode == Mode.NONE) PairingScreen(
-                                model, onScan = { screen = Screen.SCAN }, onPaste = { pastePairing = true },
-                                onAbout = { screen = Screen.SETTINGS },
-                                onWatchApps = { watchAppsOpen = true },
+            AvatarMotionHost(model.settings.animatedAvatars, model.settings.motion) {
+                CoucouTheme(model.settings.theme, model.settings.dynamicColour) {
+                    // Dark icons on a light page; the camera screen is black in both themes, so its icons are light.
+                    val lightPage = !tokens().isDark && screen != Screen.SCAN
+                    SideEffect {
+                        val bars = WindowCompat.getInsetsController(window, window.decorView)
+                        bars.isAppearanceLightStatusBars = lightPage
+                        bars.isAppearanceLightNavigationBars = lightPage
+                    }
+                    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                        Box(Modifier.fillMaxSize().windowInsetsPadding(if (screen == Screen.HOME || screen == Screen.SCAN) WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom) else WindowInsets.safeDrawing)) {
+                            val tabs = Nav.tabs()
+                            val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+                            val pairingPasteVisible = pastePairing && screen == Screen.HOME && model.mode == Mode.NONE
+                            val barVisible = Nav.barVisible(screen, keyboardOpen) && !pairingPasteVisible && !watchAppsOpen
+                            BackHandler(enabled = Nav.back(screen) != null) { Nav.back(screen)?.let { screen = it } }
+                            // Chat keeps its message box above the bar; Home and Settings scroll under it (their own bottom padding).
+                            Box(Modifier.fillMaxSize().padding(bottom = if (barVisible && screen == Screen.CHAT) BarClearance else 0.dp)) {
+                            when (screen) {
+                                Screen.SCAN -> ScanScreen(
+                                    onBack = { screen = Screen.HOME },
+                                    // True if it was a pairing code: the camera is released and the user is asked to confirm.
+                                    onText = { text -> model.requestPairing(text).also { if (it) screen = Screen.HOME } },
+                                )
+                                Screen.CHAT -> ChatScreen(
+                                    model, onHome = { showPairing = true; screen = Screen.HOME }, onSettings = { screen = Screen.SETTINGS },
+                                )
+                                Screen.SESSION -> SessionScreen(model, detailPill.orEmpty(), onBack = { screen = Screen.HOME })
+                                Screen.SETTINGS -> SettingsScreen(
+                                    model, onHistory = { screen = Screen.HISTORY },
+                                    onOverlay = { setOverlay(it) },
+                                    onDiagnostics = { screen = Screen.DIAGNOSTICS }, onLicences = { screen = Screen.LICENCES },
+                                    onWatchApps = { watchAppsOpen = true },
+                                )
+                                Screen.LICENCES -> LicencesScreen(onBack = { screen = Screen.SETTINGS })
+                                Screen.DIAGNOSTICS -> DiagnosticsScreen(model, onBack = { screen = Screen.SETTINGS })
+                                Screen.HISTORY -> HistoryScreen(model, onBack = { screen = Screen.SETTINGS })
+                                Screen.HOME -> if (model.mode == Mode.NONE) PairingScreen(
+                                    model, onScan = { screen = Screen.SCAN }, onPaste = { pastePairing = true },
+                                    onAbout = { screen = Screen.SETTINGS },
+                                    onWatchApps = { watchAppsOpen = true },
+                                    onOverlay = { setOverlay(true, showHint = false) },
+                                    showPairing = showPairing, onShowPairing = { showPairing = it },
+                                ) else Home(
+                                    model, onOverlay = { setOverlay(it) }, onWatchApps = { watchAppsOpen = true },
+                                    onSession = { detailPill = it; screen = Screen.SESSION },
+                                    onScan = { screen = Screen.SCAN }, onReview = { closedApproval = null }, onQuestion = { questionPill = it },
+                                    onHistory = { screen = Screen.HISTORY }, onDiagnostics = { screen = Screen.DIAGNOSTICS },
+                                )
+                            }
+                            }
+                            if (barVisible) {
+                                BottomBar(
+                                    tabs, Nav.tabOf(screen), onSelect = { screen = Nav.screenOf(it) },
+                                    alert = model.approvals.isNotEmpty(), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
+                                )
+                            }
+                            // Modal sheets belong above the app bar, inside the system-bar and keyboard insets.
+                            if (pairingPasteVisible) PairingPasteSheet(model, onDismiss = { pastePairing = false })
+                            if (watchAppsOpen) WatchAppsSheet(
+                                model, onDismiss = { watchAppsOpen = false }, onAccess = ::notificationAccess,
                                 onOverlay = { setOverlay(true, showHint = false) },
-                                showPairing = showPairing, onShowPairing = { showPairing = it },
-                            ) else Home(
-                                model, onOverlay = { setOverlay(it) }, onWatchApps = { watchAppsOpen = true },
-                                onSession = { detailPill = it; screen = Screen.SESSION },
-                                onScan = { screen = Screen.SCAN }, onReview = { closedApproval = null }, onQuestion = { questionPill = it },
-                                onHistory = { screen = Screen.HISTORY }, onDiagnostics = { screen = Screen.DIAGNOSTICS },
                             )
-                        }
-                        }
-                        if (barVisible) {
-                            BottomBar(
-                                tabs, Nav.tabOf(screen), onSelect = { screen = Nav.screenOf(it) },
-                                alert = model.approvals.isNotEmpty(), modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
+                            // A request for permission rises over whatever is on screen until it is decided or closed.
+                            val pending = model.approvals.firstOrNull { it.fingerprint == reviewApproval && it.fingerprint != closedApproval }
+                                ?: ApprovalSheetPlan.next(model.approvals, closedApproval)
+                            if (pending != null && screen != Screen.SCAN) ApprovalSheet(model, pending, onAllow = ::approve, onDismiss = { closedApproval = pending.fingerprint })
+                            questionPill?.let { QuestionSheet(model, it, onDismiss = { questionPill = null }, onSend = ::sendAnswer) }
+                            DiffSheet(model)
+                            // Pairing, chat, an approval and a question never show in screenshots or in the recent-apps card.
+                            val secure = SecureScreens.needed(
+                                screen, pairing = model.mode == Mode.NONE, approvalSheetShown = pending != null && screen != Screen.SCAN,
+                                questionSheetShown = questionPill != null, pairConfirmShown = model.pairRequest != null,
                             )
+                            SideEffect {
+                                if (secure) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE) else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                            }
+                            // A scanned code or a link from the camera app: the user decides before anything is paired.
+                            model.pairRequest?.let { PairConfirm(model, it) }
                         }
-                        // Modal sheets belong above the app bar, inside the system-bar and keyboard insets.
-                        if (pairingPasteVisible) PairingPasteSheet(model, onDismiss = { pastePairing = false })
-                        if (watchAppsOpen) WatchAppsSheet(
-                            model, onDismiss = { watchAppsOpen = false }, onAccess = ::notificationAccess,
-                            onOverlay = { setOverlay(true, showHint = false) },
-                        )
-                        // A request for permission rises over whatever is on screen until it is decided or closed.
-                        val pending = model.approvals.firstOrNull { it.fingerprint == reviewApproval && it.fingerprint != closedApproval }
-                            ?: ApprovalSheetPlan.next(model.approvals, closedApproval)
-                        if (pending != null && screen != Screen.SCAN) ApprovalSheet(model, pending, onAllow = ::approve, onDismiss = { closedApproval = pending.fingerprint })
-                        questionPill?.let { QuestionSheet(model, it, onDismiss = { questionPill = null }, onSend = ::sendAnswer) }
-                        DiffSheet(model)
-                        // Pairing, chat, an approval and a question never show in screenshots or in the recent-apps card.
-                        val secure = SecureScreens.needed(
-                            screen, pairing = model.mode == Mode.NONE, approvalSheetShown = pending != null && screen != Screen.SCAN,
-                            questionSheetShown = questionPill != null, pairConfirmShown = model.pairRequest != null,
-                        )
-                        SideEffect {
-                            if (secure) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE) else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                        }
-                        // A scanned code or a link from the camera app: the user decides before anything is paired.
-                        model.pairRequest?.let { PairConfirm(model, it) }
                     }
                 }
             }
@@ -378,6 +381,7 @@ private fun Home(
                 onDetails = if (focus != null && HomePanel.hasDetails(focus)) ({ onSession(focus.pillId) }) else null,
                 onQuestion = if (focus != null && focus.state == BotState.QUESTION) ({ onQuestion(focus.pillId) }) else null,
                 canAnswer = focus != null && model.questionFor(focus.pillId) != null,
+                desktopConnected = model.linkState == LinkState.CONNECTED,
                 onLink = {
                     when (pair) {
                         HomePanel.Link.PAIR -> onScan() // not reachable on Home (no computer shows the pairing screen), harmless

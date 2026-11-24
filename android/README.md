@@ -35,6 +35,14 @@ Android's notification access screen may label the toggle **Restricted setting**
 
 [Meta documents Muse Code](https://dev.meta.ai/docs/muse-code) as a terminal and CI agent and uses the browser for authentication. The existing desktop hook can forward Muse Code activity through phone pairing. No supported Muse Code web activity feed for Android was found. Generic browser notifications do not give Coumpanion a dependable, portable way to identify and follow a Muse Code task across browsers. Automatic Muse web tracking remains unavailable.
 
+## AI avatars
+
+The avatar renderer uses a single robot master at `app/src/main/assets/avatars/robot.png`. It tints the shell in the provider’s palette and adds a badge using the installed provider app icon when available. A pixel monogram or spark covers providers without a local icon. The face, outlines and dither remain part of the source artwork. The renderer uses nearest-neighbor sampling and caches the resulting bitmaps. Status marks provide a fallback when the master is unavailable.
+
+Compact and expanded islands, the AI app picker, and active session cards use the same renderer. The Solo, List, Team, and Agent Overview widgets use static renders. Manual sessions use the Tracking pose, and notification reports use Idle. Thinking, Working, and Completed use confirmed desktop session states.
+
+**Settings → Display → Animated AI avatars** appears in builds with the master and switches avatar motion on or off. Avatar motion also pauses with battery saver, reduced motion, the screen off, or the island closed.
+
 ## Build and test
 
 Needs JDK 17 and the Android SDK (platform 36). From this folder:

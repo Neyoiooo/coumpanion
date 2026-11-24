@@ -443,6 +443,7 @@ class AppModel(private val context: Context) : LinkListener {
         onStopTracking = { setManualTracking(it, false) },
         position = { settings.islandPosition },
         plain = { settings.plainIsland },
+        animatedAvatars = { settings.animatedAvatars },
     )
 
     /** The island went up: leave what it showed in the notification shade (quietly), so nothing is lost with the swipe. */

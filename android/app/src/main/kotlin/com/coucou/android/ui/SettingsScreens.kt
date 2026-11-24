@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import com.coucou.android.Attribution
 import com.coucou.android.R
 import com.coucou.android.app.AppModel
+import com.coucou.android.app.AvatarArtwork
 import com.coucou.android.app.NotificationWatchAccess
 import com.coucou.android.app.Mode
 import com.coucou.android.core.HistoryDays
@@ -216,6 +217,8 @@ fun SettingsScreen(
     onLicences: () -> Unit, onWatchApps: () -> Unit,
 ) {
     val s = model.settings
+    val context = LocalContext.current.applicationContext
+    val showAvatarSettings = remember(context) { AvatarArtwork.available(context) }
     val uri = LocalUriHandler.current
     val t = tokens()
     LazyColumn(
@@ -303,6 +306,12 @@ fun SettingsScreen(
                     model.updateSettings(s.copy(hideIslandInDnd = it))
                 }
                 RowDivider()
+                if (showAvatarSettings) {
+                    SettingSwitch(stringResource(R.string.animated_ai_avatars), null, s.animatedAvatars) {
+                        model.updateSettings(s.copy(animatedAvatars = it))
+                    }
+                    RowDivider()
+                }
                 ChoiceRow(
                     stringResource(R.string.settings_motion),
                     listOf(

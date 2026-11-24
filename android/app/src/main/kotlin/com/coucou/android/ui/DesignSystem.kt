@@ -166,6 +166,7 @@ fun SectionHeading(text: String, modifier: Modifier = Modifier) {
 @Composable
 fun ListRow(
     title: String, modifier: Modifier = Modifier, hint: String? = null, onClick: (() -> Unit)? = null,
+    leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val t = tokens()
@@ -176,6 +177,7 @@ fun ListRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.GAP.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        leading?.invoke()
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = TypeScale.BODY.style(t.text.c()).copy(fontWeight = FontWeight.SemiBold))
             if (hint != null) Text(hint, style = TypeScale.SECONDARY.style(t.textDim.c()))

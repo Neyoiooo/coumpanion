@@ -38,6 +38,7 @@ import com.coucou.android.core.SpokenLabels
 import com.coucou.android.core.Spacing
 import com.coucou.android.core.TypeScale
 import com.coucou.android.link.SessionInfo
+import com.coucou.android.core.AvatarMood
 import com.coucou.android.core.BotState
 import com.coucou.android.core.StatePalette
 import com.coucou.android.core.Rgb
@@ -64,7 +65,6 @@ internal fun rgbColor(c: Rgb) = Color(c.r.toFloat(), c.g.toFloat(), c.b.toFloat(
 
 private fun agentTint(session: SessionInfo): Color? = HomePanel.colorHex(session)?.let(HomePanel::rgb)?.let(::rgbColor)
 
-
 /** The colour of an agent's state (Louis's state colours), for dots and glows. */
 internal fun stateColor(state: BotState): Color =
     if (state == BotState.IDLE) StatusColors.online else rgbColor(StatePalette.color(state))
@@ -82,6 +82,7 @@ fun HeroCard(
     onQuestion: (() -> Unit)? = null,
     /** The phone can answer this question here (the `answers` capability): the button says so. */
     canAnswer: Boolean = false,
+    desktopConnected: Boolean = true,
 ) {
     val state = focus?.state ?: BotState.SLEEPING
     val wash = rgbColor(StatePalette.color(state))
@@ -100,7 +101,10 @@ fun HeroCard(
             }
             if (focus == null) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    StatusMark(state, Modifier.size(112.dp))
+                    val mood = if (desktopConnected) AvatarMood.IDLE else AvatarMood.DISCONNECTED
+                    ProviderAvatar("coumpanion", "", mood, Modifier.size(112.dp)) {
+                        StatusMark(state, Modifier.size(112.dp))
+                    }
                     Text(stringResource(R.string.home_empty_title), style = TypeScale.TITLE.style(white))
                     Text(stringResource(R.string.home_empty_hint), style = TypeScale.SECONDARY.style(dim), maxLines = 3)
                 }
@@ -112,7 +116,10 @@ fun HeroCard(
                     Modifier.semantics(mergeDescendants = true) { contentDescription = spoken },
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    StatusMark(state, Modifier.size(108.dp), agentTint(focus))
+                    val mood = if (desktopConnected) AvatarMood.forBot(state) else AvatarMood.DISCONNECTED
+                    ProviderAvatar(focus.pillId, name, mood, Modifier.size(108.dp)) {
+                        StatusMark(state, Modifier.size(108.dp), agentTint(focus))
+                    }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(name, style = TypeScale.TITLE.style(white), maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Text(
@@ -164,7 +171,9 @@ fun AgentRows(others: List<SessionInfo>, onPick: (SessionInfo) -> Unit) {
                     .padding(horizontal = Spacing.INSIDE.dp, vertical = 12.dp).semantics(mergeDescendants = true) { contentDescription = spoken },
                 horizontalArrangement = Arrangement.spacedBy(Spacing.GAP.dp), verticalAlignment = Alignment.CenterVertically,
             ) {
-                StatusMark(s.state, Modifier.size(40.dp), agentTint(s))
+                ProviderAvatar(s.pillId, name, AvatarMood.forBot(s.state), Modifier.size(40.dp)) {
+                    StatusMark(s.state, Modifier.size(40.dp), agentTint(s))
+                }
                 Column(Modifier.weight(1f)) {
                     Text(name, style = TypeScale.BODY.style(t.text.c()).copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(line ?: state, style = TypeScale.SECONDARY.style(t.textDim.c()), maxLines = 2, overflow = TextOverflow.Ellipsis)
