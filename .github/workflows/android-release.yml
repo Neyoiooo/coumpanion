@@ -1,6 +1,6 @@
 name: Android release
 
-# A manual run prepares signed artifacts or publishes a signed preview from an earlier run.
+# A manual run prepares signed artifacts or attaches them to an existing preview release.
 # An android-v* tag publishes a stable release after the install check.
 # Build code never receives signing secrets. Signing uses only runner tools and artifacts from the build job.
 on:
@@ -10,11 +10,11 @@ on:
   workflow_dispatch:
     inputs:
       preview_run_id:
-        description: Completed Android release run with signed APKs to publish as a preview
+        description: Completed Android release run with signed APKs to attach to a preview
         type: string
         required: false
       preview_number:
-        description: Preview number to use when publishing a signed run
+        description: Number of the existing preview release
         type: string
         required: false
         default: '1'
@@ -190,7 +190,7 @@ jobs:
       actions: read
       contents: write
     steps:
-      - name: Publish signed Android preview
+      - name: Attach signed APKs to Android preview
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_RUN: ${{ inputs.preview_run_id }}
@@ -210,30 +210,15 @@ jobs:
             | select(length == 1) | .[0].name')
           [[ "$artifact" =~ ^Coumpanion-Android-([0-9]+\.[0-9]+\.[0-9]+)$ ]]
           version="${BASH_REMATCH[1]}"
+          tag="coumpanion-v$version-preview.$PREVIEW_NUMBER"
+          tag_head=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')
+          [[ "$tag_head" == "$head" ]]
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isPrerelease | jq -e '.isPrerelease'
           gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --name "$artifact"
           sha256sum -c SHA256SUMS
-          if jq -e '.jobs | any(.name == "install" and .conclusion == "success")' <<< "$jobs" >/dev/null; then
-            status='The Android emulator installation and launch checks passed.'
-          else
-            status='The Android emulator installation and launch checks remain unverified.'
-          fi
-          cat > release-notes.md <<EOF_NOTES
-          Coumpanion $version preview $PREVIEW_NUMBER for Android 11 and later.
-
-          - **Standard** includes local session tracking, the Dynamic Island, and desktop pairing.
-          - **Full** adds optional AI app notification access.
-
-          Download the APK for your edition and open it on your phone. If you installed the debug-signed Standard test build, uninstall it before installing this preview. Android clears that build's local sessions when you uninstall it.
-
-          APK signature and 16 KB alignment checks passed. $status [Signing and test run](https://github.com/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN)
-
-          [Android installation guide](https://github.com/$GITHUB_REPOSITORY/blob/main/android/README.md)
-          EOF_NOTES
-          gh release create "coumpanion-v$version-preview.$PREVIEW_NUMBER" \
+          gh release upload "$tag" \
             "Coumpanion-Android-$version-Standard.apk" "Coumpanion-Android-$version-Full.apk" SHA256SUMS \
-            --repo "$GITHUB_REPOSITORY" --target "$head" \
-            --title "Coumpanion $version Android Preview $PREVIEW_NUMBER" \
-            --notes-file release-notes.md --prerelease --latest=false
+            --repo "$GITHUB_REPOSITORY"
 
   publish:
     needs: [build, install]
