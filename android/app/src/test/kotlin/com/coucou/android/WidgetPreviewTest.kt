@@ -139,7 +139,7 @@ class WidgetPreviewTest {
         assertEquals(3, Regex("""android:minHeight="@dimen/widget_row_min"""").findAll(preview("list")).count())
         // Mochi Big: Mochi, the agent and its state on the left; Claude 68% and Codex 41% on the right; the six tiles.
         assertEquals(
-            listOf("Claude Code", "Working", "Claude · 5 h", "68%", "Codex · week", "41%", "Home", "Chat", "Settings", "Recent", "Top agent", "Pair again"),
+            listOf("Claude Code", "Working", "Claude · 5 h", "68%", "Codex · week", "41%", "Home", "Chat", "Settings", "Recent", "Top agent", "AI tracking"),
             text("big"),
         )
         assertEquals(listOf("2 agents working", "Claude Code", "Working", "Codex", "Thinking", "Gemini CLI", "Idle"), text("glance"))
