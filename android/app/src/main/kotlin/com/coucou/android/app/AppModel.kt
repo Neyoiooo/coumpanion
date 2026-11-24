@@ -14,6 +14,8 @@ import androidx.compose.runtime.setValue
 import com.coucou.android.R
 import com.coucou.android.core.AiNotificationEvent
 import com.coucou.android.core.AiSessionTracker
+import com.coucou.android.core.AiProvider
+import com.coucou.android.core.AiSessionResult
 import com.coucou.android.core.ChatTab
 import com.coucou.android.core.ChatTabState
 import com.coucou.android.core.Decision
@@ -157,14 +159,18 @@ class AppModel(private val context: Context) : LinkListener {
         }
     }
 
-    private val aiTracker = AiSessionTracker(kv)
+    private val sessionClock = SessionClock(context)
+    private val aiTracker = AiSessionTracker(kv).also { it.restore(sessionClock.now()) }
+    private val sessionDeadline = Runnable { updateManualTracking() }
     private var aiSessions by mutableStateOf(aiTracker.snapshot)
     val watchedActivity get() = aiSessions.activity
     val manualTracking get() = aiSessions.manual
+    val aiProviders get() = aiSessions.providers
+    val aiSessionHistory get() = aiSessions.history
 
     private val manualScreen = ScreenWatch(context) { on ->
         if (!on) overlay.clearWatchedUpdate()
-        refreshIsland()
+        checkpointSessions()
     }
 
     fun clearWatchedActivity() {
@@ -172,15 +178,57 @@ class AppModel(private val context: Context) : LinkListener {
         aiSessions = aiTracker.snapshot
     }
 
-    fun setManualTracking(app: WatchedAiApp, on: Boolean) {
-        if (on && app !in installedWatchApps) return
-        aiTracker.setManual(app, on, System.currentTimeMillis())
+    fun setManualTracking(app: WatchedAiApp, on: Boolean) = setManualTracking(app.packageName, on)
+
+    fun setManualTracking(id: String, on: Boolean) {
+        val now = sessionClock.now()
+        if (on) aiTracker.start(id, now, settings.manualSessionPolicy)
+        else aiTracker.end(id, AiSessionResult.CANCELLED, now)
+        updateManualTracking()
+    }
+
+    fun pauseTracking(id: String, paused: Boolean) {
+        if (paused) aiTracker.pause(id, sessionClock.now()) else aiTracker.resume(id, sessionClock.now())
+        updateManualTracking()
+    }
+
+    fun restartTracking(id: String) {
+        aiTracker.restart(id, sessionClock.now(), settings.manualSessionPolicy)
+        updateManualTracking()
+    }
+
+    fun markTrackingDone(id: String) {
+        aiTracker.end(id, AiSessionResult.MANUAL_DONE, sessionClock.now())
+        updateManualTracking()
+    }
+
+    fun clearSessionHistory(id: String? = null) {
+        aiTracker.clearHistory(id)
+        aiSessions = aiTracker.snapshot
+    }
+
+    fun saveAiProvider(provider: AiProvider): Boolean = aiTracker.saveProvider(provider).also {
+        if (it) updateManualTracking()
+    }
+
+    fun removeAiProvider(id: String) {
+        aiTracker.removeProvider(id, sessionClock.now())
+        updateManualTracking()
+    }
+
+    private fun checkpointSessions() {
+        aiTracker.checkpoint(sessionClock.now())
         updateManualTracking()
     }
 
     private fun updateManualTracking() {
+        val now = sessionClock.now()
+        val reminders = aiTracker.tick(now)
         aiSessions = aiTracker.snapshot
         if (manualTracking.isEmpty()) manualScreen.stop() else manualScreen.start()
+        main.removeCallbacks(sessionDeadline)
+        aiTracker.nextCheck(now)?.let { main.postDelayed(sessionDeadline, it.coerceAtLeast(1L)) }
+        for (provider in reminders) notifier.trackingReminder(provider.id, provider.label)
         refreshIsland()
     }
 
@@ -194,7 +242,7 @@ class AppModel(private val context: Context) : LinkListener {
             }
         }
         refreshWatchAccess()
-        aiTracker.retainInstalled(installedWatchApps.toSet())
+        aiTracker.retainInstalled(installedWatchApps.map { it.packageName }.toSet(), sessionClock.now())
         updateManualTracking()
     }
 
@@ -429,7 +477,7 @@ class AppModel(private val context: Context) : LinkListener {
                 overlay.hide()
                 notifier.cancelAllStatus()
             } else {
-                refreshIsland() // the user left the app: an agent at work shows on the island at once
+                checkpointSessions()
             }
         }
 
@@ -470,13 +518,25 @@ class AppModel(private val context: Context) : LinkListener {
 
     internal fun clearWatchedUpdate() = overlay.clearWatchedUpdate()
 
-    internal fun openWatchedApp(packageName: String) {
-        val app = watchedApp(packageName)
-            ?: manualTracking.firstOrNull { it.app.packageName == packageName }?.app
-            ?: return
-        val launch = context.packageManager.getLaunchIntentForPackage(app.packageName) ?: return
-        runCatching { context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-        clearWatchedUpdate()
+    internal fun openWatchedApp(id: String) {
+        val provider = aiTracker.provider(id) ?: return
+        if (launchProvider(context, provider, track = false)) clearWatchedUpdate()
+    }
+
+    /** Call from a user gesture. Use a package-scoped launcher intent for apps hidden by Android visibility. */
+    fun launchProvider(from: Context, provider: AiProvider, track: Boolean): Boolean {
+        val packageName = provider.packageName
+        val launch = if (packageName != null) {
+            context.packageManager.getLaunchIntentForPackage(packageName)
+                ?: Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage(packageName)
+        } else {
+            Intent(Intent.ACTION_VIEW, android.net.Uri.parse(checkNotNull(provider.website))).addCategory(Intent.CATEGORY_BROWSABLE)
+        }
+        if (from !is android.app.Activity) launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val opened = runCatching { from.startActivity(launch) }.isSuccess
+        if (opened && track) setManualTracking(provider.id, true)
+        if (!opened) android.widget.Toast.makeText(from, R.string.ai_provider_unavailable, android.widget.Toast.LENGTH_SHORT).show()
+        return opened
     }
 
     fun overlayPermitted() = overlay.permitted()

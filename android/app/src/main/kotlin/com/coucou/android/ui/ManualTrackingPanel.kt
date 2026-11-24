@@ -12,9 +12,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -23,8 +25,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import com.coucou.android.R
 import com.coucou.android.app.AppModel
+import com.coucou.android.app.SessionClock
 import com.coucou.android.core.AvatarMood
 import com.coucou.android.core.ManualAiSession
+import com.coucou.android.core.SessionTime
 import com.coucou.android.core.WatchedAiApp
 import com.coucou.android.core.TypeScale
 import kotlinx.coroutines.delay
@@ -41,7 +45,7 @@ internal fun ManualTrackingPanel(model: AppModel, onOverlay: () -> Unit, showPic
             Panel {
                 model.installedWatchApps.forEachIndexed { index, app ->
                     if (index > 0) RowDivider()
-                    val tracking = active.any { it.app == app }
+                    val tracking = active.any { it.provider.id == app.packageName }
                     ProviderSwitch(app, tracking, if (tracking) AvatarMood.TRACKING else AvatarMood.IDLE) {
                         model.setManualTracking(app, it)
                     }
@@ -57,12 +61,12 @@ internal fun ManualTrackingPanel(model: AppModel, onOverlay: () -> Unit, showPic
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        ProviderAvatar(session.app.packageName, session.app.label, AvatarMood.TRACKING, Modifier.size(44.dp))
+                        ProviderAvatar(session.provider.id, session.provider.label, AvatarMood.TRACKING, Modifier.size(44.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(session.app.label, style = TypeScale.BODY.style(t.text.c()))
+                            Text(session.provider.label, style = TypeScale.BODY.style(t.text.c()))
                             Text(elapsedTracking(session, now), style = TypeScale.SECONDARY.style(t.textDim.c()))
                         }
-                        StopTrackingButton(session) { model.setManualTracking(session.app, false) }
+                        StopTrackingButton(session) { model.setManualTracking(session.provider.id, false) }
                     }
                 }
             }
@@ -84,23 +88,26 @@ internal fun ProviderSwitch(app: WatchedAiApp, checked: Boolean, mood: AvatarMoo
 
 /** A visible panel updates once per displayed minute. There is no background timer or write. */
 @Composable
-internal fun trackingClock(sessions: List<ManualAiSession>): androidx.compose.runtime.State<Long> {
+internal fun trackingClock(sessions: List<ManualAiSession>): androidx.compose.runtime.State<SessionTime> {
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     val visible = lifecycleState.isAtLeast(Lifecycle.State.STARTED)
-    return produceState(System.currentTimeMillis(), visible, sessions) {
-        if (!visible) return@produceState
+    val context = LocalContext.current
+    val clock = remember(context) { SessionClock(context) }
+    return produceState(clock.now(), visible, sessions) {
+        value = clock.now()
+        val running = sessions.filterNot { it.paused }
+        if (!visible || running.isEmpty()) return@produceState
         while (true) {
-            val now = System.currentTimeMillis()
+            val now = clock.now()
             value = now
-            val nextMinute = sessions.minOf { 60_000 - ((now - it.startedAtMs).coerceAtLeast(0) % 60_000) }
-            delay(nextMinute)
+            delay(running.minOf { 60_000 - (it.elapsed(now) % 60_000) })
         }
     }
 }
 
 @Composable
-internal fun elapsedTracking(session: ManualAiSession, nowMs: Long): String {
-    val minutes = session.elapsedMinutes(nowMs)
+internal fun elapsedTracking(session: ManualAiSession, now: SessionTime): String {
+    val minutes = session.elapsed(now) / 60_000
     return when {
         minutes < 1 -> stringResource(R.string.ago_less_than_minute)
         minutes < 60 -> stringResource(R.string.ago_minutes, minutes)
@@ -110,7 +117,7 @@ internal fun elapsedTracking(session: ManualAiSession, nowMs: Long): String {
 
 @Composable
 internal fun StopTrackingButton(session: ManualAiSession, onStop: () -> Unit) {
-    val description = stringResource(R.string.ai_stop_provider, session.app.label)
+    val description = stringResource(R.string.ai_stop_provider, session.provider.label)
     TextButton(onClick = onStop, modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = description }) {
         Text(stringResource(R.string.chat_stop), color = tokens().text.c())
     }

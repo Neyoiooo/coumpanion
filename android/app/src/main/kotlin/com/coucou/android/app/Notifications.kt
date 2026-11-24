@@ -205,6 +205,18 @@ class Notifications(private val context: Context) {
     fun cancelApproval(fp: String) = nm.cancel(idFor(fp))
 
     /** An agent finished, failed, hit a limit or asks something. Quiet: the app's tone and the pill are the alerts. */
+    fun trackingReminder(providerId: String, label: String) {
+        val n = Notification.Builder(context, CH_UPDATES)
+            .setSmallIcon(R.drawable.ic_stat_coumpanion)
+            .setContentTitle(context.getString(R.string.ai_tracking_reminder))
+            .setContentText(context.getString(R.string.ai_tracking_reminder_body, label))
+            .setContentIntent(open(null, false, 82))
+            .setVisibility(Notification.VISIBILITY_PRIVATE)
+            .setAutoCancel(true)
+            .build()
+        runCatching { nm.notify("manual-tracking", providerId.hashCode(), n) }
+    }
+
     fun showStatus(pillId: String, agentName: String, state: BotState, statusText: String) {
         val what = context.getString(
             when (state) {

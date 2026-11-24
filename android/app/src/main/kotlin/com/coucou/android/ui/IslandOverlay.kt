@@ -103,7 +103,6 @@ import com.coucou.android.core.OverlayPolicy
 import com.coucou.android.core.PxRect
 import com.coucou.android.core.Tokens
 import com.coucou.android.core.Tracked
-import com.coucou.android.core.WatchedAiApp
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
@@ -126,7 +125,7 @@ class IslandOverlay(
     /** The user swiped the island up: what it showed now belongs in the notification shade. */
     private val onSwiped: (IslandSpec) -> Unit = {},
     private val onOpenWatchedApp: (packageName: String) -> Unit,
-    private val onStopTracking: (WatchedAiApp) -> Unit,
+    private val onStopTracking: (String) -> Unit,
     private val position: () -> IslandPosition,
     private val plain: () -> Boolean,
     private val animatedAvatars: () -> Boolean,
@@ -586,18 +585,18 @@ class IslandOverlay(
                     sessions.forEach { session ->
                         HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            ProviderAvatar(session.app.packageName, session.app.label, AvatarMood.TRACKING, Modifier.size(32.dp))
+                            ProviderAvatar(session.provider.id, session.provider.label, AvatarMood.TRACKING, Modifier.size(32.dp))
                             Spacer(Modifier.width(6.dp))
                             Column(
                                 Modifier.weight(1f).heightIn(min = 56.dp).clickable(role = Role.Button) {
-                                    tap("a tracked app") { onOpenWatchedApp(session.app.packageName) }
+                                    tap("a tracked app") { onOpenWatchedApp(session.provider.id) }
                                 }.padding(vertical = 8.dp),
                                 verticalArrangement = Arrangement.Center,
                             ) {
-                                Text(session.app.label, color = foreground, fontSize = 13.sp)
+                                Text(session.provider.label, color = foreground, fontSize = 13.sp)
                                 Text(elapsedTracking(session, now), color = dim, fontSize = 12.sp)
                             }
-                            StopTrackingButton(session) { tap("stop tracking") { onStopTracking(session.app) } }
+                            StopTrackingButton(session) { tap("stop tracking") { onStopTracking(session.provider.id) } }
                         }
                     }
                 }

@@ -17,7 +17,7 @@ data class IslandSpec(
     val manualSessions: List<ManualAiSession> = emptyList(),
     val notificationEvent: AiNotificationEvent = AiNotificationEvent.UPDATE,
 ) {
-    val manualTracking: Boolean get() = manualSessions.firstOrNull()?.app?.packageName == pillId
+    val manualTracking: Boolean get() = manualSessions.firstOrNull()?.provider?.id == pillId
 
     enum class Kind { WORKING, QUESTION, APPROVAL, FINISHED, ERROR, RATELIMIT, APP_UPDATE }
 

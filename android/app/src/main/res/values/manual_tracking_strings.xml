@@ -17,4 +17,8 @@
     <string name="island_position_right">Right</string>
     <string name="island_plain">Solid island background</string>
     <string name="animated_ai_avatars">Animated AI avatars</string>
+    <string name="ai_tracking_reminder">Manual tracking reminder</string>
+    <string name="ai_tracking_reminder_body">You have a manual timer for %1$s.</string>
+    <string name="ai_provider_unavailable">This provider could not be opened.</string>
+    <string name="ai_timer_paused">Paused</string>
 </resources>

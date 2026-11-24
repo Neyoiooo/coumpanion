@@ -53,6 +53,8 @@ data class UserSettings(
     val islandPosition: IslandPosition = IslandPosition.CAMERA,
     val plainIsland: Boolean = false,
     val animatedAvatars: Boolean = true,
+    val autoTrackLaunches: Boolean = true,
+    val manualSessionPolicy: ManualSessionPolicy = ManualSessionPolicy(),
 ) {
     companion object {
         private const val SOUND = "sound_on"
@@ -70,6 +72,9 @@ data class UserSettings(
         private const val MUTED = "muted_agents"
         private const val ISLAND_POSITION = "island_position"
         private const val ANIMATED_AVATARS = "animated_ai_avatars"
+        private const val AUTO_TRACK = "ai_auto_track_launches"
+        private const val EXPIRATION = "ai_session_expiration_minutes"
+        private const val REMINDER = "ai_session_reminder_minutes"
         private const val PLAIN_ISLAND = "island_plain"
         private const val HIDE_IN_DND = "island_hide_in_dnd"
 
@@ -97,6 +102,11 @@ data class UserSettings(
                     ?: d.islandPosition,
                 plainIsland = store.getBoolean(PLAIN_ISLAND, d.plainIsland),
                 animatedAvatars = store.getBoolean(ANIMATED_AVATARS, d.animatedAvatars),
+                autoTrackLaunches = store.getBoolean(AUTO_TRACK, d.autoTrackLaunches),
+                manualSessionPolicy = ManualSessionPolicy(
+                    store.getInt(EXPIRATION, 0).coerceIn(0, ManualSessionPolicy.MAX_MINUTES),
+                    store.getInt(REMINDER, 0).coerceIn(0, ManualSessionPolicy.MAX_MINUTES),
+                ),
             )
         }
 
@@ -118,6 +128,9 @@ data class UserSettings(
             store.put(ISLAND_POSITION, s.islandPosition.name)
             store.put(PLAIN_ISLAND, s.plainIsland)
             store.put(ANIMATED_AVATARS, s.animatedAvatars)
+            store.put(AUTO_TRACK, s.autoTrackLaunches)
+            store.put(EXPIRATION, s.manualSessionPolicy.expirationMinutes)
+            store.put(REMINDER, s.manualSessionPolicy.reminderMinutes)
         }
     }
 }
