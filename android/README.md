@@ -4,38 +4,55 @@ Coumpanion shows your agents, lets you answer approval requests and supports cha
 
 The offline demo runs on Android 11 or later. [Coumpanion Server](server/README.md) provides a real DeepSeek connection over a private network. Compatible desktop links can also be used for pairing and chat.
 
-## Watch AI apps
+## Choose an edition
 
-Google Play Protect can block the Preview 5 GitHub APK before installation because it uses notification access. If you see **App blocked to protect your device**, you can keep using Preview 4 for server pairing and chat. Watch AI apps was added in Preview 5. [Preview 4 download](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.5.0-preview.4/Coumpanion-debug.apk) · [Google’s explanation](https://developers.google.com/android/play-protect/warning-dev-guidance#app_blocked_to_protect_your_device)
+| Edition | Application ID | Features |
+| --- | --- | --- |
+| Standard | `app.coumpanion.android.standard` | Manual tracking, Dynamic Island, widgets, desktop pairing and DeepSeek through the optional server |
+| Full | `app.coumpanion.android` | Standard features plus optional notification watching |
 
-1. Open Coumpanion and tap **Choose AI apps** on Home or **Watch AI apps** in Settings.
-2. Turn on the installed apps you want to watch, then tap **Allow notification access** and grant it for Coumpanion in Android Settings.
-3. Return to Coumpanion and tap **Allow the island** if it appears. Turn on **Display over other apps**. Switch to another app and wait for a new notification from a selected AI app.
-
-The island shows **Update** for a few seconds. Tap to open the source app, or press and hold to see a short notification title. You can switch apps on or off in **Settings → Watch AI apps**. Coumpanion uses incoming Android notifications, so the updates you see depend on what each app posts.
-
-Android grants notification access for the device. Coumpanion filters by the packages you select before reading a notification title, keeps the title in memory for the island, and leaves the original notification in the shade. This feature runs locally on the phone.
-
-If Coumpanion is already installed and Android labels the notification access switch as a **Restricted setting**, open **Settings → Apps → Coumpanion**. When the menu offers **Allow restricted settings**, use it, then return to **Watch AI apps** to grant notification access.
+Both editions support Android 11 and later. Full retains the existing application ID. Android only upgrades an existing install when the signatures match. If you have a debug-signed preview, install Standard alongside it or back up what you need before replacing the preview with production-signed Full. Android clears app data and permissions on uninstall. The editions have separate local histories, settings and pairing.
 
 ## Manual task tracking
 
-Open **Choose AI apps** and use **Manual task tracking** to select an installed AI app. Grant **Display over other apps** if needed, then leave Coumpanion. The island says **Tracking**, not Working: it is a user-started marker, not proof of ongoing generation. Tap the island to open the source app. Stop tracking from the app picker or Home. One manual marker is supported at a time, held in memory while Coumpanion runs. This does not require notification access, a server, or account linking. It cannot keep another app alive or automatically determine when an arbitrary task finishes. Desktop approvals and questions take priority.
+Open **Choose AI apps** on Home and turn on manual tracking for each installed AI app you want to track. Grant **Display over other apps** when prompted and switch to another app. Tap the island to see elapsed tracking time, open the source app, or stop each session. You can also stop sessions from Home or the app picker. Sessions restore when you reopen Coumpanion. Manual tracking is an unverified marker and runs entirely on the phone without notification access or pairing. Desktop approvals and questions take priority.
+
+In **Settings → Display**, choose Camera, Center, Left or Right for the island position and turn on **Solid island background** if you prefer a static background. Android may hide or terminate the overlay under its system policies. Reopen Coumpanion to restore saved manual sessions after a force stop or reboot.
+
+## Watch AI apps
+
+1. In Full, tap **Choose AI apps** on Home or open the AI apps picker from Settings.
+2. Select the installed apps you want to watch and grant notification access in Android Settings.
+3. Grant **Display over other apps** if you want the island, then switch to another app.
+
+A new notification shows an **Update** for a few seconds. Tap to open the source app, or hold to see the shortened title and any recognized event. A matching provider-specific title may report a completion or an issue. Other titles show a generic update. These are notification reports. Verified desktop progress comes through the paired desktop link.
+
+Android grants notification access for the device. Coumpanion checks the selected package before reading its title and keeps titles in memory for the island. Its bounded local history stores only the provider, receipt time and event category. Clear the history from Home or the app picker. Turning off a watched app clears its entries, and revoking notification access clears the log. Android keeps the original notification in the shade.
+
+Android's notification access screen may label the toggle **Restricted setting** for sideloaded apps. See [Android's guidance for restricted settings](https://support.google.com/android/answer/12623953).
+
+## Muse web investigation
+
+[Meta documents Muse Code](https://dev.meta.ai/docs/muse-code) as a terminal and CI agent and uses the browser for authentication. The existing desktop hook can forward Muse Code activity through phone pairing. No supported Muse Code web activity feed for Android was found. Generic browser notifications do not give Coumpanion a dependable, portable way to identify and follow a Muse Code task across browsers. Automatic Muse web tracking remains unavailable.
 
 ## Build and test
 
-Needs JDK 17 and the Android SDK (platform 35). From this folder:
+Needs JDK 17 and the Android SDK (platform 36). From this folder:
 
 ```bash
 ./gradlew test assembleDebug lint
 node scripts/gen-strings.mjs --check      # res/values/strings.xml is generated from i18n/app-strings.json
 ```
 
-A release build (R8 shrinking and obfuscation, resources shrunk, `android.util.Log` calls removed, not debuggable) is `./gradlew assembleRelease`;
-`lint` already depends on it in CI, with a check that no debug log text is left in the APK. Signing keys are never in the repository: set
-`COUCOU_KEYSTORE_FILE`, `COUCOU_KEYSTORE_PASSWORD`, `COUCOU_KEY_ALIAS` (and `COUCOU_KEY_PASSWORD` if it differs) in the environment or in
-`~/.gradle/gradle.properties`. Without them the release APK is unsigned (it cannot be installed), never signed with a debug key. Keep
-`app/build/outputs/mapping/release/mapping.txt` with the build you ship. Nothing is published from here.
+`assembleRelease` builds the two R8-optimized APKs. `lint` checks the resulting APKs for debug logs and verifies that the listener is declared only in Full. For a local release-signed build, supply `COUCOU_KEYSTORE_FILE`, `COUCOU_KEYSTORE_PASSWORD`, `COUCOU_KEY_ALIAS` and, if it differs, `COUCOU_KEY_PASSWORD` through the environment or your user Gradle properties. Keep the key and password out of the repository.
+
+### Production distribution
+
+Use the **Android release** workflow on `main` to build and sign both APKs and a Standard Android App Bundle. The workflow expects `ANDROID_KEYSTORE_BASE64` and `ANDROID_KEYSTORE_PASSWORD` for the production key with alias `coucou`. Keep a secure backup and reuse the signing identity for future APK updates. The workflow verifies signatures, records APK checksums, and checks that both signed APKs install, reinstall and launch on Android 16. A manual run prepares artifacts. An `android-v0.6.0` tag publishes the APKs after those checks pass.
+
+Both editions target Android 16 (API 36), the current submission requirement for phone apps on Google Play. For Google Play, register the Standard application ID, enroll in Play App Signing and test the bundle on an internal track. If you distribute the same package through both Google Play and GitHub, configure the same app-signing identity for both channels so they can update each other. If Play Console uses a separate upload key, sign the unsigned Standard bundle with that registered key before upload. [Android app signing guide](https://developer.android.com/studio/publish/app-signing)
+
+For GitHub distribution, verify the release APKs against `SHA256SUMS` and register the application IDs and signing certificates where Android developer verification applies. If Google Play Protect blocks a signed release, record the exact warning and affected device, follow Google's developer guidance and submit an appeal if the classification appears incorrect. Signing verifies the APK's origin and integrity. Play Protect independently evaluates the distribution channel and permissions. [Android developer verification](https://developer.android.com/developer-verification) · [Play Protect developer guidance](https://developers.google.com/android/play-protect/warning-dev-guidance)
 
 To run the offline demo, open **Connect to your server** and tap **Try demo mode**. Tap **Allow** next to the overlay permission notice on Home and enable **Display over other apps** for Coumpanion. Return to Coumpanion, then switch to another app while the demo runs. The island shows progress and the demo approval. Tap **Review request** to see the exact command. The first **Allow** or **Send answer** uses your PIN, pattern, or password. That check is shared while the screen stays on. **Deny** works directly.
 
@@ -54,13 +71,13 @@ The desktop side is in `windows/src-tauri/src/phone_link`; the protocol is `docs
   usage and service cards when the computer offers them, and *Recent* (your own Allow/Deny decisions, kept only on the phone).
   Raw tool names become plain words (`core/ToolLabels.kt`); a command or path is never shown without a deliberate tap (`core/SafeText.kt`).
 - **Languages** (Settings > Display > Language, or Android 13 and later: Android's own Apps > Coumpanion > Language): the phone's own, English, French (informal "tu", like the rest of Coucou), Spanish, Brazilian Portuguese, Simplified Chinese, Hindi, Bengali, Russian, Indonesian, Arabic (written right to left, the layout and the arrows mirror) and Turkish. The English source is `i18n/app-strings.json` (strings and plurals); each language is a file in `i18n/translations/`; `node scripts/gen-strings.mjs` writes the resources (`values-<language>`), `res/xml/locales_config.xml` and the table `app/TextIds.kt`, and `--check` (run by CI) fails on a missing key, a placeholder that does not match, a missing plural form or a stale file. Texts the Mac and Windows apps already have in a language are reused; the rest was written for Android and is listed in `i18n/REVIEW.md` so a native speaker can check it. The words that the pure rules produce ("Running a command", "2 agents are working", the Widgets' state words) go through `core/Texts.kt`, so they are translated too. Before Android 13 there is no system per-app language, so the choice is kept in the app (the Widgets' fixed texts, drawn by the launcher, then follow the phone's language). Not translated yet: the "Can't connect?" report and its steps, and the demo's made-up sessions.
-- **Theme** (Settings > Display): System (the default), Light or Dark, and an optional *Use my phone's colours* (Material You, Android 12 and later, off by default). The hero panel, the sheets and the file-change view take their colours from `core/Tokens.kt` (`DARK` and `LIGHT`, every text pair checked for WCAG AA in `TokensTest` and `LightThemeTest`); the island over other apps and the camera screen stay black. The agent and state colours are the same in both.
+- **Theme** (Settings > Display): System (the default), Light or Dark, and an optional *Use my phone's colours* (Material You, Android 12 and later, off by default). The hero panel, the sheets and the file-change view take their colours from `core/Tokens.kt` (`DARK` and `LIGHT`, every text pair checked for WCAG AA in `TokensTest` and `LightThemeTest`); the island remains dark and has its own background setting, and the camera screen stays black. The agent and state colours are the same in both.
 - **Accessibility**: TalkBack says an agent as "Claude Code, waiting for your OK" (name, state in words, then the line), a tab with an alert as "Home, a request is waiting", and a request sheet or the island is announced when it appears (`core/SpokenLabels.kt`, `core/WidgetSpoken.kt`: every tapped area of every Widget speaks one sentence built from what it shows). Every control is at least 48 dp, sheets scroll and status lines may wrap so the app holds at a font scale of 1.3, and Settings > Display > *Reduce motion* (System, On, Off; System follows Android's "Remove animations") turns the island's and sheets' springs into a fade (`core/MotionPolicy.kt`).
 - **Request alerts** (Settings > Permission requests): *Don't wake the screen for a request* (off by default, the screen wakes as before) and the vibration (Standard is the old pattern, Short, or Off). A request is never muted or hidden by either: it still arrives with an approval tone and its notification. The vibration is a notification channel setting that Android cannot change later, so each choice has its own channel id and the old one is deleted (`core/ApprovalAlerts.kt`).
 - **Home says why the link was lost** (not on Wi-Fi, the computer closed the connection, or it cannot be reached: Coucou closed there, phone link off, another network), and the ongoing notification is posted again only when its text changes (`core/OngoingGate.kt`). Predictive back is on (`enableOnBackInvokedCallback`).
 - **Requests**: a sheet rises over any screen. Allow uses the screen-lock check once while the screen stays on, Deny works directly, taps in the first 600 ms
   are ignored, and each request expires after 120 s. Questions from Claude Code can be answered the same way (the computer must allow it).
-- **Island over other apps** (on by default, with an option to turn it off): a black island from the camera cut-out drops while an agent works, shows
+- **Island over other apps** (on by default, with an option to turn it off): a dark island positioned below the status bar drops while an agent works, shows
   the result for 10 s and goes back up with the computer's motion. Needs Android's "Display over other apps". Rules are pure and
   tested (`core/Island*.kt`); `ui/IslandOverlay.kt` draws.
 - **Chat** (a tab, when the computer offers it), **session details**, **file changes** and **plan usage** are opt-in switches on the
