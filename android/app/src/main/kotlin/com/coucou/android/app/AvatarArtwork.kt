@@ -14,6 +14,7 @@ import kotlin.math.roundToInt
 /** One master image. Provider colors, badges and blink frames are derived locally and cached. */
 internal object AvatarArtwork {
     private const val MASTER = "avatars/robot.png"
+    private const val BADGES = "avatars/badges"
     private const val MAX_EDGE = 256
     private const val CACHE_BYTES = 8 * 1024 * 1024
 
@@ -162,9 +163,16 @@ internal object AvatarArtwork {
 
     private fun drawBadge(context: Context, image: Bitmap, appearance: ProviderAppearance) {
         val canvas = Canvas(image)
-        val edge = (image.width * 0.092f).roundToInt().coerceAtLeast(5)
+        val edge = (image.width * 0.117f).roundToInt().coerceAtLeast(5)
         val x = (image.width - edge) / 2
         val y = (image.height * 0.827f - edge / 2f).roundToInt()
+        val logo = appearance.logo?.let { name ->
+            runCatching { context.assets.open("$BADGES/$name.png").use(BitmapFactory::decodeStream) }.getOrNull()
+        }
+        if (logo != null) {
+            canvas.drawBitmap(logo, null, Rect(x, y, x + edge, y + edge), Paint(Paint.FILTER_BITMAP_FLAG))
+            return
+        }
         val icon = appearance.iconPackage?.let { runCatching { context.packageManager.getApplicationIcon(it) }.getOrNull() }
         if (icon != null) {
             val clip = android.graphics.Path().apply {
@@ -177,18 +185,14 @@ internal object AvatarArtwork {
             canvas.restore()
             return
         }
-        val rows = glyphs.getValue(appearance.badge)
         val cell = (edge / 5).coerceAtLeast(1)
-        val startX = x + (edge - cell * 3) / 2
-        val startY = y + (edge - cell * 5) / 2
+        val cx = x + edge / 2f
+        val cy = y + edge / 2f
         val paint = Paint().apply { color = Color.WHITE }
-        rows.forEachIndexed { row, bits ->
-            for (col in 0..2) if (bits and (4 shr col) != 0) {
-                val left = (startX + col * cell).toFloat()
-                val top = (startY + row * cell).toFloat()
-                canvas.drawRect(left, top, left + cell, top + cell, paint)
-            }
-        }
+        val half = cell / 2f
+        val arm = cell * 1.5f
+        canvas.drawRect(cx - arm, cy - half, cx + arm, cy + half, paint)
+        canvas.drawRect(cx - half, cy - arm, cx + half, cy + arm, paint)
     }
 
     private fun blink(image: Bitmap): Bitmap {
@@ -209,11 +213,4 @@ internal object AvatarArtwork {
     }
 
     private fun Bitmap.pixels() = IntArray(width * height).also { getPixels(it, 0, width, 0, 0, width, height) }
-
-    private val glyphs = mapOf(
-        'G' to intArrayOf(7, 4, 5, 5, 7), 'A' to intArrayOf(2, 5, 7, 5, 5),
-        'D' to intArrayOf(6, 5, 5, 5, 6), 'P' to intArrayOf(6, 5, 6, 4, 4),
-        'M' to intArrayOf(5, 7, 7, 5, 5), 'C' to intArrayOf(7, 4, 4, 4, 7),
-        'X' to intArrayOf(5, 5, 2, 5, 5), '*' to intArrayOf(0, 2, 7, 2, 0),
-    )
 }

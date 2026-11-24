@@ -8,7 +8,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
-MASTER = ROOT / "android/app/src/main/assets/avatars/robot.png"
+ARTWORK = ROOT / "android/app/src/main/assets/avatars"
 OUTPUT = ROOT / "docs/media/coupi"
 EDGE = 144
 FRAME_MS = 60
@@ -37,44 +37,6 @@ THEMES = (
     Theme("copilot", "tracking", ("#B8A9FA", "#95DDF1", "#9AE0BC", "#F6B8D5"), "copilot"),
 )
 
-BADGES = {
-    "chatgpt": (
-        "..XXX....", ".X...X...", ".X.X.XXX.", "XXX.X...X", "X...X.X.X",
-        "X.X.X.XXX", ".XXX.X.X.", "...X...X.", "....XXX..",
-    ),
-    "claude": (
-        "....X....", "XX..X..XX", "..X.X.X..", "...XXX...", "XXXXXXXXX",
-        "...XXX...", "..X.X.X..", ".X..X..X.", "....X....",
-    ),
-    "gemini": (
-        "....X....", "....X....", "...XXX...", "..XXXXX..", "XXXXXXXXX",
-        "..XXXXX..", "...XXX...", "....X....", "....X....",
-    ),
-    "codex": (
-        ".XXX.....", "....X....", ".....X...", "....X....", ".XXX.....",
-        ".........", ".....XXX.",
-    ),
-    "muse": (
-        "XX.....XX", "XXX...XXX", "X.XX.XX.X", "X..XXX..X", "X...X...X",
-        "X.......X", "X.......X",
-    ),
-    "deepseek": (
-        ".......X.", ".....X.X.", ".....XXX.", "XXX..XX..", "XXXXXX...",
-        ".XXXX....", "..XX.X...",
-    ),
-    "grok": (
-        ".......XX", "......XX.", ".....XX..", ".X..XX...", "XX.XX...X",
-        "XXXX...XX", "XXX...XX.", "XXX.XXX..", ".XXXXX...",
-    ),
-    "perplexity": (
-        "X...X...X", "XX..X..XX", "X.X.X.X.X", "X..XXX..X", "XXXXXXXXX",
-        ".X..X..X.", ".X.X.X.X.", ".XX.X.XX.", ".X..X..X.",
-    ),
-    "copilot": (
-        "..1122...", ".111222..", "11...222.", "11....222", "11...3333",
-        "444...33.", ".444.333.", "..44433..", "...443...",
-    ),
-}
 QUESTION = (".XXX.", "X...X", "...X.", "..X..", ".....", "..X..")
 WARNING = ("..X..", ".XXX.", ".X.X.", "XX.XX", "XXXXX")
 SLEEP = ("XXXX", "..X.", ".X..", "XXXX")
@@ -86,8 +48,7 @@ def pixel_mark(draw, xy, rows, fill, edge=1):
         for column, value in enumerate(line):
             if value != ".":
                 left, top = x + column * edge, y + row * edge
-                color = fill if value == "X" else fill[int(value) - 1]
-                draw.rectangle((left, top, left + edge - 1, top + edge - 1), color)
+                draw.rectangle((left, top, left + edge - 1, top + edge - 1), fill)
 
 
 def recolor(image, colors):
@@ -124,15 +85,12 @@ def equip(master, theme):
     sprite = master.resize((width, round(master.height * width / master.width)), PIXEL)
     sprite = recolor(sprite, theme.colors)
     if theme.mark:
-        draw = ImageDraw.Draw(sprite)
-        x, y = round(sprite.width * 0.5), round(sprite.height * 0.827)
-        mark = BADGES[theme.mark]
-        if theme.mark == "copilot":
-            fill = theme.colors
-            draw.ellipse((x - 5, y - 5, x + 5, y + 5), fill="#343646")
-        else:
-            fill = IVORY
-        pixel_mark(draw, (x - len(mark[0]) // 2, y - len(mark) // 2), mark, fill)
+        edge = round(sprite.width * 0.117)
+        with Image.open(ARTWORK / "badges" / (theme.mark + ".png")) as badge:
+            logo = badge.convert("RGBA").resize((edge, edge), Image.Resampling.LANCZOS)
+        x = (sprite.width - edge) // 2
+        y = round(sprite.height * 0.827 - edge / 2)
+        sprite.alpha_composite(logo, (x, y))
     return sprite
 
 
@@ -233,7 +191,7 @@ def animate(master, theme):
 
 
 def main():
-    with Image.open(MASTER) as image:
+    with Image.open(ARTWORK / "robot.png") as image:
         master = image.convert("RGBA")
     OUTPUT.mkdir(parents=True, exist_ok=True)
     for theme in THEMES:

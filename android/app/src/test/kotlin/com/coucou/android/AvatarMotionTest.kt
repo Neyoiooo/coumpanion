@@ -47,6 +47,13 @@ class AvatarMotionTest {
         assertEquals(AvatarMood.WORKING, AvatarMood.forIsland(verified.copy(state = BotState.WORKING)))
     }
 
+    @Test fun providersResolveToDistinctLogoAssets() {
+        val providers = listOf("chatgpt", "claude", "gemini", "deepseek", "perplexity", "muse", "copilot", "grok", "codex")
+        assertEquals(providers, providers.map { ProviderAppearance.resolve(it).logo })
+        assertEquals("codex", ProviderAppearance.resolve("agent_codex").logo)
+        assertEquals(null, ProviderAppearance.resolve("example.agent").logo)
+    }
+
     @Test fun disabledAnimationsAreStaticAndOneShotEffectsEnd() {
         AvatarMood.entries.forEach { assertEquals(AvatarFrame(), AvatarMotion.frame(it, 2_000, false)) }
         assertTrue(AvatarMotion.frame(AvatarMood.IDLE, 5_260, true).blink)

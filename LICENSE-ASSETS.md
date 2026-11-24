@@ -31,3 +31,7 @@ If you fork Coucou to ship your own app, that's welcome under the MIT License: j
 ## Questions or permission requests
 
 Open an issue on [GitHub](https://github.com/Louis-CFM/coucou/issues) or write to raillelouis@gmail.com.
+
+## Coupi provider badges
+
+The Coupi badges use the provider marks from LobeHub's `@lobehub/icons-static-png` 2.12.0. The marks are placed on circular plates for contrast and used in the Android avatars and README GIFs to identify the equipped provider. The marks remain the property of their respective owners. [Source package](https://www.npmjs.com/package/@lobehub/icons-static-png/v/2.12.0) · [Lobe Icons MIT license](android/app/src/main/assets/licenses/MIT-LobeIcons.txt)

@@ -31,19 +31,23 @@ The gallery shows the avatar system on `main`. The download links below point to
 | Coupi | State and equipped AI | What the island is telling you |
 | :---: | --- | --- |
 | <img src="docs/media/coupi/idle.gif" width="88" height="88" alt="Coupi breathes and blinks"> | **Idle** · Unequipped | Coupi is at rest. |
-| <img src="docs/media/coupi/tracking.gif" width="88" height="88" alt="Mint Coupi sways under three orbiting pixels"> | **Tracking** · ChatGPT | Your manual timer is running. Only elapsed tracking time is confirmed. |
-| <img src="docs/media/coupi/thinking.gif" width="88" height="88" alt="Terracotta Coupi tilts above animated thinking dots"> | **Thinking** · Claude | A paired desktop agent reported that it is thinking. |
-| <img src="docs/media/coupi/working.gif" width="88" height="88" alt="Blue-violet Coupi bounces between processing pixels"> | **Working** · Gemini | A paired desktop agent reported work in progress. |
-| <img src="docs/media/coupi/completed.gif" width="88" height="88" alt="Indigo Coupi jumps and throws off pixel sparkles"> | **Completed** · Codex | A paired desktop agent reported completion. Coupi celebrates briefly and returns to idle. |
-| <img src="docs/media/coupi/approval.gif" width="88" height="88" alt="Lavender Coupi pulses under a question mark"> | **Waiting for approval** · Muse | A paired desktop agent needs your response. |
-| <img src="docs/media/coupi/error.gif" width="88" height="88" alt="Ocean-blue Coupi shakes beside a warning"> | **Error** · DeepSeek | An integration reported a problem. |
-| <img src="docs/media/coupi/disconnected.gif" width="88" height="88" alt="Silver Coupi rests beneath drifting pixel Zs"> | **Disconnected** · Grok | The desktop link is offline. |
+| <img src="docs/media/coupi/tracking.gif" width="88" height="88" alt="Mint Coupi sways under three orbiting pixels"> | **Tracking** · <img src="android/app/src/main/assets/avatars/badges/chatgpt.png" width="22" height="22" alt=""> ChatGPT | Your manual timer is running. Only elapsed tracking time is confirmed. |
+| <img src="docs/media/coupi/thinking.gif" width="88" height="88" alt="Terracotta Coupi tilts above animated thinking dots"> | **Thinking** · <img src="android/app/src/main/assets/avatars/badges/claude.png" width="22" height="22" alt=""> Claude | A paired desktop agent reported that it is thinking. |
+| <img src="docs/media/coupi/working.gif" width="88" height="88" alt="Blue-violet Coupi bounces between processing pixels"> | **Working** · <img src="android/app/src/main/assets/avatars/badges/gemini.png" width="22" height="22" alt=""> Gemini | A paired desktop agent reported work in progress. |
+| <img src="docs/media/coupi/completed.gif" width="88" height="88" alt="Indigo Coupi jumps and throws off pixel sparkles"> | **Completed** · <img src="android/app/src/main/assets/avatars/badges/codex.png" width="22" height="22" alt=""> Codex | A paired desktop agent reported completion. Coupi celebrates briefly and returns to idle. |
+| <img src="docs/media/coupi/approval.gif" width="88" height="88" alt="Lavender Coupi pulses under a question mark"> | **Waiting for approval** · <img src="android/app/src/main/assets/avatars/badges/muse.png" width="22" height="22" alt=""> Muse | A paired desktop agent needs your response. |
+| <img src="docs/media/coupi/error.gif" width="88" height="88" alt="Ocean-blue Coupi shakes beside a warning"> | **Error** · <img src="android/app/src/main/assets/avatars/badges/deepseek.png" width="22" height="22" alt=""> DeepSeek | An integration reported a problem. |
+| <img src="docs/media/coupi/disconnected.gif" width="88" height="88" alt="Silver Coupi rests beneath drifting pixel Zs"> | **Disconnected** · <img src="android/app/src/main/assets/avatars/badges/grok.png" width="22" height="22" alt=""> Grok | The desktop link is offline. |
 
 <p align="center">
   <img src="docs/media/coupi/perplexity.gif" width="96" alt="Turquoise Coupi equipped with Perplexity">
   <img src="docs/media/coupi/copilot.gif" width="96" alt="Pastel rainbow Coupi equipped with Copilot">
   <br>
-  <strong>Perplexity · Copilot</strong>
+  <strong>
+    <img src="android/app/src/main/assets/avatars/badges/perplexity.png" width="22" height="22" alt=""> Perplexity
+    ·
+    <img src="android/app/src/main/assets/avatars/badges/copilot.png" width="22" height="22" alt=""> Copilot
+  </strong>
 </p>
 
 The pairings illustrate how the palettes and motions combine. The island shows states supported by each session’s activity source. Full edition’s optional notification watching shows updates reported by the source app.
@@ -73,4 +77,4 @@ node scripts/gen-strings.mjs --check
 
 ## Credits
 
-Coumpanion is based on Louis Raillé’s Coucou and Rhytam Biswas’s Android port. The code is open source under the MIT License. [Upstream project](https://github.com/Louis-CFM/coucou) · [MIT license](LICENSE) · [Android license](android/LICENSE) · [Upstream artwork notice](LICENSE-ASSETS.md)
+Coumpanion is based on Louis Raillé’s Coucou and Rhytam Biswas’s Android port. The code is open source under the MIT License. [Upstream project](https://github.com/Louis-CFM/coucou) · [MIT license](LICENSE) · [Android license](android/LICENSE) · [Artwork and provider logo notices](LICENSE-ASSETS.md)

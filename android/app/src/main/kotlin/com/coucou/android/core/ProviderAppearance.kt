@@ -5,24 +5,24 @@ import java.util.Locale
 /** Colors describe the provider. Status colors remain independent. */
 internal data class ProviderAppearance(
     val colors: List<Int>,
-    val badge: Char,
+    val logo: String? = null,
     val iconPackage: String? = null,
 ) {
     val accent: Int get() = colors.first()
 
     companion object {
-        private fun known(color: Int, badge: Char, app: WatchedAiApp? = null) =
-            ProviderAppearance(listOf(color), badge, app?.packageName)
+        private fun known(color: Int, logo: String, app: WatchedAiApp? = null) =
+            ProviderAppearance(listOf(color), logo, app?.packageName)
 
-        private val chatGpt = known(0x78D6A3, 'G', WatchedAiApp.CHATGPT)
-        private val claude = known(0xE69B71, 'A', WatchedAiApp.CLAUDE)
-        private val gemini = known(0x8C9EFF, 'G', WatchedAiApp.GEMINI)
-        private val deepSeek = known(0x4D80F5, 'D', WatchedAiApp.DEEPSEEK)
-        private val perplexity = known(0x43C7C4, 'P', WatchedAiApp.PERPLEXITY)
-        private val muse = known(0xB68AEF, 'M')
-        private val copilot = ProviderAppearance(listOf(0xB8A9FA, 0x95DDF1, 0x9AE0BC, 0xF6B8D5), 'C', WatchedAiApp.COPILOT.packageName)
-        private val grok = known(0xA6ADB8, 'X', WatchedAiApp.GROK)
-        private val codex = known(0x6366F1, 'C')
+        private val chatGpt = known(0x78D6A3, "chatgpt", WatchedAiApp.CHATGPT)
+        private val claude = known(0xE69B71, "claude", WatchedAiApp.CLAUDE)
+        private val gemini = known(0x8C9EFF, "gemini", WatchedAiApp.GEMINI)
+        private val deepSeek = known(0x4D80F5, "deepseek", WatchedAiApp.DEEPSEEK)
+        private val perplexity = known(0x43C7C4, "perplexity", WatchedAiApp.PERPLEXITY)
+        private val muse = known(0xB68AEF, "muse")
+        private val copilot = ProviderAppearance(listOf(0xB8A9FA, 0x95DDF1, 0x9AE0BC, 0xF6B8D5), "copilot", WatchedAiApp.COPILOT.packageName)
+        private val grok = known(0xA6ADB8, "grok", WatchedAiApp.GROK)
+        private val codex = known(0x6366F1, "codex")
 
         private val aliases = mapOf(
             "chatgpt" to chatGpt, "openai" to chatGpt, "ai_openai" to chatGpt,
@@ -46,7 +46,8 @@ internal data class ProviderAppearance(
         fun resolve(providerId: String, name: String = ""): ProviderAppearance {
             val id = providerId.trim().lowercase(Locale.ROOT)
             val firstWord = name.trim().lowercase(Locale.ROOT).substringBefore(' ')
-            return aliases[id] ?: aliases[firstWord] ?: known(colorWheel[Math.floorMod(id.hashCode(), colorWheel.size)], '*')
+            return aliases[id] ?: aliases[firstWord] ?:
+                ProviderAppearance(listOf(colorWheel[Math.floorMod(id.hashCode(), colorWheel.size)]))
         }
     }
 }

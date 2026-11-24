@@ -37,13 +37,13 @@ Android's notification access screen may label the toggle **Restricted setting**
 
 ## AI avatars
 
-Coupi uses a single transparent master at `app/src/main/assets/avatars/robot.png`, prepared as a cutout from the supplied mascot image. Equipping a provider tints the shell and adds its installed app icon to the belly badge when available. A pixel monogram or spark covers providers without a local icon. The face, outlines and dither remain part of the source artwork. The renderer uses nearest-neighbor sampling and caches the resulting bitmaps. Status marks provide a fallback when the master is unavailable.
+Coupi uses a single transparent master at `app/src/main/assets/avatars/robot.png`, prepared as a cutout from the supplied mascot image. Equipping a provider tints the shell and adds its logo to the belly badge. The bundled badges work offline, including when the provider's app is absent. A generic pixel spark identifies unknown providers. The face, outlines and dither remain part of the source artwork. The renderer uses nearest-neighbor sampling and caches the resulting bitmaps. Status marks provide a fallback when the master is unavailable.
 
 Compact and expanded islands, the AI app picker, and active session cards use the same renderer. The Solo, List, Team, and Agent Overview widgets use static renders. Manual sessions use the Tracking pose, and notification reports use Idle. Thinking, Working, and Completed use confirmed desktop session states.
 
 **Settings → Display → Animated AI avatars** appears in builds with the master and switches avatar motion on or off. Avatar motion also pauses with battery saver, reduced motion, the screen off, or the island closed.
 
-Run `python scripts/render-coupi-showcase.py` from the repository root with Pillow installed to regenerate the README GIFs from the same master. The GIFs use pixel badges so they can be generated without Android app icons.
+Run `python scripts/render-coupi-showcase.py` from the repository root with Pillow installed to regenerate the README GIFs from the same master and bundled logos. [Logo sources and attribution](../LICENSE-ASSETS.md#coupi-provider-badges)
 
 ## Build and test
 
