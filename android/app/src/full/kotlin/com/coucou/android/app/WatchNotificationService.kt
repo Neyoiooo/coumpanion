@@ -2,13 +2,15 @@ package com.coucou.android.app
 
 import android.app.Notification
 import android.os.Process
+import android.os.SystemClock
+import com.coucou.android.core.NotificationDeduplicator
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 
 /** Android binds this service after the user grants notification access. */
 class WatchNotificationService : NotificationListenerService() {
     private val model get() = (application as CoucouApp).model
-    private val seen = LinkedHashMap<String, Int>()
+    private val seen = NotificationDeduplicator()
     private val screen by lazy { ScreenWatch(this) { on -> if (!on) model.clearWatchedUpdate() } }
 
     override fun onListenerConnected() {
@@ -27,9 +29,9 @@ class WatchNotificationService : NotificationListenerService() {
 
     private fun clear() {
         screen.stop()
-        seen.clear()
         model.clearWatchedUpdate()
         model.refreshWatchAccess()
+        if (!model.watchAccess) seen.clear()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -45,12 +47,11 @@ class WatchNotificationService : NotificationListenerService() {
         val title = runCatching {
             com.coucou.android.core.WatchedAiApp.shortTitle(notification.extras.getCharSequence(Notification.EXTRA_TITLE))
         }.getOrDefault("")
-        if (seen.put(sbn.key, title.hashCode()) == title.hashCode()) return
-        if (seen.size > 64) seen.remove(seen.keys.first())
+        if (!seen.accept(sbn.key, title, SystemClock.elapsedRealtime())) return
         model.showWatchedUpdate(app, title)
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        seen.remove(sbn.key)
+        seen.removed(sbn.key, SystemClock.elapsedRealtime())
     }
 }

@@ -2,6 +2,8 @@ package com.coucou.android
 
 import com.coucou.android.core.AiNotificationEvent
 import com.coucou.android.core.AvatarMood
+import com.coucou.android.core.AvatarBodyMotion
+import com.coucou.android.core.AiProvider
 import com.coucou.android.core.AvatarMotion
 import com.coucou.android.core.BotState
 import com.coucou.android.core.IslandSpec
@@ -52,6 +54,26 @@ class AvatarMotionTest {
         assertEquals(providers, providers.map { ProviderAppearance.resolve(it).logo })
         assertEquals("codex", ProviderAppearance.resolve("agent_codex").logo)
         assertEquals(null, ProviderAppearance.resolve("example.agent").logo)
+    }
+
+    @Test fun sharedBodyMotionSettlesAndRespectsReducedMotion() {
+        AvatarMood.entries.forEach { assertEquals(AvatarBodyMotion.still, AvatarBodyMotion.at(it, 317, false)) }
+        assertNotEquals(AvatarBodyMotion.still, AvatarBodyMotion.at(AvatarMood.TRACKING, 800, true))
+        assertNotEquals(AvatarBodyMotion.still, AvatarBodyMotion.at(AvatarMood.COMPLETED, 475, true))
+        assertEquals(AvatarBodyMotion.still, AvatarBodyMotion.at(AvatarMood.COMPLETED, 1_000, true))
+        assertEquals(AvatarBodyMotion.still, AvatarBodyMotion.at(AvatarMood.ERROR, 500, true))
+        assertEquals(AvatarBodyMotion.still, AvatarBodyMotion.at(AvatarMood.DISCONNECTED, 200, true))
+    }
+
+    @Test fun customPaletteUsesItsIdentityAndKeepsTheStatusFallbackAvailable() {
+        val custom = checkNotNull(AiProvider.custom("My AI", false, "https://example.com", null, null))
+        val renamed = checkNotNull(AiProvider.custom("Claude", false, "https://elsewhere.example", null, null, id = custom.id))
+        assertEquals(ProviderAppearance.forProvider(custom), ProviderAppearance.forProvider(renamed))
+        assertEquals(null, ProviderAppearance.forProvider(renamed).logo)
+        val renderer = File("src/main/kotlin/com/coucou/android/ui/ProviderAvatar.kt").readText()
+        assertTrue(renderer.substringAfter("if (sprite == null)").substringBefore("val faces").contains("fallback()"))
+        assertTrue(File("src/main/kotlin/com/coucou/android/app/AvatarArtwork.kt").readText()
+            .contains("if (right < left) return null"))
     }
 
     @Test fun disabledAnimationsAreStaticAndOneShotEffectsEnd() {

@@ -52,6 +52,7 @@ data class UserSettings(
     val hideIslandInDnd: Boolean = false,
     val islandPosition: IslandPosition = IslandPosition.CAMERA,
     val plainIsland: Boolean = false,
+    val islandSize: IslandSize = IslandSize.MEDIUM,
     val animatedAvatars: Boolean = true,
     val autoTrackLaunches: Boolean = true,
     val manualSessionPolicy: ManualSessionPolicy = ManualSessionPolicy(),
@@ -75,6 +76,7 @@ data class UserSettings(
         private const val AUTO_TRACK = "ai_auto_track_launches"
         private const val EXPIRATION = "ai_session_expiration_minutes"
         private const val REMINDER = "ai_session_reminder_minutes"
+        private const val ISLAND_SIZE = "island_size"
         private const val PLAIN_ISLAND = "island_plain"
         private const val HIDE_IN_DND = "island_hide_in_dnd"
 
@@ -101,6 +103,7 @@ data class UserSettings(
                 islandPosition = IslandPosition.entries.firstOrNull { it.name == islandPosition }
                     ?: d.islandPosition,
                 plainIsland = store.getBoolean(PLAIN_ISLAND, d.plainIsland),
+                islandSize = IslandSize.entries.firstOrNull { it.name == store.getString(ISLAND_SIZE, "") } ?: d.islandSize,
                 animatedAvatars = store.getBoolean(ANIMATED_AVATARS, d.animatedAvatars),
                 autoTrackLaunches = store.getBoolean(AUTO_TRACK, d.autoTrackLaunches),
                 manualSessionPolicy = ManualSessionPolicy(
@@ -127,6 +130,7 @@ data class UserSettings(
             store.put(HIDE_IN_DND, s.hideIslandInDnd)
             store.put(ISLAND_POSITION, s.islandPosition.name)
             store.put(PLAIN_ISLAND, s.plainIsland)
+            store.put(ISLAND_SIZE, s.islandSize.name)
             store.put(ANIMATED_AVATARS, s.animatedAvatars)
             store.put(AUTO_TRACK, s.autoTrackLaunches)
             store.put(EXPIRATION, s.manualSessionPolicy.expirationMinutes)

@@ -31,6 +31,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -41,6 +42,7 @@ import androidx.lifecycle.compose.currentStateAsState
 import com.coucou.android.app.AvatarArtwork
 import com.coucou.android.core.AiProvider
 import com.coucou.android.core.AvatarMood
+import com.coucou.android.core.AvatarBodyMotion
 import com.coucou.android.core.IslandPalette
 import com.coucou.android.core.MotionChoice
 import com.coucou.android.core.MotionPolicy
@@ -172,22 +174,36 @@ internal fun ProviderAvatar(
             faces?.motion?.frame(mood, age, animate) ?: 0
         }
     }
+    val movement by remember(clock, subscribed, started, mood) {
+        derivedStateOf(structuralEqualityPolicy()) {
+            val animate = subscribed && clock?.running == true && mood != AvatarMood.DISCONNECTED
+            val age = if (animate) checkNotNull(clock).millis - started else 0L
+            AvatarBodyMotion.at(mood, age, animate)
+        }
+    }
     Canvas(modifier) {
         val scale = size.minDimension * 0.90f / maxOf(image.width, image.height)
         val w = (image.width * scale).roundToInt().coerceAtLeast(1)
         val h = (image.height * scale).roundToInt().coerceAtLeast(1)
         val origin = IntOffset((center.x - w / 2f).roundToInt(), (center.y - h / 2f).roundToInt())
         val destination = IntSize(w, h)
-        drawImage(image, dstOffset = origin, dstSize = destination, filterQuality = FilterQuality.None)
-        if (faces != null && atlas != null) {
-            drawImage(
-                atlas,
-                srcOffset = IntOffset(faces.tileWidth * pose, 0),
-                srcSize = IntSize(faces.tileWidth, atlas.height),
-                dstOffset = origin,
-                dstSize = destination,
-                filterQuality = FilterQuality.None,
-            )
+        val body = movement
+        withTransform({
+            translate(body.x * size.minDimension, body.y * size.minDimension)
+            rotate(body.tilt)
+            scale(1f, body.stretch)
+        }) {
+            drawImage(image, dstOffset = origin, dstSize = destination, filterQuality = FilterQuality.None)
+            if (faces != null && atlas != null) {
+                drawImage(
+                    atlas,
+                    srcOffset = IntOffset(faces.tileWidth * pose, 0),
+                    srcSize = IntSize(faces.tileWidth, atlas.height),
+                    dstOffset = origin,
+                    dstSize = destination,
+                    filterQuality = FilterQuality.None,
+                )
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ data class PxRect(val left: Int, val top: Int, val right: Int, val bottom: Int) 
 }
 
 enum class IslandPosition { CAMERA, CENTER, LEFT, RIGHT }
+enum class IslandSize(val scale: Float) { SMALL(0.91f), MEDIUM(1f), LARGE(1.16f) }
 
 /** The camera anchor, safe window bounds and layout sizes, in pixels. */
 data class IslandBox(
@@ -23,6 +24,7 @@ data class IslandBox(
     val expandedW: Int, val expandedH: Int,
     val approvalW: Int, val approvalH: Int,
     val panelCorner: Int,
+    val maxHeight: Int,
 ) {
     val maxWidth: Int get() = rightEdge - leftEdge
 
@@ -50,7 +52,8 @@ object IslandGeometry {
     fun place(
         screenW: Int, density: Float, cutoutTop: PxRect?, statusBarH: Int,
         safeTop: Int = 0, safeLeft: Int = 0, safeRight: Int = 0,
-        panelWidth: Int = screenW, fontScale: Float = 1f,
+        panelWidth: Int = screenW, fontScale: Float = 1f, size: IslandSize = IslandSize.MEDIUM,
+        screenH: Int = Int.MAX_VALUE, safeBottom: Int = 0,
     ): IslandBox {
         fun dp(v: Int) = (v * density).toInt()
         val safeStart = safeLeft.coerceIn(0, screenW - 1)
@@ -58,7 +61,8 @@ object IslandGeometry {
         val margin = minOf(dp(MARGIN_DP), (safeEnd - safeStart - 1) / 2)
         val left = safeStart + margin
         val right = safeEnd - margin
-        fun width(limit: Int) = dp(limit).coerceIn(1, right - left)
+        fun scaledDp(dp: Int) = (dp * density * size.scale).toInt()
+        fun width(limit: Int) = scaledDp(limit).coerceIn(1, right - left)
 
         val cut = cutoutTop?.takeIf { it.width > 0 && it.bottom > 0 }
         val windowTop = maxOf(statusBarH, safeTop, cut?.bottom ?: 0, 0) + dp(CUTOUT_GAP_DP)
@@ -73,11 +77,12 @@ object IslandGeometry {
         return IslandBox(
             anchorX = anchor, windowTop = windowTop, leftEdge = left, rightEdge = right,
             seedWidth = width(52),
-            workingW = width(176), workingH = dp(36) + (18 * extraTextHeight).toInt(),
-            cardW = width(200), cardH = dp(38) + (18 * extraTextHeight).toInt(),
-            expandedW = width(244), expandedH = dp(90) + (52 * extraTextHeight).toInt(),
-            approvalW = width(272), approvalH = dp(138) + (76 * extraTextHeight).toInt(),
-            panelCorner = dp(24),
+            workingW = width(176), workingH = scaledDp(36) + (18 * extraTextHeight).toInt(),
+            cardW = width(200), cardH = scaledDp(38) + (18 * extraTextHeight).toInt(),
+            expandedW = width(244), expandedH = scaledDp(90) + (52 * extraTextHeight).toInt(),
+            approvalW = width(272), approvalH = scaledDp(138) + (76 * extraTextHeight).toInt(),
+            panelCorner = scaledDp(24),
+            maxHeight = (screenH - windowTop - safeBottom).coerceAtLeast(1),
         )
     }
 

@@ -89,4 +89,9 @@
     <string name="ai_diag_battery_hint">Coupi pauses motion when Battery Saver is on. Tap for Android battery settings.</string>
     <string name="ai_diag_service_hint">This service runs for an optional paired link.</string>
     <string name="ai_diag_avatar_hint">Shows whether the sprite and face template loaded.</string>
+    <string name="ai_island_size">Island size</string>
+    <string name="ai_size_small">Small</string>
+    <string name="ai_size_medium">Medium</string>
+    <string name="ai_size_large">Large</string>
+    <string name="ai_island_translucent">Turn off for a translucent island.</string>
 </resources>

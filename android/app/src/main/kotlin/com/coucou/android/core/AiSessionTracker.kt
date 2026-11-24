@@ -7,16 +7,25 @@ enum class AiNotificationEvent {
     UPDATE, COMPLETION_REPORTED, ATTENTION_REPORTED;
 
     companion object {
+        // Existing exact English matches. Other wording and languages remain generic updates.
+        private data class TitleRule(val locale: Locale, val matches: Map<String, AiNotificationEvent>)
+        private fun english(vararg titles: Pair<String, AiNotificationEvent>) = TitleRule(Locale.ENGLISH, mapOf(*titles))
+
         private val titleRules = mapOf(
-            WatchedAiApp.CHATGPT to mapOf("task complete" to COMPLETION_REPORTED, "your task is complete" to COMPLETION_REPORTED),
-            WatchedAiApp.CLAUDE to mapOf("claude has finished" to COMPLETION_REPORTED),
-            WatchedAiApp.GEMINI to mapOf("your deep research report is ready" to COMPLETION_REPORTED),
-            WatchedAiApp.DEEPSEEK to mapOf("response failed" to ATTENTION_REPORTED),
-            WatchedAiApp.PERPLEXITY to mapOf("your report is ready" to COMPLETION_REPORTED),
+            WatchedAiApp.CHATGPT to listOf(english("task complete" to COMPLETION_REPORTED, "your task is complete" to COMPLETION_REPORTED)),
+            WatchedAiApp.CLAUDE to listOf(english("claude has finished" to COMPLETION_REPORTED)),
+            WatchedAiApp.GEMINI to listOf(english("your deep research report is ready" to COMPLETION_REPORTED)),
+            WatchedAiApp.DEEPSEEK to listOf(english("response failed" to ATTENTION_REPORTED)),
+            WatchedAiApp.PERPLEXITY to listOf(english("your report is ready" to COMPLETION_REPORTED)),
         )
 
-        fun classify(app: WatchedAiApp, title: String): AiNotificationEvent =
-            titleRules[app]?.get(title.trim().lowercase(Locale.ROOT).removeSuffix(".")) ?: UPDATE
+        fun classify(app: WatchedAiApp, title: String): AiNotificationEvent {
+            val cleaned = title.trim().removeSuffix(".")
+            for (rule in titleRules[app].orEmpty()) {
+                rule.matches[cleaned.lowercase(rule.locale)]?.let { return it }
+            }
+            return UPDATE
+        }
     }
 }
 

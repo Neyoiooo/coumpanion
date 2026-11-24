@@ -10,6 +10,7 @@ import com.coucou.android.core.SessionTime
 import com.coucou.android.core.BotState
 import com.coucou.android.core.IslandGeometry
 import com.coucou.android.core.IslandPosition
+import com.coucou.android.core.IslandSize
 import com.coucou.android.core.IslandSpec
 import com.coucou.android.core.IslandTimeline
 import com.coucou.android.core.KeyValueStore
@@ -111,6 +112,25 @@ class AiSessionTrackerTest {
         assertTrue(AiProvider.custom("URL with user info", false, "https://a:b@example.com", null, null) == null)
     }
 
+    @Test fun corruptedRecordsAreSkippedAndHistoryIsBounded() {
+        val disk = Store()
+        val id = WatchedAiApp.CLAUDE.packageName
+        val tracker = AiSessionTracker(disk)
+        repeat(AiSessionTracker.HISTORY_LIMIT + 5) {
+            tracker.start(id, time(it + 1L), ManualSessionPolicy())
+            tracker.end(id, AiSessionResult.MANUAL_DONE, time(it + 2L))
+        }
+        val valid = disk.getString("ai_session_records", "")
+        disk.put("ai_session_records", valid.replaceFirst("v2\n", "v2\nS|broken\nH|invalid\n"))
+        val restored = AiSessionTracker(disk)
+        assertTrue(restored.snapshot.manual.isEmpty())
+        assertEquals(AiSessionTracker.HISTORY_LIMIT, restored.snapshot.history.size)
+        restored.clearHistory(restored.snapshot.history.first().id)
+        assertEquals(AiSessionTracker.HISTORY_LIMIT - 1, AiSessionTracker(disk).snapshot.history.size)
+        restored.clearHistory()
+        assertTrue(AiSessionTracker(disk).snapshot.history.isEmpty())
+    }
+
     @Test fun classificationUsesTheProviderAndFullTitleWithoutClaimingProgress() {
         val title = "Your task is complete."
         val event = AiNotificationEvent.classify(WatchedAiApp.CHATGPT, title)
@@ -143,10 +163,15 @@ class AiSessionTrackerTest {
     @Test fun appearanceSettingsRoundTripAndKeepEveryPositionInsideTheSafeArea() {
         val store = Store()
         assertEquals(IslandPosition.CAMERA, UserSettings.load(store).islandPosition)
-        val settings = UserSettings(islandPosition = IslandPosition.RIGHT, plainIsland = true)
+        val settings = UserSettings(islandPosition = IslandPosition.RIGHT, islandSize = IslandSize.LARGE, plainIsland = true)
         UserSettings.save(store, settings)
         assertEquals(settings, UserSettings.load(store))
         val box = IslandGeometry.place(400, 1f, PxRect(65, 0, 85, 35), 30, safeLeft = 40)
+        val landscape = IslandGeometry.place(660, 1f, null, 25, safeLeft = 48, safeRight = 52,
+            size = IslandSize.LARGE, screenH = 280, safeBottom = 24)
+        assertEquals(227, landscape.maxHeight)
+        assertTrue(landscape.workingW > box.workingW)
+        assertTrue(landscape.leftFor(landscape.expandedW, IslandPosition.LEFT) >= 48)
         val width = 100
         assertEquals(box.leftEdge, box.leftFor(width, IslandPosition.CAMERA))
         assertEquals(box.leftEdge, box.leftFor(width, IslandPosition.LEFT))

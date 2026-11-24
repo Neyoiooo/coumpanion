@@ -59,3 +59,28 @@ internal class AvatarMotion private constructor(
         }
     }
 }
+
+/** A transform in fractions of the avatar box. It applies to the sprite, faceplate and badge together. */
+internal data class AvatarBody(val x: Float = 0f, val y: Float = 0f, val stretch: Float = 1f, val tilt: Float = 0f)
+
+internal object AvatarBodyMotion {
+    val still = AvatarBody()
+
+    fun at(mood: AvatarMood, elapsedMs: Long, animate: Boolean): AvatarBody {
+        if (!animate) return still
+        val age = elapsedMs.coerceAtLeast(0)
+        fun wave(period: Long) = kotlin.math.sin((age % period) * (2.0 * Math.PI / period)).toFloat()
+        return when (mood) {
+            AvatarMood.IDLE -> AvatarBody(stretch = 1f + wave(3_600) * 0.027f)
+            AvatarMood.TRACKING -> AvatarBody(y = wave(3_200) * 0.029f)
+            AvatarMood.THINKING -> AvatarBody(tilt = wave(3_000) * 3.1f)
+            AvatarMood.WORKING -> AvatarBody(y = -kotlin.math.abs(wave(1_260)) * 0.043f, tilt = wave(2_100) * 2.4f)
+            AvatarMood.COMPLETED -> if (age >= 950) still else {
+                AvatarBody(y = -kotlin.math.sin(Math.PI * age / 950.0).toFloat() * 0.085f)
+            }
+            AvatarMood.WAITING -> AvatarBody(stretch = 1f + wave(2_500) * 0.035f)
+            AvatarMood.ERROR -> if (age >= 420) still else AvatarBody(x = wave(135) * 0.04f * (1f - age / 420f))
+            AvatarMood.DISCONNECTED -> still
+        }
+    }
+}

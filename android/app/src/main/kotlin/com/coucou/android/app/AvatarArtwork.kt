@@ -86,7 +86,7 @@ internal object AvatarArtwork {
     }
 
     /** Trim transparent margins once without filtering the pixel artwork. */
-    private fun trim(bitmap: Bitmap): Bitmap {
+    private fun trim(bitmap: Bitmap): Bitmap? {
         val pixels = bitmap.pixels()
         val cleared = clearBlackBackdrop(pixels, bitmap.width, bitmap.height)
         var left = bitmap.width
@@ -102,7 +102,7 @@ internal object AvatarArtwork {
                 bottom = maxOf(bottom, y)
             }
         }
-        if (right < left) return bitmap
+        if (right < left) return null
         val width = right - left + 1
         val height = bottom - top + 1
         val cropped = if (cleared) Bitmap.createBitmap(pixels, top * bitmap.width + left, bitmap.width, width, height, Bitmap.Config.ARGB_8888)

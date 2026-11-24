@@ -177,6 +177,33 @@ class AppModel(private val context: Context) : LinkListener {
         checkpointSessions()
     }
 
+    private var packageWatching = false
+    private val packageWatch = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) return
+            val removed = intent.data?.schemeSpecificPart ?: return
+            val now = sessionClock.now()
+            for (session in manualTracking.filter { it.provider.packageName == removed }) {
+                aiTracker.end(session.provider.id, AiSessionResult.UNAVAILABLE, now)
+            }
+            refreshWatchApps()
+        }
+    }
+
+    private fun watchRemoval(needed: Boolean) {
+        if (needed == packageWatching) return
+        if (needed) {
+            packageWatching = runCatching {
+                androidx.core.content.ContextCompat.registerReceiver(context, packageWatch,
+                    android.content.IntentFilter(Intent.ACTION_PACKAGE_REMOVED).apply { addDataScheme("package") },
+                    androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
+            }.isSuccess
+        } else {
+            runCatching { context.unregisterReceiver(packageWatch) }
+            packageWatching = false
+        }
+    }
+
     fun clearWatchedActivity() {
         aiTracker.clearActivity()
         aiSessions = aiTracker.snapshot
@@ -247,6 +274,7 @@ class AppModel(private val context: Context) : LinkListener {
         val reminders = aiTracker.tick(now)
         aiSessions = aiTracker.snapshot
         if (manualTracking.isEmpty()) manualScreen.stop() else manualScreen.start()
+        watchRemoval(manualTracking.isNotEmpty())
         main.removeCallbacks(sessionDeadline)
         aiTracker.nextCheck(now)?.let { main.postDelayed(sessionDeadline, it.coerceAtLeast(1L)) }
         for (provider in reminders) notifier.trackingReminder(provider.id, provider.label)
@@ -309,6 +337,8 @@ class AppModel(private val context: Context) : LinkListener {
         val relayChanged = next.useRelay != settings.useRelay
         val quietChanged = next.quiet != settings.quiet
         val dndChoiceChanged = next.hideIslandInDnd != settings.hideIslandInDnd
+        val islandChanged = next.islandPosition != settings.islandPosition || next.islandSize != settings.islandSize ||
+            next.plainIsland != settings.plainIsland
         settings = next
         UserSettings.save(kv, next)
         applySound()
@@ -317,7 +347,8 @@ class AppModel(private val context: Context) : LinkListener {
         // Switching the relay on or off rebuilds the connection with the right routes.
         if (relayChanged) currentPairing?.let { restartLink(it) }
         if (dndChoiceChanged) watchDnd()
-        if (dndChoiceChanged || quietChanged) refreshIsland()
+        if (islandChanged) overlay.remeasure()
+        if (dndChoiceChanged || quietChanged || islandChanged) refreshIsland()
     }
 
     // ── Do Not Disturb ──────────────────────────────────────────────────────────
@@ -513,6 +544,7 @@ class AppModel(private val context: Context) : LinkListener {
         onPauseTracking = ::pauseTracking,
         onDoneTracking = ::markTrackingDone,
         position = { settings.islandPosition },
+        islandSize = { settings.islandSize },
         plain = { settings.plainIsland },
         animatedAvatars = { settings.animatedAvatars },
     )
@@ -549,7 +581,7 @@ class AppModel(private val context: Context) : LinkListener {
     /** Call from a user gesture. Use a package-scoped launcher intent for apps hidden by Android visibility. */
     fun launchProvider(from: Context, provider: AiProvider, track: Boolean): Boolean {
         val packageName = provider.packageName
-        val opened = runCatching {
+        val result = runCatching {
             val launch = if (packageName != null) {
                 context.packageManager.getLaunchIntentForPackage(packageName)
                     ?: Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage(packageName)
@@ -558,7 +590,12 @@ class AppModel(private val context: Context) : LinkListener {
             }
             if (from !is android.app.Activity) launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             from.startActivity(launch)
-        }.isSuccess
+        }
+        val opened = result.isSuccess
+        if (packageName != null && result.exceptionOrNull() is android.content.ActivityNotFoundException) {
+            aiTracker.end(provider.id, AiSessionResult.UNAVAILABLE, sessionClock.now())
+            updateManualTracking()
+        }
         if (opened && track) setManualTracking(provider.id, true)
         if (!opened) android.widget.Toast.makeText(from, R.string.ai_provider_unavailable, android.widget.Toast.LENGTH_SHORT).show()
         return opened

@@ -1,6 +1,7 @@
 package com.coucou.android.ui
 
 import com.coucou.android.core.IslandPosition
+import com.coucou.android.core.IslandSize
 import com.coucou.android.core.AgentMute
 import com.coucou.android.core.TeamChoice
 import androidx.compose.material3.OutlinedTextField
@@ -331,7 +332,15 @@ fun SettingsScreen(
                     s.islandPosition,
                 ) { model.updateSettings(s.copy(islandPosition = it)) }
                 RowDivider()
-                SettingSwitch(stringResource(R.string.island_plain), null, s.plainIsland) {
+                ChoiceRow(
+                    stringResource(R.string.ai_island_size),
+                    listOf(IslandSize.SMALL to stringResource(R.string.ai_size_small),
+                        IslandSize.MEDIUM to stringResource(R.string.ai_size_medium),
+                        IslandSize.LARGE to stringResource(R.string.ai_size_large)),
+                    s.islandSize,
+                ) { model.updateSettings(s.copy(islandSize = it)) }
+                RowDivider()
+                SettingSwitch(stringResource(R.string.island_plain), stringResource(R.string.ai_island_translucent), s.plainIsland) {
                     model.updateSettings(s.copy(plainIsland = it))
                 }
                 RowDivider()

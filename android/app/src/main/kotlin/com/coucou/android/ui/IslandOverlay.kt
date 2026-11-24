@@ -94,6 +94,7 @@ import com.coucou.android.core.IslandBox
 import com.coucou.android.core.IslandGeometry
 import com.coucou.android.core.IslandPalette
 import com.coucou.android.core.IslandPosition
+import com.coucou.android.core.IslandSize
 import com.coucou.android.core.IslandSpec
 import com.coucou.android.core.IslandSurface
 import com.coucou.android.core.IslandTimeline
@@ -129,6 +130,7 @@ class IslandOverlay(
     private val onPauseTracking: (String, Boolean) -> Unit,
     private val onDoneTracking: (String) -> Unit,
     private val position: () -> IslandPosition,
+    private val islandSize: () -> IslandSize,
     private val plain: () -> Boolean,
     private val animatedAvatars: () -> Boolean,
 ) {
@@ -277,12 +279,12 @@ class IslandOverlay(
         Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f),
     )
 
-    private fun targetHeight(b: IslandBox, kind: IslandSpec.Kind): Int = when {
+    private fun targetHeight(b: IslandBox, kind: IslandSpec.Kind): Int = (when {
         kind == IslandSpec.Kind.APPROVAL && approvalContentHeight > 0 -> approvalContentHeight
         expanded && spec?.manualSessions?.isNotEmpty() == true && sessionsContentHeight > 0 -> sessionsContentHeight
         spec?.manualSessions?.isNotEmpty() == true && !expanded -> trackingHeaderHeight(b)
         else -> IslandGeometry.sizeFor(b, kind, expanded).second
-    }
+    }).coerceAtMost(b.maxHeight)
 
     private fun trackingHeaderHeight(b: IslandBox) = maxOf(b.workingH, (48 * context.resources.displayMetrics.density).roundToInt())
 
@@ -316,11 +318,13 @@ class IslandOverlay(
     }
 
     /** The screen changed under the open island: new box, same window moved to the new centre, then the usual sync. */
-    private fun remeasure() = safely {
+    fun remeasure() = safely {
         if (view == null) return@safely
         val b = measure()
         if (b == box) return@safely
         box = b
+        approvalContentHeight = 0
+        sessionsContentHeight = 0
         sync()
     }
 
@@ -362,6 +366,7 @@ class IslandOverlay(
         val insets = metrics.windowInsets
         val cutout = insets.displayCutout
         val topCutout = cutout?.boundingRectTop?.let { PxRect(it.left, it.top, it.right, it.bottom) }
+        val system = insets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
         val statusBar = insets.getInsetsIgnoringVisibility(WindowInsets.Type.statusBars()).top
         val screenWidth = metrics.bounds.width()
         val panelWidth = runCatching {
@@ -372,8 +377,11 @@ class IslandOverlay(
         return IslandGeometry.place(
             screenWidth, density, topCutout, statusBar,
             safeTop = cutout?.safeInsetTop ?: 0,
-            safeLeft = cutout?.safeInsetLeft ?: 0,
-            safeRight = cutout?.safeInsetRight ?: 0,
+            safeLeft = maxOf(system.left, cutout?.safeInsetLeft ?: 0),
+            safeRight = maxOf(system.right, cutout?.safeInsetRight ?: 0),
+            safeBottom = maxOf(system.bottom, cutout?.safeInsetBottom ?: 0),
+            screenH = metrics.bounds.height(),
+            size = islandSize(),
             panelWidth = panelWidth,
             fontScale = context.resources.configuration.fontScale,
         )
@@ -436,7 +444,7 @@ class IslandOverlay(
     private val foreground = Color(IslandSurface.TEXT)
 
     private fun Modifier.islandBackground(palette: IslandPalette, sweep: () -> Float) = drawWithCache {
-        val fill = Brush.verticalGradient(listOf(Color(0xFF191A22), Color(0xFF0D0E14)))
+        val fill = Brush.verticalGradient(listOf(Color(0xE9191A22), Color(0xF20D0E14)))
         val glow = listOf(Color(palette.glow).copy(alpha = 0.16f), Color(palette.glow).copy(alpha = 0f))
         val trail = listOf(Color(palette.trail).copy(alpha = 0.10f), Color(palette.trail).copy(alpha = 0f))
         onDrawBehind {
@@ -520,13 +528,12 @@ class IslandOverlay(
                         .alpha(open.coerceIn(0.0, 1.0).toFloat())
                         .semantics { liveRegion = if (approval) LiveRegionMode.Assertive else LiveRegionMode.Polite }
                     if (approval) {
-                        RequestCard(s, accent, content.requiredWidth(px(compactW.toDouble())).onSizeChanged { measureApproval(it.height) })
-                    } else if (sessionList) {
-                        val maxListHeight = remember(b, compactH) {
-                            val metrics = wm.currentWindowMetrics
-                            val bottom = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()).bottom
-                            (metrics.bounds.height() - b.windowTop - bottom - compactH).coerceAtLeast(0)
+                        Column(content.requiredWidth(px(compactW.toDouble())).heightIn(max = px(b.maxHeight.toDouble()))
+                            .onSizeChanged { measureApproval(it.height) }.verticalScroll(rememberScrollState())) {
+                            RequestCard(s, accent, Modifier.fillMaxWidth())
                         }
+                    } else if (sessionList) {
+                        val maxListHeight = (b.maxHeight - compactH).coerceAtLeast(0)
                         val listWidth = if (expanded) b.expandedW else compactW
                         SessionStrip(s, palette, px(compactH.toDouble()), px(maxListHeight.toDouble()),
                             content.requiredWidth(px(listWidth.toDouble())))
