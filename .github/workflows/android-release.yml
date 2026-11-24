@@ -18,6 +18,11 @@ on:
         type: string
         required: false
         default: '1'
+      standard_only:
+        description: Create a Standard-only test preview from a successful signed install run
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -251,6 +256,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SOURCE_RUN: ${{ inputs.preview_run_id }}
           PREVIEW_NUMBER: ${{ inputs.preview_number }}
+          STANDARD_ONLY: ${{ inputs.standard_only }}
         run: |
           [[ "$SOURCE_RUN" =~ ^[1-9][0-9]*$ && "$PREVIEW_NUMBER" =~ ^[1-9][0-9]*$ ]]
           run="repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN"
@@ -267,6 +273,25 @@ jobs:
           [[ "$artifact" =~ ^Coumpanion-Android-([0-9]+\.[0-9]+\.[0-9]+)$ ]]
           version="${BASH_REMATCH[1]}"
           tag="coumpanion-v$version-preview.$PREVIEW_NUMBER"
+          if [[ "$STANDARD_ONLY" == true ]]; then
+            jq -e '.jobs | any(.name == "install" and .conclusion == "success")' <<< "$jobs"
+            gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --name "$artifact"
+            standard="Coumpanion-Android-$version-Standard.apk"
+            grep -F "./$standard" SHA256SUMS > standard-checksum
+            sha256sum -c standard-checksum
+            mv standard-checksum SHA256SUMS
+            cat > release-notes.md <<EOF_NOTES
+          This signed Standard preview is available for testing on Android 11 or later.
+
+          Clean install, reinstall, and upgrade from the signed 0.6.0 Standard Preview 1 passed on the Android 16 emulator.
+
+          [Installation guide](https://github.com/$GITHUB_REPOSITORY/blob/$head/android/README.md) · [Android changelog](https://github.com/$GITHUB_REPOSITORY/blob/$head/android/CHANGELOG.md) · [Signed installation CI](https://github.com/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN)
+          EOF_NOTES
+            gh release create "$tag" "$standard" SHA256SUMS --repo "$GITHUB_REPOSITORY" \
+              --target "$head" --title "Coumpanion $version Standard Preview $PREVIEW_NUMBER" \
+              --prerelease --latest=false --notes-file release-notes.md
+            exit 0
+          fi
           tag_head=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')
           [[ "$tag_head" == "$head" ]]
           gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isPrerelease | jq -e '.isPrerelease'
