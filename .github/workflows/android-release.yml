@@ -200,22 +200,36 @@ jobs:
           BASELINE
             )
           fi
+          launch() {
+            local app="$1"
+            adb shell am start -W -n "$app/com.coucou.android.MainActivity" | tee "$RUNNER_TEMP/launch.txt"
+            grep -q 'Status: ok' "$RUNNER_TEMP/launch.txt"
+            adb shell pidof "$app"
+          }
+          trap 'adb shell cmd power set-mode 0 || true; adb shell dumpsys battery reset || true' EXIT
           for edition in Standard Full; do
             app=app.coumpanion.android
             if [[ "$edition" = Standard ]]; then app+=.standard; fi
             apk="Coumpanion-Android-$VERSION-$edition.apk"
             adb install "$apk"
             adb install -r "$apk"
-            adb shell am start -W -n "$app/com.coucou.android.MainActivity" | tee "$RUNNER_TEMP/launch.txt"
-            grep -q 'Status: ok' "$RUNNER_TEMP/launch.txt"
-            adb shell pidof "$app"
+            launch "$app"
+            adb shell input keyevent KEYCODE_HOME
+            adb shell input keyevent KEYCODE_SLEEP
+            adb shell input keyevent KEYCODE_WAKEUP
+            adb shell input keyevent 82
+            adb shell dumpsys battery unplug
+            adb shell cmd power set-mode 1
+            adb shell pm grant "$app" android.permission.POST_NOTIFICATIONS
+            adb shell pm revoke "$app" android.permission.POST_NOTIFICATIONS
+            adb shell am force-stop "$app"
+            launch "$app"
+            adb shell cmd power set-mode 0
             if [[ "$VERSION" != 0.6.0 ]]; then
               adb uninstall "$app"
               adb install "baseline/Coumpanion-Android-0.6.0-$edition.apk"
               adb install -r "$apk"
-              adb shell am start -W -n "$app/com.coucou.android.MainActivity" | tee "$RUNNER_TEMP/upgrade.txt"
-              grep -q 'Status: ok' "$RUNNER_TEMP/upgrade.txt"
-              adb shell pidof "$app"
+              launch "$app"
             fi
           done
 

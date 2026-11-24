@@ -39,13 +39,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.coucou.android.R
 import com.coucou.android.app.AppModel
+import com.coucou.android.app.Mode
 import com.coucou.android.app.AvatarArtwork
 import com.coucou.android.app.ProviderLogos
 import com.coucou.android.core.AiProvider
 import com.coucou.android.core.AvatarMood
+import com.coucou.android.core.BotState
 import com.coucou.android.core.ManualAiSession
 import com.coucou.android.core.ProviderAppearance
 import com.coucou.android.core.TypeScale
+import com.coucou.android.link.LinkState
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -105,6 +108,11 @@ private fun AiProviderCard(
     var actions by remember(provider.id) { mutableStateOf(false) }
     val actionTitle = stringResource(R.string.ai_provider_actions)
     val availability = providerAvailability(model, provider)
+    val logo = ProviderAppearance.forProvider(provider).logo
+    val paired = if (logo != null && model.mode == Mode.PAIRED && model.linkState == LinkState.CONNECTED) {
+        model.sessions.firstOrNull { ProviderAppearance.resolve(it.pillId, it.agent).logo == logo }
+    } else null
+    val report = model.watchedActivity.firstOrNull { it.app.packageName == provider.packageName && !provider.isCustom }
     Box(modifier) {
         Panel {
             Column(
@@ -119,7 +127,8 @@ private fun AiProviderCard(
                 ).padding(start = 10.dp, end = 6.dp, bottom = 10.dp),
             ) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    ProviderAvatar(provider.id, provider.label, sessionMood(session), Modifier.size(48.dp), provider = provider)
+                    val mood = if (session != null) sessionMood(session) else paired?.let { AvatarMood.forBot(it.state) } ?: AvatarMood.IDLE
+                    ProviderAvatar(provider.id, provider.label, mood, Modifier.size(48.dp), provider = provider)
                     TextButton(onClick = { actions = true }, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text("⋯", style = TypeScale.TITLE.style(t.text.c()))
                     }
@@ -135,6 +144,14 @@ private fun AiProviderCard(
                     session.paused -> stringResource(R.string.ai_timer_status, stringResource(R.string.ai_timer_paused), elapsed.orEmpty())
                     else -> stringResource(R.string.ai_timer_status, stringResource(R.string.manual_ai_tracking), elapsed.orEmpty())
                 }, style = TypeScale.SECONDARY.style(t.text.c()))
+                paired?.let {
+                    Text(stringResource(R.string.ai_timer_status, stringResource(R.string.ai_history_source_desktop),
+                        stringResource(it.state.launcherLabel())), style = TypeScale.SECONDARY.style(t.textDim.c()))
+                }
+                report?.let {
+                    Text(stringResource(R.string.ai_timer_status, stringResource(R.string.ai_latest_report),
+                        stringResource(it.event.labelRes())), style = TypeScale.SECONDARY.style(t.textDim.c()))
+                }
             }
         }
         DropdownMenu(expanded = actions, onDismissRequest = { actions = false }) {
@@ -193,6 +210,17 @@ internal fun providerAvailability(model: AppModel, provider: AiProvider): Int = 
     model.installedWatchApps.any { it.packageName == provider.packageName } -> R.string.ai_installed
     provider.isCustom -> R.string.ai_app_availability_unknown
     else -> R.string.ai_not_installed
+}
+
+private fun BotState.launcherLabel(): Int = when (this) {
+    BotState.IDLE -> R.string.ai_paired_idle
+    BotState.SEARCHING -> R.string.state_searching
+    BotState.THINKING -> R.string.state_thinking
+    BotState.WORKING -> R.string.state_working
+    BotState.FINISHED -> R.string.notif_finished
+    BotState.QUESTION, BotState.APPROVAL -> R.string.notif_question
+    BotState.ERROR, BotState.RATELIMIT, BotState.DIZZY -> R.string.notif_error
+    BotState.SLEEPING -> R.string.status_not_connected
 }
 
 @Composable

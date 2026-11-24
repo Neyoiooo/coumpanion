@@ -13,15 +13,29 @@ The offline demo runs on Android 11 or later. [Coumpanion Server](server/README.
 
 Both editions support Android 11 and later. Full retains the existing application ID. Android only upgrades an existing install when the signatures match. If you have a debug-signed preview, install Standard alongside it or back up what you need before replacing the preview with production-signed Full. Android clears app data and permissions on uninstall. The editions have separate local histories, settings and pairing.
 
-## Manual task tracking
+## AI Launcher and manual timers
 
-Open **Choose AI apps** on Home and turn on manual tracking for each installed AI app you want to track. Grant **Display over other apps** when prompted and switch to another app. Tap the island to see elapsed tracking time, open the source app, or stop each session. You can also stop sessions from Home or the app picker. Sessions restore when you reopen Coumpanion. Manual tracking is an unverified marker and runs entirely on the phone without notification access or pairing. Desktop approvals and questions take priority.
+On Home, tap an AI to open it. By default this starts a manual timer if the provider opens successfully. Reopen an active provider by tapping its card. Long-press the card or open its actions menu to pause, resume, restart, mark done manually, or stop. Configure launch tracking, expiration, and reminders for new timers in **Settings → Manual timers**. Reminders require notification permission and run while Android keeps Coumpanion active. An expired timer appears as Expired in history.
 
-In **Settings → Display**, choose Camera, Center, Left or Right for the island position and turn on **Solid island background** if you prefer a static background. Android may hide or terminate the overlay under its system policies. Reopen Coumpanion to restore saved manual sessions after a force stop or reboot.
+Use **Add AI** for a native package or an HTTPS website. You can import a logo and choose an accent, or let Coupi choose a stable color. Android limits visibility of other packages. A custom native app may be labeled **Check by opening** until Android resolves a user-initiated launch. Providing a package does not add notification monitoring.
+
+Grant **Display over other apps** to use the island. Choose Camera, Center, Left, or Right, select a size, and switch between solid and translucent backgrounds in **Settings → Display**. Expand the island for multiple timers, elapsed time, and controls. Desktop approvals and questions take priority.
+
+Timers count elapsed realtime across wall clock and timezone changes. They restore when you reopen Coumpanion. After a reboot the app resumes from its saved checkpoint, because the time since that checkpoint cannot be measured across boots. Android can hide or terminate the overlay. Nothing restarts an app that has been force-stopped until the user opens it again.
+
+## Quick Settings and Share
+
+Add the Coumpanion Quick Settings tile to see the active timer count or the paired connection summary. Tap it for a compact picker and session actions. Share selected plain text into Coumpanion, pick a provider, and choose how to hand off the text. If Android finds a supported text receiver in that app, **Share text to app** sends an Android share intent. Otherwise use **Copy Prompt** and paste it yourself. You can also open a draft in an available desktop chat.
+
+## Session History and Diagnostics
+
+In Settings, filter **Session History** by provider, date, or final status and delete records locally. Notification reports have a receipt timestamp and no known task duration. Paired history records the interval observed on the phone from working activity through a verified finish or error. Manual entries always reflect a user timer.
+
+**Diagnostics Center** shows the edition, build, permissions, link service, timer count, and avatar availability with Android settings shortcuts. Its optional clipboard report contains only local status fields. [Privacy policy](../docs/coumpanion-privacy.html)
 
 ## Watch AI apps
 
-1. In Full, tap **Choose AI apps** on Home or open the AI apps picker from Settings.
+1. In Full, open **Watch AI notifications** from Home or Settings.
 2. Select the installed apps you want to watch and grant notification access in Android Settings.
 3. Grant **Display over other apps** if you want the island, then switch to another app.
 
@@ -37,13 +51,15 @@ Android's notification access screen may label the toggle **Restricted setting**
 
 ## AI avatars
 
-Coupi uses a single transparent master at `app/src/main/assets/avatars/robot.png`, prepared as a cutout from the supplied mascot image. Equipping a provider tints the shell and adds its logo to the belly badge. The bundled badges work offline, including when the provider’s app is absent. A generic pixel spark identifies unknown providers. One shared face atlas animates Coupi’s eyes and mouth in Idle. Every other state shows a status symbol on the faceplate. The renderer uses nearest-neighbor sampling and caches the resulting bitmaps. Status marks provide a fallback when the master is unavailable.
+Coupi uses a single transparent master at `app/src/main/assets/avatars/robot.png`, prepared as a cutout from the supplied mascot image. Equipping a provider tints the shell and adds its logo to the belly badge. The bundled badges work offline, including when the provider’s app is absent. A generic pixel spark identifies unknown providers. One shared face atlas animates Coupi’s eyes and mouth in Idle. Every other state shows a status symbol on the faceplate. The renderer shares body motion, face timing, and nearest-neighbor sampling across providers and caches the recolored bitmaps. Status marks provide a fallback when the master is unavailable.
 
 Compact and expanded islands, the AI app picker, and active session cards use the same renderer. The Solo, List, Team, and Agent Overview widgets use static renders. Manual sessions use the Tracking pose, and notification reports use Idle. Thinking, Working, and Completed use confirmed desktop session states.
 
 **Settings → Display → Animated AI avatars** switches between animated and still poses. Android uses still poses with battery saver or reduced motion. Animation also pauses with the screen off or the island closed.
 
 Run `python scripts/render-coupi-showcase.py` from the repository root with Pillow installed to regenerate the app’s face atlas and the README GIFs. Both use the timing in `app/src/main/assets/avatars/face-timeline.txt`. [Logo sources and attribution](../LICENSE-ASSETS.md#coupi-provider-badges)
+
+[Android changelog](CHANGELOG.md)
 
 ## Build and test
 
@@ -58,9 +74,9 @@ node scripts/gen-strings.mjs --check      # res/values/strings.xml is generated 
 
 ### Production distribution
 
-Use the **Android release** workflow on `main` to build and sign both APKs and a Standard Android App Bundle. The workflow expects `ANDROID_KEYSTORE_BASE64` and `ANDROID_KEYSTORE_PASSWORD` for the production key with alias `coucou`. Keep a secure backup and reuse the signing identity for future APK updates. The workflow verifies signatures and 16 KB native-library alignment, records APK checksums, and checks that both signed APKs install, reinstall and launch on Android 16 with 16 KB pages. A manual run prepares artifacts. An `android-v0.6.0` tag publishes the APKs after those checks pass.
+Use the **Android release** workflow on `main` to build and sign both APKs and a Standard Android App Bundle. The workflow expects `ANDROID_KEYSTORE_BASE64` and `ANDROID_KEYSTORE_PASSWORD` for the production key with alias `coucou`. Keep a secure backup and reuse the signing identity for future APK updates. The workflow verifies signatures and 16 KB native-library alignment, records APK checksums, and checks that both signed APKs install, reinstall and launch on Android 16 with 16 KB pages. A manual run prepares artifacts. A matching `android-v*` tag publishes the APKs after the checks pass. The workflow also checks upgrading both editions from the pinned 0.6.0 Preview 1 APKs.
 
-Both editions target Android 16 (API 36), the current submission requirement for phone apps on Google Play. For Google Play, register the Standard application ID, enroll in Play App Signing and test the bundle on an internal track. If you distribute the same package through both Google Play and GitHub, configure the same app-signing identity for both channels so they can update each other. If Play Console uses a separate upload key, sign the unsigned Standard bundle with that registered key before upload. [Android app signing guide](https://developer.android.com/studio/publish/app-signing)
+Both editions target Android 16 (API 36). For Google Play, register the Standard application ID, enroll in Play App Signing and test the bundle on an internal track. If you distribute the same package through both Google Play and GitHub, configure the same app-signing identity for both channels so they can update each other. If Play Console uses a separate upload key, sign the unsigned Standard bundle with that registered key before upload. [Android app signing guide](https://developer.android.com/studio/publish/app-signing)
 
 For GitHub distribution, verify the release APKs against `SHA256SUMS` and register the application IDs and signing certificates where Android developer verification applies. If Google Play Protect blocks a signed release, record the exact warning and affected device, follow Google's developer guidance and submit an appeal if the classification appears incorrect. Signing verifies the APK's origin and integrity. Play Protect independently evaluates the distribution channel and permissions. [Android developer verification](https://developer.android.com/developer-verification) · [Play Protect developer guidance](https://developers.google.com/android/play-protect/warning-dev-guidance)
 

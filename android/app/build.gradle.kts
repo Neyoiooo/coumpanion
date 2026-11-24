@@ -22,8 +22,8 @@ android {
         applicationId = "app.coumpanion.android"
         minSdk = 30
         targetSdk = 36
-        versionCode = 9
-        versionName = "0.6.0"
+        versionCode = 10
+        versionName = "0.6.1"
         manifestPlaceholders["launcherLabel"] = "@string/app_name"
         // The app's languages (English and the translations in i18n/translations); the libraries' other languages are left out of the app.
         resourceConfigurations += listOf("en", "fr", "es", "pt-rBR", "b+zh+Hans", "hi", "bn", "ru", "in", "ar", "tr", "de", "ja", "ko", "b+zh+Hant", "th", "it")

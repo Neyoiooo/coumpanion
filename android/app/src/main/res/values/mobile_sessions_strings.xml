@@ -94,4 +94,6 @@
     <string name="ai_size_medium">Medium</string>
     <string name="ai_size_large">Large</string>
     <string name="ai_island_translucent">Turn off for a translucent island.</string>
+    <string name="ai_latest_report">Latest notification report</string>
+    <string name="ai_paired_idle">Idle</string>
 </resources>
