@@ -9,7 +9,7 @@
 Coumpanion keeps your AI sessions in a Dynamic Island on Android. Open a provider from the AI Launcher, then pause, resume, mark done, or stop its manual timer. Add a native app or HTTPS site to give it a personalized Coupi. Manual tracking runs on your phone without an account, API key, or server.
 
 <p align="center">
-  <a href="https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.6.1-preview.1/Coumpanion-Android-0.6.1-Standard.apk"><strong>Download Standard 0.6.1 Preview</strong></a>
+  <a href="https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.6.1-preview.2/Coumpanion-Android-0.6.1-Standard.apk"><strong>Download Standard 0.6.1 Preview 2</strong></a>
   ·
   <a href="android/README.md">Setup and installation</a>
 </p>
@@ -57,7 +57,7 @@ Both editions require **Android 11 or later**. In Standard 0.6.1, pick a provide
 
 | Edition | What’s included | Signed preview |
 | --- | --- | --- |
-| **Standard** | AI Launcher, custom providers, local timer controls, Dynamic Island, widgets, optional desktop pairing | [Download Standard 0.6.1 Preview APK](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.6.1-preview.1/Coumpanion-Android-0.6.1-Standard.apk) |
+| **Standard** | AI Launcher, custom providers, local timer controls, Dynamic Island, widgets, optional desktop pairing | [Download Standard 0.6.1 Preview 2 APK](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.6.1-preview.2/Coumpanion-Android-0.6.1-Standard.apk) |
 | **Full** | Local tracking, Dynamic Island, widgets, optional desktop pairing and notification watching | [Download Full 0.6.0 Preview APK](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.6.0-preview.1/Coumpanion-Android-0.6.0-Full.apk) |
 
 Both editions can use DeepSeek through the optional Coumpanion Server. The server holds your DeepSeek API key. [Set up the server from your phone](android/server/README.md#from-your-phone) · [Browse releases](https://github.com/Neyoiooo/coumpanion/releases)
