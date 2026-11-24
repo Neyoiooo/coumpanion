@@ -73,7 +73,7 @@
         <receiver android:name=".app.KeepAliveReceiver" android:exported="false" />
 
         <service
-            android:name=".app.LinkService"
+            android:name="com.coucou.android.app.LinkService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property

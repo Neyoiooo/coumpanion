@@ -19,7 +19,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.currentStateAsState
 import com.coucou.android.R
 import com.coucou.android.app.AppModel
 import com.coucou.android.core.ManualAiSession
@@ -68,15 +68,15 @@ internal fun ManualTrackingPanel(model: AppModel, onOverlay: () -> Unit, showPic
 /** A visible panel updates once per displayed minute. There is no background timer or write. */
 @Composable
 internal fun trackingClock(sessions: List<ManualAiSession>): androidx.compose.runtime.State<Long> {
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    return produceState(System.currentTimeMillis(), lifecycle, sessions) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            while (true) {
-                val now = System.currentTimeMillis()
-                value = now
-                val nextMinute = sessions.minOf { 60_000 - ((now - it.startedAtMs).coerceAtLeast(0) % 60_000) }
-                delay(nextMinute)
-            }
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val visible = lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+    return produceState(System.currentTimeMillis(), visible, sessions) {
+        if (!visible) return@produceState
+        while (true) {
+            val now = System.currentTimeMillis()
+            value = now
+            val nextMinute = sessions.minOf { 60_000 - ((now - it.startedAtMs).coerceAtLeast(0) % 60_000) }
+            delay(nextMinute)
         }
     }
 }
