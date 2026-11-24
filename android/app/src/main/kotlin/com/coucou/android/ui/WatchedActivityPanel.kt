@@ -42,7 +42,7 @@ internal fun WatchedActivityPanel(model: AppModel, limit: Int = 10) {
             activity.take(limit).forEachIndexed { index, entry ->
                 if (index > 0) RowDivider()
                 Row(
-                    Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    Modifier.fillMaxWidth().heightIn(min = 56.dp)
                         .clickable(role = Role.Button) { model.openWatchedApp(entry.app.packageName) }
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
