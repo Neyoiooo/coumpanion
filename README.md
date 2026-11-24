@@ -35,7 +35,7 @@ The gallery shows the avatar system on `main`. The download links below point to
 
 The island shows states supported by each session’s activity source. Full edition’s optional notification watching shows updates reported by the source app.
 
-## <img src="docs/media/coupi/idle.gif" width="26" alt=""> Coupi’s idle personality
+## <img src="docs/media/coupi/idle.gif" width="26" alt=""> Coupi’s AI personality
 
 At rest, Coupi looks left and right, blinks, and makes a little “o” before smiling again. Equip a provider to see the same idle loop in its colors.
 
