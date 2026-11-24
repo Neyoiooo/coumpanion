@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Render Coupi’s shared face atlas and README GIFs. Requires Pillow."""
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -111,7 +112,7 @@ def recolor(image, colors):
 def equip(master, theme):
     sprite = recolor(master, theme.colors)
     if theme.mark:
-        edge = round(sprite.width * 0.117)
+        edge = round(sprite.width * 0.19)
         with Image.open(ARTWORK / "badges" / (theme.mark + ".png")) as badge:
             logo = badge.convert("RGBA").resize((edge, edge), Image.Resampling.LANCZOS)
         x = (sprite.width - edge) // 2
@@ -120,95 +121,19 @@ def equip(master, theme):
     return sprite
 
 
-def face_overlays(master, timeline):
-    face = master.getpixel((55, 42))
-    eye_patches = []
-    for box in EYES:
-        eye = master.crop(box)
-        mask = []
-        for y in range(eye.height):
-            for x in range(eye.width):
-                r, g, b, _ = eye.getpixel((x, y))
-                lightest, darkest = max(r, g, b), min(r, g, b)
-                glint = darkest > 235 and lightest - darkest <= 5
-                mask.append(255 if lightest < 170 or glint else 0)
-        alpha = Image.new("L", eye.size)
-        alpha.putdata(mask)
-        eye.putalpha(alpha)
-        eye_patches.append(eye)
+def source_art():
+    source = json.loads((ARTWORK / "pixel-art.json").read_text())
+    edge = source["size"]
+    palette = [tuple(bytes.fromhex(color)) for color in source["palette"]]
 
-    def is_cream(pixel):
-        return pixel[0] > 220 and pixel[0] > pixel[2] + 5
+    def sprite(pixels):
+        image = Image.new("RGBA", (edge, edge))
+        image.putdata([palette[pixel] for pixel in pixels])
+        return image
 
-    cream_rows = [
-        [x for x in range(17, 95) if is_cream(master.getpixel((x, y)))]
-        for y in range(26, 74)
-    ]
-
-    def face_notification(name, draw):
-        center = (56, 49)
-        panel = {
-            "warning": "#f37e7c",
-            "warning_red": "#e96a70",
-        }.get(name, face)
-        for y, cream in enumerate(cream_rows, start=26):
-            if cream:
-                draw.line((cream[0], y, cream[-1], y), fill=panel)
-
-        if name.startswith("timer_"):
-            color = "#544489"
-            glyph(draw, center, CLOCK, {"X": color}, 3)
-            draw.rectangle((55, 41, 57, 50), fill=color)
-            tips = {"timer_one": (62, 49), "timer_two": (61, 54), "timer_three": (56, 56)}
-            draw.line((center, tips[name]), fill=color, width=3)
-        elif name.startswith("think_"):
-            glyph(draw, (56, 50), BUBBLE, {"X": "#55467c"}, 3)
-            active = ("think_one", "think_two", "think_three").index(name)
-            for i in range(3):
-                x = 47 + i * 8
-                draw.rectangle((x, 47, x + 3, 50), fill="#55467c" if i == active else "#b6a5cd")
-        elif name.startswith("work_"):
-            draw.rounded_rectangle((34, 41, 77, 57), 3, outline="#284867", width=2)
-            active = ("work_one", "work_two", "work_three").index(name)
-            for i in range(3):
-                x = 38 + i * 12
-                draw.rectangle((x, 45, x + 9, 53), fill="#287d9e" if i == active else "#cbdce1")
-        elif name in ("heart", "heart_large"):
-            cell = 4 if name == "heart" else 5
-            glyph(draw, center, HEART, {"X": "#128447" if cell == 4 else "#169b54"}, cell)
-        elif name.startswith("question"):
-            glyph(draw, center, QUESTION, {"X": "#7346b7" if name == "question_bright" else "#504180"}, 5)
-        elif name.startswith("warning"):
-            glyph(draw, center, WARNING, {"X": "#ffd775", "!": "#641b34"}, 5)
-        elif name.startswith("sleeping"):
-            glyph(draw, (56, 48 if name == "sleeping" else 45), SLEEP, {"X": "#56557f"}, 4)
-        else:
-            raise ValueError(f"Unknown face expression: {name}")
-
-    def pose(name):
-        overlay = Image.new("RGBA", master.size)
-        draw = ImageDraw.Draw(overlay)
-        if name == "neutral":
-            return overlay
-        if name in ("glance_left", "glance_right", "blink"):
-            for left, top, right, bottom in EYES:
-                draw.rectangle((left, top, right - 1, bottom - 1), fill=face)
-            if name == "blink":
-                for x in EYE_X:
-                    glyph(draw, (x, 48), CLOSED, {"X": INK})
-            else:
-                dx = -4 if name == "glance_left" else 4
-                for (x, y, _, _), eye in zip(EYES, eye_patches):
-                    overlay.alpha_composite(eye, (x + dx, y))
-        elif name in ("smile", "mouth_o"):
-            draw.rectangle((48, 51, 64, 64), fill=face)
-            mouth = SMILE if name == "smile" else (".XX.", "X..X", ".XX.")
-            glyph(draw, (56, 56), mouth, {"X": INK})
-        else:
-            face_notification(name, draw)
-        return overlay
-
-    return {name: pose(name) for name in dict.fromkeys(name for frames in timeline.values() for name, _ in frames)}
+    master = sprite(source["master"]).resize((128, 128), PIXEL)
+    overlays = {name: sprite(pixels) for name, pixels in zip(source["names"], source["poses"])}
+    return master, overlays
 
 
 def indexed(image, palette):
@@ -224,7 +149,7 @@ def animate(master, overlays, timeline, theme):
     sequence = timeline[theme.state]
     frames, durations = [], []
     for name, duration in sequence:
-        art = Image.alpha_composite(sprite, overlays[name])
+        art = Image.alpha_composite(sprite, overlays[name].resize(sprite.size, PIXEL))
         frame = Image.new("RGBA", (EDGE, EDGE))
         frame.alpha_composite(art, ((EDGE - art.width) // 2, (EDGE - art.height) // 2))
         frames.append(frame)
@@ -240,14 +165,14 @@ def animate(master, overlays, timeline, theme):
 
 
 def main():
-    with Image.open(ARTWORK / "robot.png") as image:
-        height = round(image.height * SPRITE_WIDTH / image.width)
-        master = image.convert("RGBA").resize((SPRITE_WIDTH, height), PIXEL)
+    master, overlays = source_art()
     timeline = read_timeline()
-    overlays = face_overlays(master, timeline)
-    atlas = Image.new("RGBA", (master.width * len(overlays), master.height))
+    assert list(overlays) == list(dict.fromkeys(name for frames in timeline.values() for name, _ in frames))
+    master.save(ARTWORK / "robot.png", optimize=True)
+    edge = next(iter(overlays.values())).width
+    atlas = Image.new("RGBA", (edge * len(overlays), edge))
     for index, overlay in enumerate(overlays.values()):
-        atlas.paste(overlay, (index * master.width, 0))
+        atlas.paste(overlay, (index * edge, 0))
     atlas.save(ARTWORK / "faces.png", optimize=True)
 
     OUTPUT.mkdir(parents=True, exist_ok=True)

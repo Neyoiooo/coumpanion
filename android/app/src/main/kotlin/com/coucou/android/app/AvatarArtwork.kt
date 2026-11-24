@@ -205,7 +205,7 @@ internal object AvatarArtwork {
 
     private fun drawBadge(context: Context, image: Bitmap, appearance: ProviderAppearance) {
         val canvas = Canvas(image)
-        val edge = (image.width * 0.117f).roundToInt().coerceAtLeast(5)
+        val edge = (image.width * 0.19f).roundToInt().coerceAtLeast(5)
         val x = (image.width - edge) / 2
         val y = (image.height * 0.827f - edge / 2f).roundToInt()
         val logo = providerLogo(context, appearance)

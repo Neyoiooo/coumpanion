@@ -599,7 +599,7 @@ class IslandOverlay(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ProviderAvatar(s.pillId, s.agent, if (s.manualTracking) sessionMood(first) else AvatarMood.forIsland(s),
-                    Modifier.size(27.dp), provider = first?.provider?.takeIf { s.manualTracking })
+                    Modifier.size(36.dp), provider = first?.provider?.takeIf { s.manualTracking })
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(label, color = dim, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     val detail = when {
@@ -618,7 +618,7 @@ class IslandOverlay(
                     sessions.forEach { session ->
                         HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            ProviderAvatar(session.provider.id, session.provider.label, sessionMood(session), Modifier.size(32.dp), provider = session.provider)
+                            ProviderAvatar(session.provider.id, session.provider.label, sessionMood(session), Modifier.size(40.dp), provider = session.provider)
                             Spacer(Modifier.width(6.dp))
                             Column(
                                 Modifier.weight(1f).heightIn(min = 56.dp).clickable(role = Role.Button) {
@@ -667,7 +667,7 @@ class IslandOverlay(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                ProviderAvatar(s.pillId, s.agent, AvatarMood.forIsland(s), Modifier.size(27.dp))
+                ProviderAvatar(s.pillId, s.agent, AvatarMood.forIsland(s), Modifier.size(36.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     val context = if (s.kind == IslandSpec.Kind.WORKING && s.text.isNotBlank()) s.agent + " · " + status else s.agent
                     Text(context, color = dim, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -700,7 +700,7 @@ class IslandOverlay(
         val fingerprint = s.fingerprint ?: return
         Column(modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 7.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.clickable { tap("the request header") { onOpen() } }, verticalAlignment = Alignment.CenterVertically) {
-                ProviderAvatar(s.pillId, s.agent, AvatarMood.WAITING, Modifier.size(27.dp)) {
+                ProviderAvatar(s.pillId, s.agent, AvatarMood.WAITING, Modifier.size(36.dp)) {
                     Box(Modifier.size(24.dp).background(accent.copy(alpha = 0.10f), CircleShape), contentAlignment = Alignment.Center) {
                         CoucouIcon(IconKind.LOCK, tint = accent, size = 15.dp)
                     }

@@ -130,7 +130,7 @@ private fun AiProviderCard(
             ) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     val mood = if (session != null) sessionMood(session) else paired?.let { AvatarMood.forBot(it.state) } ?: AvatarMood.IDLE
-                    ProviderAvatar(provider.id, provider.label, mood, Modifier.size(48.dp), provider = provider)
+                    ProviderAvatar(provider.id, provider.label, mood, Modifier.size(64.dp), provider = provider)
                     TextButton(onClick = { actions = true }, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text("⋯", style = TypeScale.TITLE.style(t.text.c()))
                     }

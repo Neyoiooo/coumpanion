@@ -15,6 +15,7 @@ internal data class ProviderAppearance(
         private fun known(color: Int, logo: String, app: WatchedAiApp? = null) =
             ProviderAppearance(listOf(color), logo, app?.packageName)
 
+        private val defaultCoupi = ProviderAppearance(listOf(0xA9ABC9))
         private val chatGpt = known(0x78D6A3, "chatgpt", WatchedAiApp.CHATGPT)
         private val claude = known(0xE69B71, "claude", WatchedAiApp.CLAUDE)
         private val gemini = known(0x8C9EFF, "gemini", WatchedAiApp.GEMINI)
@@ -26,6 +27,7 @@ internal data class ProviderAppearance(
         private val codex = known(0x6366F1, "codex")
 
         private val aliases = mapOf(
+            "coumpanion" to defaultCoupi, "coupi" to defaultCoupi,
             "chatgpt" to chatGpt, "openai" to chatGpt, "ai_openai" to chatGpt,
             "claude" to claude, "anthropic" to claude, "ai_anthropic" to claude,
             "integration_claude" to claude, "agent_claude-desktop" to claude,

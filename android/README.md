@@ -55,13 +55,13 @@ The redesigned island sits directly below the safe status-bar/cutout edge, follo
 
 ## AI avatars
 
-Coupi uses a single transparent master at `app/src/main/assets/avatars/robot.png`, prepared as a cutout from the supplied mascot image. Equipping a provider tints the shell and adds its logo to the belly badge. The bundled badges work offline, including when the provider’s app is absent. A generic pixel spark identifies unknown providers. One shared face atlas animates Coupi’s eyes and mouth in Idle. Every other state shows a status symbol on the faceplate. The renderer shares body motion, face timing, and nearest-neighbor sampling across providers and caches the recolored bitmaps. Status marks provide a fallback when the master is unavailable.
+Coupi uses a single transparent master at `app/src/main/assets/avatars/robot.png`, generated from an original 32×32 pixel grid in `pixel-art.json`. Equipping a provider tints the shell and adds its logo to the belly badge. The bundled badges work offline, including when the provider’s app is absent. A generic pixel spark identifies unknown providers. One shared face atlas animates Coupi’s eyes and mouth in Idle. Other states use expressive face poses and compact pixel status indicators. The renderer shares body motion, face timing, and nearest-neighbor sampling across providers and caches the recolored bitmaps. Status marks provide a fallback when the master is unavailable.
 
 Compact and expanded islands, the AI app picker, and active session cards use the same renderer. The Solo, List, Team, and Agent Overview widgets use static renders. Manual sessions use the Tracking pose, and notification reports use Idle. Thinking, Working, and Completed use confirmed desktop session states.
 
 **Settings → Display → Animated AI avatars** switches between animated and still poses. Android uses still poses with battery saver or reduced motion. Animation also pauses with the screen off or the island closed.
 
-Run `python scripts/render-coupi-showcase.py` from the repository root with Pillow installed to regenerate the app’s face atlas and the README GIFs. Both use the timing in `app/src/main/assets/avatars/face-timeline.txt`. [Logo sources and attribution](../LICENSE-ASSETS.md#coupi-provider-badges)
+Run `python scripts/render-coupi-showcase.py` from the repository root with Pillow installed to regenerate the app’s master, face atlas and README GIFs. Both use the timing in `app/src/main/assets/avatars/face-timeline.txt`. [Logo sources and attribution](../LICENSE-ASSETS.md#coupi-provider-badges)
 
 [Android changelog](CHANGELOG.md)
 

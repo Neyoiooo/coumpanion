@@ -16,7 +16,7 @@ Coumpanion keeps your AI sessions in a Dynamic Island on Android. Open a provide
 
 ## <img src="docs/media/coupi/idle.gif" width="26" alt=""> Meet Coupi
 
-Coupi is the little robot that lives in your island. Coupi looks around and smiles when idle. During every other state, its head shows a status symbol. Equip an AI to give Coupi the provider’s colors and its logo in the belly badge.
+Coupi is the little robot that lives in your island. Coupi looks around and smiles when idle. During other states, its face and small pixel indicators show its mood and activity. Equip an AI to give Coupi the provider’s colors and its logo in the belly badge.
 
 The gallery shows Coupi’s status symbols and idle looks on `main`. [Android changelog](android/CHANGELOG.md)
 
