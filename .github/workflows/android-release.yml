@@ -1,18 +1,30 @@
 name: Android release
 
-# A manual run prepares signed artifacts. An android-v* tag additionally publishes them after the install check.
+# A manual run prepares signed artifacts or publishes a signed preview from an earlier run.
+# An android-v* tag publishes a stable release after the install check.
 # Build code never receives signing secrets. Signing uses only runner tools and artifacts from the build job.
 on:
   push:
     tags:
       - 'android-v*'
   workflow_dispatch:
+    inputs:
+      preview_run_id:
+        description: Completed Android release run with signed APKs to publish as a preview
+        type: string
+        required: false
+      preview_number:
+        description: Preview number to use when publishing a signed run
+        type: string
+        required: false
+        default: '1'
 
 permissions:
   contents: read
 
 jobs:
   build:
+    if: github.event_name != 'workflow_dispatch' || inputs.preview_run_id == ''
     runs-on: ubuntu-24.04
     defaults: { run: { working-directory: android } }
     outputs:
@@ -170,6 +182,58 @@ jobs:
             grep -q 'Status: ok' "$RUNNER_TEMP/launch.txt"
             adb shell pidof "$app"
           done
+
+  publish-preview:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.preview_run_id != ''
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Publish signed Android preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ inputs.preview_run_id }}
+          PREVIEW_NUMBER: ${{ inputs.preview_number }}
+        run: |
+          [[ "$SOURCE_RUN" =~ ^[1-9][0-9]*$ && "$PREVIEW_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          run="repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN"
+          head=$(gh api "$run" --jq '
+            select(.status == "completed" and .event == "workflow_dispatch" and .head_branch == "main"
+              and .path == ".github/workflows/android-release.yml" and .head_repository.id == .repository.id)
+            | .head_sha')
+          [[ "$head" =~ ^[a-f0-9]{40}$ ]]
+          jobs=$(gh api "$run/jobs")
+          jq -e '.jobs | any(.name == "build" and .conclusion == "success") and any(.name == "sign" and .conclusion == "success")' <<< "$jobs"
+          artifact=$(gh api "$run/artifacts" --jq '
+            [.artifacts[] | select(.expired == false and (.name | startswith("Coumpanion-Android-")))]
+            | select(length == 1) | .[0].name')
+          [[ "$artifact" =~ ^Coumpanion-Android-([0-9]+\.[0-9]+\.[0-9]+)$ ]]
+          version="${BASH_REMATCH[1]}"
+          gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --name "$artifact"
+          sha256sum -c SHA256SUMS
+          if jq -e '.jobs | any(.name == "install" and .conclusion == "success")' <<< "$jobs" >/dev/null; then
+            status='The Android emulator installation and launch checks passed.'
+          else
+            status='The Android emulator installation and launch checks remain unverified.'
+          fi
+          cat > release-notes.md <<EOF_NOTES
+          Coumpanion $version preview $PREVIEW_NUMBER for Android 11 and later.
+
+          - **Standard** includes local session tracking, the Dynamic Island, and desktop pairing.
+          - **Full** adds optional AI app notification access.
+
+          Download the APK for your edition and open it on your phone. If you installed the debug-signed Standard test build, uninstall it before installing this preview. Android clears that build's local sessions when you uninstall it.
+
+          APK signature and 16 KB alignment checks passed. $status [Signing and test run](https://github.com/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN)
+
+          [Android installation guide](https://github.com/$GITHUB_REPOSITORY/blob/main/android/README.md)
+          EOF_NOTES
+          gh release create "coumpanion-v$version-preview.$PREVIEW_NUMBER" \
+            "Coumpanion-Android-$version-Standard.apk" "Coumpanion-Android-$version-Full.apk" SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" --target "$head" \
+            --title "Coumpanion $version Android Preview $PREVIEW_NUMBER" \
+            --notes-file release-notes.md --prerelease --latest=false
 
   publish:
     needs: [build, install]
