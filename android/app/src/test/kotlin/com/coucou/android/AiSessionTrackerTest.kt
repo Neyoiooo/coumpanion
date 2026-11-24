@@ -1,6 +1,7 @@
 package com.coucou.android
 
 import com.coucou.android.core.AiNotificationEvent
+import com.coucou.android.core.AiSessionTracker
 import com.coucou.android.core.BotState
 import com.coucou.android.core.IslandGeometry
 import com.coucou.android.core.IslandPosition
