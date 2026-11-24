@@ -102,6 +102,7 @@ import com.coucou.android.ui.DiscoveryHint
 import com.coucou.android.ui.ApprovalSheet
 import com.coucou.android.ui.MessagePanel
 import com.coucou.android.ui.PairingScreen
+import com.coucou.android.ui.PillButton
 import com.coucou.android.ui.DiffSheet
 import com.coucou.android.ui.QuestionSheet
 import com.coucou.android.ui.ServicesPanel
@@ -195,9 +196,10 @@ class MainActivity : ComponentActivity() {
                                 model, onScan = { screen = Screen.SCAN }, onPaste = { pastePairing = true },
                                 onAbout = { screen = Screen.SETTINGS },
                                 onWatchApps = { watchAppsOpen = true },
+                                onOverlay = { setOverlay(true, showHint = false) },
                                 showPairing = showPairing, onShowPairing = { showPairing = it },
                             ) else Home(
-                                model, onOverlay = { setOverlay(it) },
+                                model, onOverlay = { setOverlay(it) }, onWatchApps = { watchAppsOpen = true },
                                 onSession = { detailPill = it; screen = Screen.SESSION },
                                 onScan = { screen = Screen.SCAN }, onReview = { closedApproval = null }, onQuestion = { questionPill = it },
                                 onHistory = { screen = Screen.HISTORY }, onDiagnostics = { screen = Screen.DIAGNOSTICS },
@@ -351,7 +353,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun Home(
-    model: AppModel, onOverlay: (Boolean) -> Unit, onSession: (String) -> Unit,
+    model: AppModel, onOverlay: (Boolean) -> Unit, onWatchApps: () -> Unit, onSession: (String) -> Unit,
     onScan: () -> Unit, onHistory: () -> Unit, onReview: () -> Unit, onQuestion: (String) -> Unit, onDiagnostics: () -> Unit,
 ) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
@@ -413,6 +415,11 @@ private fun Home(
         if (model.recap != null) item { Box(Modifier.padding(horizontal = Gutter)) { RecapPanel(model.recap) } }
         if (model.usage != null) item { Box(Modifier.padding(horizontal = Gutter)) { UsagePanel(model.usage) } }
         if (model.services.isNotEmpty()) item { Box(Modifier.padding(horizontal = Gutter)) { ServicesPanel(model.services) } }
+        item {
+            Box(Modifier.padding(horizontal = Gutter)) {
+                PillButton(stringResource(R.string.watch_apps_choose), onWatchApps, Modifier.fillMaxWidth())
+            }
+        }
         if (model.manualTracking.isNotEmpty()) {
             item { Box(Modifier.padding(horizontal = Gutter)) { com.coucou.android.ui.ManualTrackingPanel(model, { onOverlay(true) }, showPicker = false) } }
         }

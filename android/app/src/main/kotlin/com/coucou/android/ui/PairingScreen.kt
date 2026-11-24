@@ -51,7 +51,7 @@ import com.coucou.android.link.PairingPayload
 @Composable
 fun PairingScreen(
     model: AppModel, onScan: () -> Unit, onPaste: () -> Unit, onAbout: () -> Unit, onWatchApps: () -> Unit,
-    showPairing: Boolean, onShowPairing: (Boolean) -> Unit,
+    onOverlay: () -> Unit, showPairing: Boolean, onShowPairing: (Boolean) -> Unit,
 ) {
     val t = tokens()
     androidx.activity.compose.BackHandler(enabled = showPairing) { onShowPairing(false) }
@@ -64,16 +64,15 @@ fun PairingScreen(
         Image(painterResource(R.drawable.coumpanion_firefly), contentDescription = null, modifier = Modifier.size(132.dp))
         Spacer(Modifier.size(24.dp))
         if (!showPairing) {
-            Text(stringResource(R.string.watch_apps_title), style = TypeScale.DISPLAY.style(t.text.c()).copy(textAlign = TextAlign.Center))
             Text(
-                stringResource(R.string.watch_apps_intro), Modifier.padding(top = 10.dp, bottom = 24.dp),
-                style = TypeScale.BODY.style(t.textDim.c()).copy(textAlign = TextAlign.Center),
+                stringResource(R.string.ai_sessions), Modifier.padding(bottom = 24.dp),
+                style = TypeScale.DISPLAY.style(t.text.c()).copy(textAlign = TextAlign.Center),
             )
             model.message?.let { MessagePanel(it) { model.message = null }; Spacer(Modifier.size(Gap)) }
             PillButton(stringResource(R.string.watch_apps_choose), onWatchApps, Modifier.fillMaxWidth(), PillKind.PRIMARY)
-            if (model.manualTracking != null) {
+            if (model.manualTracking.isNotEmpty()) {
                 Spacer(Modifier.size(Gap))
-                ManualTrackingPanel(model, onWatchApps, showPicker = false)
+                ManualTrackingPanel(model, onOverlay, showPicker = false)
             }
             if (model.watchedActivity.isNotEmpty()) {
                 Spacer(Modifier.size(Gap))
