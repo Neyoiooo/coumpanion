@@ -141,6 +141,16 @@ class AppModel(private val context: Context) : LinkListener {
 
     fun clearWatchedActivity() { watchedActivity = emptyList() }
 
+    // Explicit user choice; no notification access or network connection required.
+    var manualTracking by mutableStateOf<com.coucou.android.core.ManualAiSession?>(null); private set
+
+    fun setManualTracking(app: WatchedAiApp, on: Boolean) {
+        if (on && app !in installedWatchApps) return
+        manualTracking = if (on) com.coucou.android.core.ManualAiSession(app, System.currentTimeMillis())
+            else manualTracking?.takeUnless { it.app == app }
+        refreshIsland()
+    }
+
     fun refreshWatchApps() {
         installedWatchApps = WatchedAiApp.entries.filter { app ->
             @Suppress("DEPRECATION")
@@ -152,6 +162,10 @@ class AppModel(private val context: Context) : LinkListener {
         }
         watchAccess = WatchNotificationService.accessGranted(context)
         if (!watchAccess) clearWatchedActivity()
+        if (manualTracking?.app?.let { it !in installedWatchApps } == true) {
+            manualTracking = null
+            refreshIsland()
+        }
     }
 
     fun setWatched(app: WatchedAiApp, on: Boolean) {
@@ -430,7 +444,9 @@ class AppModel(private val context: Context) : LinkListener {
     internal fun clearWatchedUpdate() = overlay.clearWatchedUpdate()
 
     internal fun openWatchedApp(packageName: String) {
-        val app = watchedApp(packageName) ?: return
+        val app = watchedApp(packageName)
+            ?: manualTracking?.app?.takeIf { it.packageName == packageName }
+            ?: return
         val launch = context.packageManager.getLaunchIntentForPackage(app.packageName) ?: return
         runCatching { context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
         clearWatchedUpdate()
@@ -485,7 +501,10 @@ class AppModel(private val context: Context) : LinkListener {
             overlay.hide()
             return
         }
-        overlay.setActive(IslandPlan.active(sessions, approvals, allowed = islandAllowed(), this::agentName))
+        val desktop = IslandPlan.active(sessions, approvals, allowed = islandAllowed(), this::agentName)
+        val time = java.time.LocalTime.now()
+        val manual = manualTracking?.takeUnless { settings.quiet.isQuiet(time.hour * 60 + time.minute) }?.island()
+        overlay.setActive(desktop ?: manual)
     }
 
     private val expiry = HashMap<String, Runnable>()

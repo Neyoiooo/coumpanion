@@ -529,7 +529,7 @@ class IslandOverlay(
     @Composable
     @OptIn(ExperimentalFoundationApi::class)
     private fun StatusStrip(s: IslandSpec, palette: IslandPalette, headerHeight: Dp, reveal: Float, modifier: Modifier, sweep: () -> Float?) {
-        val status = stringResource(when (s.kind) {
+        val status = stringResource(if (s.manualTracking) R.string.manual_ai_tracking else when (s.kind) {
             IslandSpec.Kind.WORKING -> when (s.state) {
                 BotState.THINKING -> R.string.state_thinking
                 BotState.SEARCHING -> R.string.state_searching
@@ -546,7 +546,7 @@ class IslandOverlay(
             modifier.fillMaxWidth().combinedClickable(
                 onClick = {
                     tap("the status strip") {
-                        if (s.kind == IslandSpec.Kind.APP_UPDATE) onOpenWatchedApp(s.pillId) else onOpen()
+                        if (s.kind == IslandSpec.Kind.APP_UPDATE || s.manualTracking) onOpenWatchedApp(s.pillId) else onOpen()
                     }
                 },
                 onLongClick = { tap("the island long press") { toggleDetails() } },
@@ -564,6 +564,7 @@ class IslandOverlay(
             }
             if (expanded || reveal > 0f) {
                 val detail = when {
+                    s.manualTracking -> stringResource(R.string.manual_ai_unconfirmed)
                     s.kind == IslandSpec.Kind.QUESTION -> stringResource(R.string.island_answer_on_pc)
                     s.text.isBlank() -> stringResource(R.string.island_open_app)
                     else -> s.text

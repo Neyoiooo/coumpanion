@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English fallback until the manual tracking feature is translated. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="manual_ai_title">Manual task tracking</string>
+    <string name="manual_ai_tracking">Tracking</string>
+    <string name="manual_ai_unconfirmed">Manual marker. AI progress is not verified.</string>
+</resources>

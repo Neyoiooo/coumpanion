@@ -18,6 +18,10 @@ Android grants notification access for the device. Coumpanion filters by the pac
 
 If Coumpanion is already installed and Android labels the notification access switch as a **Restricted setting**, open **Settings → Apps → Coumpanion**. When the menu offers **Allow restricted settings**, use it, then return to **Watch AI apps** to grant notification access.
 
+## Manual task tracking
+
+Open **Choose AI apps** and use **Manual task tracking** to select an installed AI app. Grant **Display over other apps** if needed, then leave Coumpanion. The island says **Tracking**, not Working: it is a user-started marker, not proof of ongoing generation. Tap the island to open the source app. Stop tracking from the app picker or Home. One manual marker is supported at a time, held in memory while Coumpanion runs. This does not require notification access, a server, or account linking. It cannot keep another app alive or automatically determine when an arbitrary task finishes. Desktop approvals and questions take priority.
+
 ## Build and test
 
 Needs JDK 17 and the Android SDK (platform 35). From this folder:

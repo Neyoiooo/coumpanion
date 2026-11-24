@@ -41,6 +41,8 @@ internal fun WatchAppsSheet(model: AppModel, onDismiss: () -> Unit, onAccess: ()
                 }
             }
             Spacer(Modifier.size(16.dp))
+            ManualTrackingPanel(model, onOverlay)
+            Spacer(Modifier.size(16.dp))
             when {
                 !hasSelection -> Unit
                 !model.watchAccess -> PillButton(

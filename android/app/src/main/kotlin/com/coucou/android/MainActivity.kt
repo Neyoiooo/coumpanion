@@ -412,6 +412,9 @@ private fun Home(
         if (model.recap != null) item { Box(Modifier.padding(horizontal = Gutter)) { RecapPanel(model.recap) } }
         if (model.usage != null) item { Box(Modifier.padding(horizontal = Gutter)) { UsagePanel(model.usage) } }
         if (model.services.isNotEmpty()) item { Box(Modifier.padding(horizontal = Gutter)) { ServicesPanel(model.services) } }
+        if (model.manualTracking != null) {
+            item { Box(Modifier.padding(horizontal = Gutter)) { com.coucou.android.ui.ManualTrackingPanel(model, { onOverlay(true) }, showPicker = false) } }
+        }
         if (model.watchedActivity.isNotEmpty()) {
             item { Box(Modifier.padding(horizontal = Gutter)) { com.coucou.android.ui.WatchedActivityPanel(model) } }
         }

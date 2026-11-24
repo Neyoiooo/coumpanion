@@ -13,6 +13,8 @@ data class IslandSpec(
     val fingerprint: String? = null,
     /** False for a request whose command could not be shown in full: the island offers Deny only. */
     val canAllow: Boolean = true,
+    /** A user-started local marker, not verified AI activity. */
+    val manualTracking: Boolean = false,
 ) {
     enum class Kind { WORKING, QUESTION, APPROVAL, FINISHED, ERROR, RATELIMIT, APP_UPDATE }
 
