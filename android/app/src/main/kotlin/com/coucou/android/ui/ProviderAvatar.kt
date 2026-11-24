@@ -39,6 +39,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import com.coucou.android.app.AvatarArtwork
+import com.coucou.android.core.AiProvider
 import com.coucou.android.core.AvatarMood
 import com.coucou.android.core.IslandPalette
 import com.coucou.android.core.MotionChoice
@@ -126,10 +127,13 @@ internal fun ProviderAvatar(
     name: String,
     mood: AvatarMood,
     modifier: Modifier,
+    provider: AiProvider? = null,
     fallback: (@Composable () -> Unit)? = null,
 ) {
     val context = LocalContext.current.applicationContext
-    val appearance = remember(providerId, name) { ProviderAppearance.resolve(providerId, name) }
+    val appearance = remember(providerId, name, provider) {
+        provider?.let { ProviderAppearance.forProvider(it) } ?: ProviderAppearance.resolve(providerId, name)
+    }
     val sprite = remember(context, appearance) { AvatarArtwork.sprite(context, appearance) }
     if (sprite == null) {
         if (fallback != null) {

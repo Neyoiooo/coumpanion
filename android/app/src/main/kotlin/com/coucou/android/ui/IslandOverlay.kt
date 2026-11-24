@@ -126,6 +126,8 @@ class IslandOverlay(
     private val onSwiped: (IslandSpec) -> Unit = {},
     private val onOpenWatchedApp: (packageName: String) -> Unit,
     private val onStopTracking: (String) -> Unit,
+    private val onPauseTracking: (String, Boolean) -> Unit,
+    private val onDoneTracking: (String) -> Unit,
     private val position: () -> IslandPosition,
     private val plain: () -> Boolean,
     private val animatedAvatars: () -> Boolean,
@@ -554,10 +556,14 @@ class IslandOverlay(
     @OptIn(ExperimentalFoundationApi::class)
     private fun SessionStrip(s: IslandSpec, palette: IslandPalette, headerHeight: Dp, maxListHeight: Dp, modifier: Modifier) {
         val sessions = s.manualSessions
+        val now by trackingClock(sessions)
+        val first = sessions.firstOrNull()
         val label = if (s.manualTracking && sessions.size > 1) stringResource(R.string.ai_sessions) else s.agent
         val status = when {
             !s.manualTracking -> statusText(s)
             sessions.size > 1 -> stringResource(R.string.ai_tracking_count, sessions.size)
+            first?.paused == true -> stringResource(R.string.ai_timer_paused)
+            first != null -> elapsedTracking(first, now)
             else -> stringResource(R.string.manual_ai_tracking)
         }
         val toggle = stringResource(if (expanded) R.string.island_collapse_details else R.string.island_expand_details)
@@ -572,20 +578,20 @@ class IslandOverlay(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                ProviderAvatar(s.pillId, s.agent, AvatarMood.forIsland(s), Modifier.size(27.dp))
+                ProviderAvatar(s.pillId, s.agent, if (s.manualTracking) sessionMood(first) else AvatarMood.forIsland(s),
+                    Modifier.size(27.dp), provider = first?.provider?.takeIf { s.manualTracking })
                 Text(label, Modifier.weight(1f), color = foreground, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(status, color = Color(palette.label), fontSize = 11.sp, maxLines = 1)
                 CoucouIcon(IconKind.CHEVRON, Modifier.rotate(if (expanded) -90f else 90f), tint = dim, size = 12.dp, mirror = false)
             }
             if (expanded) {
-                val now by trackingClock(sessions)
                 Column(Modifier.heightIn(max = maxListHeight).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
                     if (!s.manualTracking && s.text.isNotBlank()) Text(s.text, color = foreground, fontSize = 13.sp)
                     Text(stringResource(R.string.manual_ai_unconfirmed), Modifier.padding(vertical = 6.dp), color = dim, fontSize = 12.sp)
                     sessions.forEach { session ->
                         HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            ProviderAvatar(session.provider.id, session.provider.label, AvatarMood.TRACKING, Modifier.size(32.dp))
+                            ProviderAvatar(session.provider.id, session.provider.label, sessionMood(session), Modifier.size(32.dp), provider = session.provider)
                             Spacer(Modifier.width(6.dp))
                             Column(
                                 Modifier.weight(1f).heightIn(min = 56.dp).clickable(role = Role.Button) {
@@ -597,6 +603,16 @@ class IslandOverlay(
                                 Text(elapsedTracking(session, now), color = dim, fontSize = 12.sp)
                             }
                             StopTrackingButton(session) { tap("stop tracking") { onStopTracking(session.provider.id) } }
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            androidx.compose.material3.TextButton(
+                                onClick = { tap("pause or resume tracking") { onPauseTracking(session.provider.id, !session.paused) } },
+                            ) {
+                                Text(stringResource(if (session.paused) R.string.ai_resume_timer else R.string.ai_pause_timer), color = foreground)
+                            }
+                            androidx.compose.material3.TextButton(
+                                onClick = { tap("mark timer done") { onDoneTracking(session.provider.id) } },
+                            ) { Text(stringResource(R.string.ai_mark_done), color = foreground) }
                         }
                     }
                 }

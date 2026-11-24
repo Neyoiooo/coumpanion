@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -117,6 +118,8 @@ import com.coucou.android.ui.PairConfirm
 import com.coucou.android.ui.PairingPasteSheet
 import com.coucou.android.ui.ScanScreen
 import com.coucou.android.ui.SessionScreen
+import com.coucou.android.ui.AiLauncher
+import com.coucou.android.ui.AiTrackingPage
 import com.coucou.android.ui.ChatScreen
 import com.coucou.android.ui.HistoryScreen
 import com.coucou.android.ui.SettingsScreen
@@ -191,6 +194,8 @@ class MainActivity : ComponentActivity() {
                                     onDiagnostics = { screen = Screen.DIAGNOSTICS }, onLicences = { screen = Screen.LICENCES },
                                     onWatchApps = { watchAppsOpen = true },
                                 )
+                                Screen.AI_TRACKING -> AiTrackingPage(model, onBack = { screen = Screen.HOME },
+                                    onOverlay = { setOverlay(true, showHint = false) })
                                 Screen.LICENCES -> LicencesScreen(onBack = { screen = Screen.SETTINGS })
                                 Screen.DIAGNOSTICS -> DiagnosticsScreen(model, onBack = { screen = Screen.SETTINGS })
                                 Screen.HISTORY -> HistoryScreen(model, onBack = { screen = Screen.SETTINGS })
@@ -228,7 +233,7 @@ class MainActivity : ComponentActivity() {
                             DiffSheet(model)
                             // Pairing, chat, an approval and a question never show in screenshots or in the recent-apps card.
                             val secure = SecureScreens.needed(
-                                screen, pairing = model.mode == Mode.NONE, approvalSheetShown = pending != null && screen != Screen.SCAN,
+                                screen, pairing = model.mode == Mode.NONE && (showPairing || pairingPasteVisible), approvalSheetShown = pending != null && screen != Screen.SCAN,
                                 questionSheetShown = questionPill != null, pairConfirmShown = model.pairRequest != null,
                             )
                             SideEffect {
@@ -375,6 +380,11 @@ private fun Home(
         verticalArrangement = Arrangement.spacedBy(Gap),
     ) {
         item {
+            Box(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = Gutter, vertical = Gap)) {
+                AiLauncher(model, onOverlay = { onOverlay(true) })
+            }
+        }
+        item {
             HeroCard(
                 focus, pair, HomeText.running(model.sessions),
                 linkDot = linkDotColor(model), linkText = linkStatusText(model),
@@ -419,13 +429,10 @@ private fun Home(
         if (model.recap != null) item { Box(Modifier.padding(horizontal = Gutter)) { RecapPanel(model.recap) } }
         if (model.usage != null) item { Box(Modifier.padding(horizontal = Gutter)) { UsagePanel(model.usage) } }
         if (model.services.isNotEmpty()) item { Box(Modifier.padding(horizontal = Gutter)) { ServicesPanel(model.services) } }
-        item {
+        if (NotificationWatchAccess.available) item {
             Box(Modifier.padding(horizontal = Gutter)) {
-                PillButton(stringResource(R.string.watch_apps_choose), onWatchApps, Modifier.fillMaxWidth())
+                PillButton(stringResource(R.string.watch_apps_title), onWatchApps, Modifier.fillMaxWidth())
             }
-        }
-        if (model.manualTracking.isNotEmpty()) {
-            item { Box(Modifier.padding(horizontal = Gutter)) { com.coucou.android.ui.ManualTrackingPanel(model, { onOverlay(true) }, showPicker = false) } }
         }
         if (model.watchedActivity.isNotEmpty()) {
             item { Box(Modifier.padding(horizontal = Gutter)) { com.coucou.android.ui.WatchedActivityPanel(model) } }

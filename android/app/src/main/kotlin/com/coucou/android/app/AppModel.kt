@@ -207,12 +207,18 @@ class AppModel(private val context: Context) : LinkListener {
         aiSessions = aiTracker.snapshot
     }
 
-    fun saveAiProvider(provider: AiProvider): Boolean = aiTracker.saveProvider(provider).also {
-        if (it) updateManualTracking()
+    fun saveAiProvider(provider: AiProvider): Boolean {
+        val previous = aiTracker.provider(provider.id)?.logoToken
+        if (!aiTracker.saveProvider(provider)) return false
+        if (previous != provider.logoToken) ProviderLogos.forget(context, previous)
+        updateManualTracking()
+        return true
     }
 
     fun removeAiProvider(id: String) {
+        val previous = aiTracker.provider(id)?.logoToken
         aiTracker.removeProvider(id, sessionClock.now())
+        ProviderLogos.forget(context, previous)
         updateManualTracking()
     }
 
@@ -489,6 +495,8 @@ class AppModel(private val context: Context) : LinkListener {
         onSwiped = { shadeAfterSwipe(it) },
         onOpenWatchedApp = ::openWatchedApp,
         onStopTracking = { setManualTracking(it, false) },
+        onPauseTracking = ::pauseTracking,
+        onDoneTracking = ::markTrackingDone,
         position = { settings.islandPosition },
         plain = { settings.plainIsland },
         animatedAvatars = { settings.animatedAvatars },
@@ -526,14 +534,16 @@ class AppModel(private val context: Context) : LinkListener {
     /** Call from a user gesture. Use a package-scoped launcher intent for apps hidden by Android visibility. */
     fun launchProvider(from: Context, provider: AiProvider, track: Boolean): Boolean {
         val packageName = provider.packageName
-        val launch = if (packageName != null) {
-            context.packageManager.getLaunchIntentForPackage(packageName)
-                ?: Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage(packageName)
-        } else {
-            Intent(Intent.ACTION_VIEW, android.net.Uri.parse(checkNotNull(provider.website))).addCategory(Intent.CATEGORY_BROWSABLE)
-        }
-        if (from !is android.app.Activity) launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        val opened = runCatching { from.startActivity(launch) }.isSuccess
+        val opened = runCatching {
+            val launch = if (packageName != null) {
+                context.packageManager.getLaunchIntentForPackage(packageName)
+                    ?: Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage(packageName)
+            } else {
+                Intent(Intent.ACTION_VIEW, android.net.Uri.parse(checkNotNull(provider.website))).addCategory(Intent.CATEGORY_BROWSABLE)
+            }
+            if (from !is android.app.Activity) launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            from.startActivity(launch)
+        }.isSuccess
         if (opened && track) setManualTracking(provider.id, true)
         if (!opened) android.widget.Toast.makeText(from, R.string.ai_provider_unavailable, android.widget.Toast.LENGTH_SHORT).show()
         return opened

@@ -61,10 +61,10 @@ internal fun ManualTrackingPanel(model: AppModel, onOverlay: () -> Unit, showPic
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        ProviderAvatar(session.provider.id, session.provider.label, AvatarMood.TRACKING, Modifier.size(44.dp))
+                        ProviderAvatar(session.provider.id, session.provider.label, sessionMood(session), Modifier.size(44.dp), provider = session.provider)
                         Column(Modifier.weight(1f)) {
                             Text(session.provider.label, style = TypeScale.BODY.style(t.text.c()))
-                            Text(elapsedTracking(session, now), style = TypeScale.SECONDARY.style(t.textDim.c()))
+                            Text(stringResource(R.string.ai_timer_status, stringResource(if (session.paused) R.string.ai_timer_paused else R.string.manual_ai_tracking), elapsedTracking(session, now)), style = TypeScale.SECONDARY.style(t.textDim.c()))
                         }
                         StopTrackingButton(session) { model.setManualTracking(session.provider.id, false) }
                     }
@@ -109,9 +109,9 @@ internal fun trackingClock(sessions: List<ManualAiSession>): androidx.compose.ru
 internal fun elapsedTracking(session: ManualAiSession, now: SessionTime): String {
     val minutes = session.elapsed(now) / 60_000
     return when {
-        minutes < 1 -> stringResource(R.string.ago_less_than_minute)
-        minutes < 60 -> stringResource(R.string.ago_minutes, minutes)
-        else -> stringResource(R.string.ago_hours_minutes, minutes / 60, minutes % 60)
+        minutes < 1 -> stringResource(R.string.ai_duration_under_minute)
+        minutes < 60 -> stringResource(R.string.ai_duration_minutes, minutes)
+        else -> stringResource(R.string.ai_duration_hours, minutes / 60, minutes % 60)
     }
 }
 

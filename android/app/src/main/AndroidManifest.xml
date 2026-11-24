@@ -159,15 +159,13 @@
             </intent-filter>
         </activity>
 
-        <!-- "Share to Coucou": text/plain from another app goes into the chat box as a draft, never sent. Exported for the share sheet; it takes one
-             string, cleaned and cut, and nothing else. -->
+        <!-- The share picker accepts bounded plain text and waits for a user-selected action. -->
         <activity
             android:name=".app.ShareActivity"
             android:exported="true"
-            android:label="@string/share_label"
+            android:label="@string/ai_share_title"
             android:excludeFromRecents="true"
-            android:noHistory="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            android:theme="@style/Theme.Coumpanion">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />

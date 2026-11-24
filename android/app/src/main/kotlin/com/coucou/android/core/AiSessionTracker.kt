@@ -34,7 +34,7 @@ class AiSessionTracker(private val store: KeyValueStore) {
             val f = row.split('|')
             require(f.size == 7 && f[2] in setOf("app", "web"))
             AiProvider.custom(decodeLocalField(f[1]), f[2] == "app", decodeLocalField(f[3]),
-                f[4].toIntOrNull(), f[5].toBooleanStrictOrNull(), f[6] == "1", f[0])
+                f[4].toIntOrNull(), f[5].toBooleanStrictOrNull(), f[6].takeIf { it.isNotEmpty() }, f[0])
         }.getOrNull()
     }.distinctBy { it.id }.toMutableList()
 
@@ -83,7 +83,7 @@ class AiSessionTracker(private val store: KeyValueStore) {
         store.put(PROVIDERS, custom.joinToString("\n") {
             listOf(it.id, encodeLocalField(it.label), if (it.packageName != null) "app" else "web",
                 encodeLocalField(it.packageName ?: checkNotNull(it.website)), it.accent ?: "",
-                it.autoTrack ?: "", if (it.customLogo) "1" else "0").joinToString("|")
+                it.autoTrack ?: "", it.logoToken ?: "").joinToString("|")
         })
         snapshot = snapshot.copy(providers = providers)
     }

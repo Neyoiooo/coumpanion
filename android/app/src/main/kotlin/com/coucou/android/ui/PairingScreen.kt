@@ -60,19 +60,13 @@ fun PairingScreen(
             .padding(start = Gutter + 8.dp, end = Gutter + 8.dp, bottom = BarClearance),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.size(32.dp))
-        Image(painterResource(R.drawable.coumpanion_firefly), contentDescription = null, modifier = Modifier.size(132.dp))
-        Spacer(Modifier.size(24.dp))
+        Spacer(Modifier.size(20.dp))
         if (!showPairing) {
-            Text(
-                stringResource(R.string.ai_sessions), Modifier.padding(bottom = 24.dp),
-                style = TypeScale.DISPLAY.style(t.text.c()).copy(textAlign = TextAlign.Center),
-            )
             model.message?.let { MessagePanel(it) { model.message = null }; Spacer(Modifier.size(Gap)) }
-            PillButton(stringResource(R.string.watch_apps_choose), onWatchApps, Modifier.fillMaxWidth(), PillKind.PRIMARY)
-            if (model.manualTracking.isNotEmpty()) {
+            AiLauncher(model, onOverlay)
+            if (com.coucou.android.app.NotificationWatchAccess.available) {
                 Spacer(Modifier.size(Gap))
-                ManualTrackingPanel(model, onOverlay, showPicker = false)
+                PillButton(stringResource(R.string.watch_apps_title), onWatchApps, Modifier.fillMaxWidth())
             }
             if (model.watchedActivity.isNotEmpty()) {
                 Spacer(Modifier.size(Gap))
@@ -82,6 +76,8 @@ fun PairingScreen(
             PillButton(stringResource(R.string.pairing_headline), { onShowPairing(true) }, Modifier.fillMaxWidth())
             return@Column
         }
+        Image(painterResource(R.drawable.coumpanion_firefly), contentDescription = null, modifier = Modifier.size(96.dp))
+        Spacer(Modifier.size(20.dp))
         Text(stringResource(R.string.pairing_headline), style = TypeScale.DISPLAY.style(t.text.c()).copy(textAlign = TextAlign.Center))
         Text(
             stringResource(

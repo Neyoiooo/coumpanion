@@ -10,6 +10,7 @@ enum class LaunchScreen(val key: String, val screen: Screen) {
     HOME("home", Screen.HOME),
     CHAT("chat", Screen.CHAT),
     SETTINGS("settings", Screen.SETTINGS),
+    AI_TRACKING("tracking", Screen.AI_TRACKING),
 
     /** "Recent": the full list of your own decisions (the same one as Home's Recent, in full). */
     RECENT("recent", Screen.HISTORY),

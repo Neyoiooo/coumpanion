@@ -180,27 +180,47 @@ internal object AvatarArtwork {
         return Color.rgb(mix(Color.red(start), Color.red(end)), mix(Color.green(start), Color.green(end)), mix(Color.blue(start), Color.blue(end)))
     }
 
+    private val providerLogos = LruCache<ProviderAppearance, Bitmap>(64)
+
+    @Synchronized
+    fun providerLogo(context: Context, appearance: ProviderAppearance): Bitmap? {
+        providerLogos.get(appearance)?.let { return it }
+        val custom = appearance.logoToken?.let { token ->
+            ProviderLogos.file(context, token)?.takeIf { it.isFile }?.let { BitmapFactory.decodeFile(it.path) }
+        }
+        val bundled = appearance.logo?.let { name ->
+            runCatching { context.assets.open("$BADGES/$name.png").use(BitmapFactory::decodeStream) }.getOrNull()
+        }
+        val logo = custom ?: bundled ?: appearance.iconPackage?.let { name ->
+            runCatching {
+                val icon = context.packageManager.getApplicationIcon(name)
+                Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).also {
+                    icon.setBounds(0, 0, 64, 64)
+                    icon.draw(Canvas(it))
+                }
+            }.getOrNull()
+        }
+        return logo?.also { providerLogos.put(appearance, it) }
+    }
+
     private fun drawBadge(context: Context, image: Bitmap, appearance: ProviderAppearance) {
         val canvas = Canvas(image)
         val edge = (image.width * 0.117f).roundToInt().coerceAtLeast(5)
         val x = (image.width - edge) / 2
         val y = (image.height * 0.827f - edge / 2f).roundToInt()
-        val logo = appearance.logo?.let { name ->
-            runCatching { context.assets.open("$BADGES/$name.png").use(BitmapFactory::decodeStream) }.getOrNull()
-        }
+        val logo = providerLogo(context, appearance)
         if (logo != null) {
-            canvas.drawBitmap(logo, null, Rect(x, y, x + edge, y + edge), Paint(Paint.FILTER_BITMAP_FLAG))
-            return
-        }
-        val icon = appearance.iconPackage?.let { runCatching { context.packageManager.getApplicationIcon(it) }.getOrNull() }
-        if (icon != null) {
             val clip = android.graphics.Path().apply {
                 addCircle(x + edge / 2f, y + edge / 2f, edge / 2f, android.graphics.Path.Direction.CW)
             }
+            val scale = edge.toFloat() / maxOf(logo.width, logo.height)
+            val w = (logo.width * scale).roundToInt().coerceAtLeast(1)
+            val h = (logo.height * scale).roundToInt().coerceAtLeast(1)
+            val left = x + (edge - w) / 2
+            val top = y + (edge - h) / 2
             canvas.save()
             canvas.clipPath(clip)
-            icon.setBounds(x, y, x + edge, y + edge)
-            icon.draw(canvas)
+            canvas.drawBitmap(logo, null, Rect(left, top, left + w, top + h), Paint(Paint.FILTER_BITMAP_FLAG))
             canvas.restore()
             return
         }

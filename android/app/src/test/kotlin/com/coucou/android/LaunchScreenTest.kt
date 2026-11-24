@@ -13,9 +13,9 @@ import org.junit.Test
 /** The closed list of screens a Widget button may open: nothing else can be asked for. */
 class LaunchScreenTest {
     @Test fun theListIsExactlyTheFiveScreensOfTheBrief() {
-        assertEquals(listOf("home", "chat", "settings", "recent", "pair"), LaunchScreen.values().map { it.key })
-        assertEquals(listOf(LaunchScreen.HOME, LaunchScreen.CHAT, LaunchScreen.SETTINGS, LaunchScreen.RECENT, LaunchScreen.PAIR), LaunchScreen.values().toList())
-        assertEquals("a key is used once", 5, LaunchScreen.values().map { it.key }.toSet().size)
+        assertEquals(listOf("home", "chat", "settings", "tracking", "recent", "pair"), LaunchScreen.values().map { it.key })
+        assertEquals(listOf(LaunchScreen.HOME, LaunchScreen.CHAT, LaunchScreen.SETTINGS, LaunchScreen.AI_TRACKING, LaunchScreen.RECENT, LaunchScreen.PAIR), LaunchScreen.values().toList())
+        assertEquals("a key is used once", 6, LaunchScreen.values().map { it.key }.toSet().size)
     }
 
     @Test fun everyValueParsesBackFromItsOwnKey() {

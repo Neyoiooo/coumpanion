@@ -5,6 +5,7 @@ import java.util.Base64
 import java.util.UUID
 
 /** A launch target and local appearance. Notification access uses WatchedAiApp independently. */
+@ConsistentCopyVisibility
 data class AiProvider private constructor(
     val id: String,
     val label: String,
@@ -12,7 +13,7 @@ data class AiProvider private constructor(
     val website: String?,
     val accent: Int?,
     val autoTrack: Boolean?,
-    val customLogo: Boolean,
+    val logoToken: String?,
 ) {
     val isCustom: Boolean get() = id.startsWith(CUSTOM_PREFIX)
 
@@ -21,7 +22,7 @@ data class AiProvider private constructor(
         private val packagePattern = Regex("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+")
 
         val builtIn = WatchedAiApp.entries.map {
-            AiProvider(it.packageName, it.label, it.packageName, null, null, null, false)
+            AiProvider(it.packageName, it.label, it.packageName, null, null, null, null)
         }
 
         fun custom(
@@ -30,18 +31,22 @@ data class AiProvider private constructor(
             target: String,
             accent: Int?,
             autoTrack: Boolean?,
-            customLogo: Boolean = false,
+            logoToken: String? = null,
             id: String = CUSTOM_PREFIX + UUID.randomUUID(),
         ): AiProvider? {
             val label = name.trim()
             val address = target.trim()
             if (label.isEmpty() || label.length > 64 || label.any { it.isISOControl() || Character.getType(it) == Character.FORMAT.toInt() }) return null
-            if (!id.startsWith(CUSTOM_PREFIX) || runCatching { UUID.fromString(id.removePrefix(CUSTOM_PREFIX)).toString() }.getOrNull() != id.removePrefix(CUSTOM_PREFIX)) return null
+            if (!id.startsWith(CUSTOM_PREFIX) || !validLogoToken(id.removePrefix(CUSTOM_PREFIX))) return null
+            if (logoToken != null && !validLogoToken(logoToken)) return null
             if (accent != null && accent !in 0..0xFFFFFF) return null
             if (native && (address.length > 255 || !packagePattern.matches(address))) return null
             if (!native && (address.length > 2_048 || !validHttps(address))) return null
-            return AiProvider(id, label, address.takeIf { native }, address.takeUnless { native }, accent, autoTrack, customLogo)
+            return AiProvider(id, label, address.takeIf { native }, address.takeUnless { native }, accent, autoTrack, logoToken)
         }
+
+        internal fun validLogoToken(value: String): Boolean =
+            runCatching { UUID.fromString(value).toString() == value }.getOrDefault(false)
 
         private fun validHttps(value: String): Boolean {
             val uri = runCatching { URI(value) }.getOrNull() ?: return false

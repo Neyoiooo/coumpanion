@@ -7,6 +7,7 @@ internal data class ProviderAppearance(
     val colors: List<Int>,
     val logo: String? = null,
     val iconPackage: String? = null,
+    val logoToken: String? = null,
 ) {
     val accent: Int get() = colors.first()
 
@@ -43,11 +44,21 @@ internal data class ProviderAppearance(
             0xE4BE79, 0xA6CB82, 0x7BCBB6, 0x75BDCF, 0xA0ADD8, 0xCF9FC7,
         )
 
+        fun forProvider(provider: AiProvider): ProviderAppearance {
+            if (!provider.isCustom) return resolve(provider.id, provider.label)
+            return ProviderAppearance(
+                listOf(provider.accent ?: fallback(provider.id)),
+                iconPackage = provider.packageName, logoToken = provider.logoToken,
+            )
+        }
+
+        private fun fallback(id: String) = colorWheel[Math.floorMod(id.hashCode(), colorWheel.size)]
+
         fun resolve(providerId: String, name: String = ""): ProviderAppearance {
             val id = providerId.trim().lowercase(Locale.ROOT)
             val firstWord = name.trim().lowercase(Locale.ROOT).substringBefore(' ')
             return aliases[id] ?: aliases[firstWord] ?:
-                ProviderAppearance(listOf(colorWheel[Math.floorMod(id.hashCode(), colorWheel.size)]))
+                ProviderAppearance(listOf(fallback(id)))
         }
     }
 }

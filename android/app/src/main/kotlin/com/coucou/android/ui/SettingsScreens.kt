@@ -231,6 +231,33 @@ fun SettingsScreen(
             Panel { LinkRow(stringResource(title), onWatchApps) }
         }
 
+        item { SectionHeading(stringResource(R.string.ai_timer_settings)) }
+        item {
+            val permission = androidx.activity.compose.rememberLauncherForActivityResult(
+                androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+            ) {}
+            val minutes = listOf(0 to stringResource(R.string.ai_timer_never), 30 to stringResource(R.string.ai_duration_minutes, 30),
+                120 to stringResource(R.string.ai_duration_minutes, 120))
+            Panel {
+                SettingSwitch(stringResource(R.string.ai_auto_track), null, s.autoTrackLaunches) {
+                    model.updateSettings(s.copy(autoTrackLaunches = it))
+                }
+                RowDivider()
+                ChoiceRow(stringResource(R.string.ai_expiration), minutes, s.manualSessionPolicy.expirationMinutes) {
+                    model.updateSettings(s.copy(manualSessionPolicy = s.manualSessionPolicy.copy(expirationMinutes = it)))
+                }
+                RowDivider()
+                ChoiceRow(stringResource(R.string.ai_reminder), minutes, s.manualSessionPolicy.reminderMinutes) {
+                    model.updateSettings(s.copy(manualSessionPolicy = s.manualSessionPolicy.copy(reminderMinutes = it)))
+                    if (it != 0 && android.os.Build.VERSION.SDK_INT >= 33 &&
+                        context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    ) permission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
+                Text(stringResource(R.string.ai_manual_settings_detail), Modifier.padding(Spacing.INSIDE.dp),
+                    style = TypeScale.SECONDARY.style(t.textDim.c()))
+            }
+        }
+
         item { SectionHeading(stringResource(R.string.settings_section_computer)) }
         item {
             Panel {

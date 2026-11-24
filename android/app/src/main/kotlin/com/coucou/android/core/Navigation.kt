@@ -4,7 +4,7 @@ package com.coucou.android.core
 enum class Tab { HOME, CHAT, SETTINGS }
 
 /** Every screen of the app. Tabs are the roots; the rest are one level down. */
-enum class Screen { HOME, CHAT, SETTINGS, HISTORY, DIAGNOSTICS, LICENCES, SESSION, SCAN }
+enum class Screen { HOME, CHAT, SETTINGS, HISTORY, DIAGNOSTICS, LICENCES, SESSION, SCAN, AI_TRACKING }
 
 /**
  * Where the user is and where Back goes. Pure, so every rule is a unit test:
@@ -27,7 +27,7 @@ object Nav {
         Screen.HOME -> Tab.HOME
         Screen.CHAT -> Tab.CHAT
         Screen.SETTINGS, Screen.HISTORY, Screen.DIAGNOSTICS, Screen.LICENCES -> Tab.SETTINGS
-        Screen.SESSION, Screen.SCAN -> null
+        Screen.SESSION, Screen.SCAN, Screen.AI_TRACKING -> null
     }
 
     fun barVisible(screen: Screen, keyboardOpen: Boolean): Boolean =
@@ -36,7 +36,7 @@ object Nav {
     /** One level up, or null when Back should leave the app. */
     fun back(screen: Screen): Screen? = when (screen) {
         Screen.HOME -> null
-        Screen.CHAT, Screen.SETTINGS, Screen.SESSION, Screen.SCAN -> Screen.HOME
+        Screen.CHAT, Screen.SETTINGS, Screen.SESSION, Screen.SCAN, Screen.AI_TRACKING -> Screen.HOME
         Screen.HISTORY, Screen.DIAGNOSTICS, Screen.LICENCES -> Screen.SETTINGS
     }
 }
