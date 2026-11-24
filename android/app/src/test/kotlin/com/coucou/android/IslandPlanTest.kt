@@ -97,7 +97,7 @@ class IslandPlanTest {
         // Galaxy A12s: 720 px wide, a centred waterdrop about 70 px wide and 66 px tall.
         val box = IslandGeometry.place(720, 2f, PxRect(325, 0, 395, 66), statusBarH = 70)
         assertEquals(360, box.anchorX)
-        assertEquals("the whole window starts below the status bar", 78, box.windowTop)
+        assertEquals("the whole window starts below the status bar", 70, box.windowTop)
         assertTrue(box.workingH > 0)
         assertTrue(box.cardH > box.workingH && box.approvalH > box.cardH)
         assertTrue(box.workingW <= 720 && box.approvalW <= 720)
@@ -116,18 +116,18 @@ class IslandPlanTest {
         assertEquals(720, IslandGeometry.place(1080, 3f, s20, statusBarH = 78).anchorX)
         val box = IslandGeometry.place(1080, 3f, s20, statusBarH = 78, panelWidth = 1440)
         assertEquals(540, box.anchorX)
-        assertEquals("window still starts below the hole", 90, box.windowTop)
+        assertEquals("window still starts below the hole", 78, box.windowTop)
     }
 
     @Test fun withoutACutoutItHangsFromTheStatusBarAtTheCentre() {
         val box = IslandGeometry.place(1080, 3f, null, statusBarH = 72)
         assertEquals(540, box.anchorX)
-        assertEquals(84, box.windowTop)
+        assertEquals(72, box.windowTop)
     }
 
     @Test fun anEmptyOrBrokenCutoutIsIgnored() {
         val box = IslandGeometry.place(720, 2f, PxRect(0, 0, 0, 0), statusBarH = 50)
-        assertEquals(58, box.windowTop)
+        assertEquals(50, box.windowTop)
         assertEquals(360, box.anchorX)
     }
 

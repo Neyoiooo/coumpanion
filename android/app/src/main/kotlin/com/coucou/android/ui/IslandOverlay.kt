@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -101,6 +100,7 @@ import com.coucou.android.core.IslandTimeline
 import com.coucou.android.core.MotionPolicy
 import com.coucou.android.core.MotionState
 import com.coucou.android.core.OverlayPolicy
+import com.coucou.android.core.ProviderAppearance
 import com.coucou.android.core.PxRect
 import com.coucou.android.core.Tokens
 import com.coucou.android.core.Tracked
@@ -443,10 +443,17 @@ class IslandOverlay(
     private val dim = Color(IslandSurface.TEXT_DIM)
     private val foreground = Color(IslandSurface.TEXT)
 
-    private fun Modifier.islandBackground(palette: IslandPalette, sweep: () -> Float) = drawWithCache {
-        val fill = Brush.verticalGradient(listOf(Color(0xE9191A22), Color(0xF20D0E14)))
-        val glow = listOf(Color(palette.glow).copy(alpha = 0.16f), Color(palette.glow).copy(alpha = 0f))
-        val trail = listOf(Color(palette.trail).copy(alpha = 0.10f), Color(palette.trail).copy(alpha = 0f))
+    private fun Modifier.islandBackground(appearance: ProviderAppearance, palette: IslandPalette, sweep: () -> Float) = drawWithCache {
+        val base = Color(0xFF101119)
+        val accents = appearance.colors.map { Color(0xFF000000L or it.toLong()) }
+        val primary = accents.first()
+        val secondary = if (accents.size > 1) accents.last() else Color(palette.trail)
+        val fill = Brush.horizontalGradient(listOf(
+            androidx.compose.ui.graphics.lerp(base, primary, 0.23f), base,
+            androidx.compose.ui.graphics.lerp(base, secondary, 0.20f),
+        ))
+        val glow = listOf(primary.copy(alpha = 0.13f), primary.copy(alpha = 0f))
+        val trail = listOf(secondary.copy(alpha = 0.09f), secondary.copy(alpha = 0f))
         onDrawBehind {
             drawRect(fill)
             if (size.height > 0f && size.width > 0f) {
@@ -494,7 +501,12 @@ class IslandOverlay(
         val corner = minOf(radius.value, shownHeight / 2).coerceAtLeast(0.0)
         val palette = remember(s.pillId, s.agent) { IslandPalette.forAgent(s.pillId, s.agent) }
         val accent = Color(palette.label)
-        val shape = RoundedCornerShape(px(corner))
+        val provider = s.manualSessions.firstOrNull()?.provider?.takeIf { s.manualTracking }
+        val appearance = remember(s.pillId, s.agent, provider) {
+            provider?.let(ProviderAppearance::forProvider) ?: ProviderAppearance.resolve(s.pillId, s.agent)
+        }
+        // Attach to the safe top edge without covering the system status bar or camera.
+        val shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = px(corner), bottomEnd = px(corner))
         val borderBrush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.22f), accent.copy(alpha = 0.14f)))
         AvatarMotionHost(animatedAvatars(), MotionState.choice, avatarMotionVisible, animateBackground = glowMotion) {
             CompositionLocalProvider(LocalTokens provides Tokens.DARK) {
@@ -505,7 +517,7 @@ class IslandOverlay(
                     Modifier.width(px(visibleWidth(b).toDouble())).height(px(shownHeight))
                         .clip(shape).then(
                             if (plain()) Modifier.background(Color(0xFF0D0E14))
-                            else Modifier.islandBackground(palette) {
+                            else Modifier.islandBackground(appearance, palette) {
                                 if (glowMotion && avatarClock?.running == true) {
                                     0.5f + 0.34f * sin(avatarClock.millis / 770.0).toFloat()
                                 } else 0.25f
@@ -535,10 +547,10 @@ class IslandOverlay(
                     } else if (sessionList) {
                         val maxListHeight = (b.maxHeight - compactH).coerceAtLeast(0)
                         val listWidth = if (expanded) b.expandedW else compactW
-                        SessionStrip(s, palette, px(compactH.toDouble()), px(maxListHeight.toDouble()),
+                        SessionStrip(s, px(compactH.toDouble()), px(maxListHeight.toDouble()),
                             content.requiredWidth(px(listWidth.toDouble())))
                     } else {
-                        StatusStrip(s, palette, px(compactH.toDouble()), reveal, content)
+                        StatusStrip(s, px(compactH.toDouble()), reveal, content)
                     }
                 }
             }
@@ -561,7 +573,7 @@ class IslandOverlay(
 
     @Composable
     @OptIn(ExperimentalFoundationApi::class)
-    private fun SessionStrip(s: IslandSpec, palette: IslandPalette, headerHeight: Dp, maxListHeight: Dp, modifier: Modifier) {
+    private fun SessionStrip(s: IslandSpec, headerHeight: Dp, maxListHeight: Dp, modifier: Modifier) {
         val sessions = s.manualSessions
         val showElapsed = expanded || s.manualTracking && sessions.size == 1
         val now by trackingClock(sessions, shown = avatarMotionVisible && showElapsed)
@@ -588,8 +600,15 @@ class IslandOverlay(
             ) {
                 ProviderAvatar(s.pillId, s.agent, if (s.manualTracking) sessionMood(first) else AvatarMood.forIsland(s),
                     Modifier.size(27.dp), provider = first?.provider?.takeIf { s.manualTracking })
-                Text(label, Modifier.weight(1f), color = foreground, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(status, color = Color(palette.label), fontSize = 11.sp, maxLines = 1)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(label, color = dim, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    val detail = when {
+                        s.manualTracking && sessions.size == 1 -> stringResource(R.string.manual_ai_tracking) + " · " + status
+                        !s.manualTracking && s.kind == IslandSpec.Kind.WORKING && s.text.isNotBlank() -> s.text
+                        else -> status
+                    }
+                    Text(detail, color = foreground, fontSize = 13.sp, lineHeight = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
                 CoucouIcon(IconKind.CHEVRON, Modifier.rotate(if (expanded) -90f else 90f), tint = dim, size = 12.dp, mirror = false)
             }
             if (expanded) {
@@ -630,9 +649,8 @@ class IslandOverlay(
 
     @Composable
     @OptIn(ExperimentalFoundationApi::class)
-    private fun StatusStrip(s: IslandSpec, palette: IslandPalette, headerHeight: Dp, reveal: Float, modifier: Modifier) {
+    private fun StatusStrip(s: IslandSpec, headerHeight: Dp, reveal: Float, modifier: Modifier) {
         val status = statusText(s)
-        val accent = Color(palette.label)
         Column(
             modifier.fillMaxWidth().combinedClickable(
                 onClick = {
@@ -650,8 +668,13 @@ class IslandOverlay(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ProviderAvatar(s.pillId, s.agent, AvatarMood.forIsland(s), Modifier.size(27.dp))
-                Text(s.agent, Modifier.weight(1f), color = foreground, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(status, Modifier.widthIn(max = 74.dp), color = accent, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    val context = if (s.kind == IslandSpec.Kind.WORKING && s.text.isNotBlank()) s.agent + " · " + status else s.agent
+                    Text(context, color = dim, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // Only paired-agent work may show a live task description. Notification titles stay in expanded details.
+                    val detail = if (s.kind == IslandSpec.Kind.WORKING && !s.manualTracking && s.text.isNotBlank()) s.text else status
+                    Text(detail, color = foreground, fontSize = 13.sp, lineHeight = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
             if (expanded || reveal > 0f) {
                 val detail = when {

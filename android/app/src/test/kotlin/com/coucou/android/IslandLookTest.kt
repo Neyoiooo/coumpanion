@@ -22,18 +22,18 @@ class IslandLookTest {
 
     @Test fun theIslandIsCentredOnTheCameraHole() {
         assertEquals(360, box.anchorX)
-        assertEquals("the entire pill clears the camera and status bar", 77, box.windowTop)
+        assertEquals("the entire pill clears the camera and status bar", 70, box.windowTop)
     }
 
     @Test fun theWorkingStripIsNarrow() {
-        assertTrue("working strip ${dp(box.workingW)} dp", dp(box.workingW) in 170f..180f)
-        assertTrue("short status strip below the cutout", dp(box.workingH) <= 36f)
+        assertTrue("working strip ${dp(box.workingW)} dp", dp(box.workingW) in 219f..220f)
+        assertTrue("short status strip below the cutout", dp(box.workingH) in 51f..52f)
     }
 
     @Test fun theResultAndRequestCardsAreWiderThanTheStrip() {
         assertTrue(box.cardW > box.workingW)
         assertTrue(box.approvalW >= box.cardW)
-        assertTrue("the result fits in a compact strip", dp(box.cardW) <= 200f && dp(box.cardH) <= 38f)
+        assertTrue("the result fits in a compact strip", dp(box.cardW) <= 240f && dp(box.cardH) <= 54f)
         assertTrue("the approval fits in a smaller panel", dp(box.approvalW) <= 272f && dp(box.approvalH) <= 138f)
     }
 
@@ -60,7 +60,7 @@ class IslandLookTest {
 
     @Test fun wideNotchesAndLandscapeSideCutoutsStayOutsideThePill() {
         val wideNotch = IslandGeometry.place(1080, 3f, PxRect(290, 0, 790, 126), statusBarH = 90, safeTop = 126)
-        assertEquals(138, wideNotch.windowTop)
+        assertEquals(126, wideNotch.windowTop)
         assertEquals(540, wideNotch.anchorX)
 
         val landscape = IslandGeometry.place(1920, 2f, null, statusBarH = 46, safeLeft = 95, safeRight = 24)
@@ -72,7 +72,7 @@ class IslandLookTest {
     @Test fun anOffCentreCutoutStaysAlignedOnAScaledScreen() {
         val left = IslandGeometry.place(1080, 3f, PxRect(85, 20, 155, 96), statusBarH = 72, panelWidth = 1440)
         assertEquals(120, left.anchorX)
-        assertEquals(108, left.windowTop)
+        assertEquals(96, left.windowTop)
     }
 
     @Test fun theGlowFollowsTheProviderAcrossAliases() {

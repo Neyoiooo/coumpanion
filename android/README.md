@@ -49,6 +49,10 @@ Android's notification access screen may label the toggle **Restricted setting**
 
 [Meta documents Muse Code](https://dev.meta.ai/docs/muse-code) as a terminal and CI agent and uses the browser for authentication. The existing desktop hook can forward Muse Code activity through phone pairing. No supported Muse Code web activity feed for Android was found. Generic browser notifications do not give Coumpanion a dependable, portable way to identify and follow a Muse Code task across browsers. Automatic Muse web tracking remains unavailable.
 
+## Top-attached live task pill
+
+The redesigned island sits directly below the safe status-bar/cutout edge, follows the configured camera/center/side position, and grows downward. Its two-line header shows the provider and a task or session label, with a dark provider-tinted gradient (or solid background in Display settings). Paired agent work can show its reported task text. Manual timers remain explicitly labeled as manual; notification titles remain in expanded details. Android may restrict overlays in some windows. Physical-device layout testing is still required.
+
 ## AI avatars
 
 Coupi uses a single transparent master at `app/src/main/assets/avatars/robot.png`, prepared as a cutout from the supplied mascot image. Equipping a provider tints the shell and adds its logo to the belly badge. The bundled badges work offline, including when the provider’s app is absent. A generic pixel spark identifies unknown providers. One shared face atlas animates Coupi’s eyes and mouth in Idle. Every other state shows a status symbol on the faceplate. The renderer shares body motion, face timing, and nearest-neighbor sampling across providers and caches the recolored bitmaps. Status marks provide a fallback when the master is unavailable.

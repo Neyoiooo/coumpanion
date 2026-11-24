@@ -47,7 +47,7 @@ data class IslandBox(
  */
 object IslandGeometry {
     const val MARGIN_DP = 12
-    const val CUTOUT_GAP_DP = 4
+    const val CUTOUT_GAP_DP = 0
 
     fun place(
         screenW: Int, density: Float, cutoutTop: PxRect?, statusBarH: Int,
@@ -77,9 +77,9 @@ object IslandGeometry {
         return IslandBox(
             anchorX = anchor, windowTop = windowTop, leftEdge = left, rightEdge = right,
             seedWidth = width(52),
-            workingW = width(176), workingH = scaledDp(36) + (18 * extraTextHeight).toInt(),
-            cardW = width(200), cardH = scaledDp(38) + (18 * extraTextHeight).toInt(),
-            expandedW = width(244), expandedH = scaledDp(90) + (52 * extraTextHeight).toInt(),
+            workingW = width(220), workingH = scaledDp(52) + (30 * extraTextHeight).toInt(),
+            cardW = width(240), cardH = scaledDp(54) + (30 * extraTextHeight).toInt(),
+            expandedW = width(264), expandedH = scaledDp(114) + (60 * extraTextHeight).toInt(),
             approvalW = width(272), approvalH = scaledDp(138) + (76 * extraTextHeight).toInt(),
             panelCorner = scaledDp(24),
             maxHeight = (screenH - windowTop - safeBottom).coerceAtLeast(1),

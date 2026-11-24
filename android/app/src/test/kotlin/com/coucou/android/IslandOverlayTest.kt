@@ -17,6 +17,14 @@ class IslandOverlayTest {
         assertTrue("Allow keeps its lock note", card.contains("R.string.approval_hint"))
     }
 
+    @Test fun compactPillKeepsManualAndReportedActivityDistinct() {
+        val session = src.substringAfter("private fun SessionStrip").substringBefore("private fun StatusStrip")
+        val status = src.substringAfter("private fun StatusStrip").substringBefore("private fun RequestCard")
+        assertTrue(session.contains("R.string.manual_ai_tracking"))
+        assertTrue(status.contains("s.kind == IslandSpec.Kind.WORKING && !s.manualTracking"))
+        assertTrue(src.contains("topStart = 0.dp, topEnd = 0.dp"))
+    }
+
     @Test fun everyTapStillGoesThroughTheEarlyTapGuard() {
         for (what in listOf("tap(\"Deny\")", "tap(\"Review\")", "tap(\"the request header\")", "tap(\"the status strip\")", "tap(\"the island long press\")")) {
             assertTrue(what, src.contains(what))

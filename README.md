@@ -74,6 +74,10 @@ node scripts/gen-strings.mjs --check
 
 [Android development and avatar system](android/README.md) · [Phone link protocol](docs/ANDROID_LINK.md)
 
+## Product direction
+
+See [the Coumpanion roadmap](docs/COUMPI_ROADMAP.md) for the mobile-first rebuild, release gates, and distinction between manual sessions and genuine agent events.
+
 ## Credits
 
 Coumpanion is based on Louis Raillé’s Coucou and Rhytam Biswas’s Android port. The code is open source under the MIT License. [Upstream project](https://github.com/Louis-CFM/coucou) · [MIT license](LICENSE) · [Android license](android/LICENSE) · [Artwork and provider logo notices](LICENSE-ASSETS.md) · [Android privacy policy](docs/coumpanion-privacy.html)
