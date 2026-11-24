@@ -100,9 +100,10 @@ dependencies {
 
 // Proves the release build in CI without a workflow change: CI runs `lint`, and lint now needs a release build that R8 has processed and
 // whose code no longer carries the debug logs (the Log calls are removed by the rules, so their tags and messages must not be in the dex).
+val aapt2 = androidComponents.sdkComponents.aapt2.flatMap { it.executable }
 val verifyReleaseNoLogs by tasks.registering {
     group = "verification"
-    description = "Builds the release APK and fails if a debug log tag or message is still in it."
+    description = "Verifies packaged service declarations and the removal of debug logs in both release APKs."
     dependsOn("assembleRelease")
     val apkDir = layout.buildDirectory.dir("outputs/apk")
     doLast {
@@ -115,11 +116,18 @@ val verifyReleaseNoLogs by tasks.registering {
                     val text = String(zip.getInputStream(entry).readBytes(), Charsets.ISO_8859_1)
                     for (word in leftovers) check(!text.contains(word)) { "'$word' is still in $edition ${entry.name}: the debug logs were not stripped" }
                 }
-                val manifest = String(zip.getInputStream(zip.getEntry("AndroidManifest.xml")).readBytes(), Charsets.UTF_8)
-                val listener = "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-                // Binary XML uses one string pool encoding for all attributes.
-                val containsListener = manifest.contains(listener) || manifest.contains(listener.toCharArray().joinToString("\u0000"))
-                check(containsListener == (edition == "full")) { "unexpected notification listener declaration in $edition" }
+            }
+            val manifest = providers.exec {
+                commandLine(aapt2.get().asFile, "dump", "xmltree", "--file", "AndroidManifest.xml", apk)
+            }.standardOutput.asText.get()
+            val listenerPermission = "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            check((listenerPermission in manifest) == (edition == "full")) { "unexpected notification listener declaration in $edition" }
+            val linkService = manifest.lineSequence()
+                .dropWhile { "\"com.coucou.android.app.LinkService\"" !in it }
+                .drop(1)
+                .takeWhile { it.trimStart().startsWith("A: ") }
+            check(linkService.any { "android:foregroundServiceType" in it && it.endsWith("=0x40000000") }) {
+                "LinkService must declare the specialUse foreground service type in $edition"
             }
         }
     }

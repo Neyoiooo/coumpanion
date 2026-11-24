@@ -1,5 +1,6 @@
 package com.coucou.android.app
 
+import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -14,6 +15,8 @@ import android.os.IBinder
 class LinkService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
+    // Lint misses the shared service declaration with editions. The release APKs are checked for specialUse.
+    @SuppressLint("ForegroundServiceType")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val model = (application as CoucouApp).model
         val notification = model.notifier.ongoing(model)
