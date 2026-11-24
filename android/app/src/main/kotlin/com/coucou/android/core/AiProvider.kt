@@ -23,7 +23,7 @@ data class AiProvider private constructor(
 
         val builtIn = WatchedAiApp.entries.map {
             AiProvider(it.packageName, it.label, it.packageName, null, null, null, null)
-        }
+        } + AiProvider("codex", "Codex", null, "https://chatgpt.com/codex", null, null, null)
 
         fun custom(
             name: String,

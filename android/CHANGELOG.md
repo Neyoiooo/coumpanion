@@ -1,5 +1,10 @@
 # Coumpanion Android changelog
 
+## Unreleased
+
+- Added the Codex web shortcut and Coupi badge to the AI Launcher. Codex supports local manual tracking.
+- Manual timers now show elapsed seconds on visible tracking screens and in the island.
+
 ## 0.6.1 Preview 2
 
 - Removed Android Demo Mode and its simulated sessions and approval requests. Open the AI Launcher for real timers or pair with your desktop for verified agent activity.

@@ -15,12 +15,15 @@ import com.coucou.android.core.IslandSpec
 import com.coucou.android.core.IslandTimeline
 import com.coucou.android.core.KeyValueStore
 import com.coucou.android.core.ManualAiSession
+import com.coucou.android.core.ProviderAppearance
 import com.coucou.android.core.PxRect
 import com.coucou.android.core.UserSettings
 import com.coucou.android.core.WatchedActivity
 import com.coucou.android.core.WatchedAiApp
+import com.coucou.android.core.encodeLocalField
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -35,6 +38,37 @@ class AiSessionTrackerTest {
     }
 
     private fun time(ms: Long, elapsed: Long = ms, boot: Int = 1) = SessionTime(ms, elapsed, boot)
+
+    @Test fun codexIsAWebProviderAndItsManualTimerSurvivesPackageChecks() {
+        val disk = Store()
+        val tracker = AiSessionTracker(disk)
+        val codex = checkNotNull(tracker.provider("codex"))
+        assertEquals("https://chatgpt.com/codex", codex.website)
+        assertNull(codex.packageName)
+        assertEquals("codex", ProviderAppearance.forProvider(codex).logo)
+        assertTrue(tracker.start(codex.id, time(1_000L), ManualSessionPolicy()))
+        val restored = AiSessionTracker(disk).also { it.restore(time(1_500L)) }
+        restored.retainInstalled(emptySet(), time(2_500L))
+        val timer = restored.snapshot.manual.single()
+        assertEquals(codex.id, timer.provider.id)
+        assertEquals(1_500L, timer.elapsed(time(2_500L)))
+        assertEquals(AiActivitySource.MANUAL, timer.source)
+        assertEquals(BotState.IDLE, timer.island().state)
+    }
+
+    @Test fun existingCustomCodexKeepsItsLauncherCardAndTimer() {
+        val disk = Store()
+        val id = "custom:00000000-0000-0000-0000-000000000001"
+        val website = "https://chatgpt.com/codex"
+        disk.put("ai_custom_providers", "$id|${encodeLocalField("My Codex")}|web|${encodeLocalField(website)}|||")
+        val tracker = AiSessionTracker(disk)
+        assertEquals(id, tracker.snapshot.providers.single { it.website == website }.id)
+        assertTrue(tracker.start(id, time(1_000L), ManualSessionPolicy()))
+        val restored = AiSessionTracker(disk).also { it.restore(time(1_500L)) }
+        assertEquals(id, restored.snapshot.manual.single().provider.id)
+        restored.removeProvider(id, time(2_000L))
+        assertEquals("codex", restored.snapshot.providers.single { it.website == website }.id)
+    }
 
     @Test fun manualSessionsRestoreIndependentlyAndSurviveNotificationUpdates() {
         val disk = Store()

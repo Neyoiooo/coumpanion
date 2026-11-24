@@ -33,9 +33,9 @@
     <string name="ai_restart_timer">Restart timer</string>
     <string name="ai_mark_done">Mark done manually</string>
     <string name="ai_timer_status">%1$s · %2$s</string>
-    <string name="ai_duration_under_minute">Under 1 min</string>
+    <string name="ai_timer_minutes_seconds">%1$d:%2$02d</string>
+    <string name="ai_timer_hours_minutes_seconds">%1$d:%2$02d:%3$02d</string>
     <string name="ai_duration_minutes">%1$d min</string>
-    <string name="ai_duration_hours">%1$d h %2$d min</string>
     <string name="ai_no_providers">Install a supported AI app or add a provider from the AI Launcher.</string>
     <string name="ai_timer_settings">Manual timers</string>
     <string name="ai_expiration">Expire new timers after</string>

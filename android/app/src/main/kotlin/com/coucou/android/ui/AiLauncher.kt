@@ -24,6 +24,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +48,7 @@ import com.coucou.android.core.AvatarMood
 import com.coucou.android.core.BotState
 import com.coucou.android.core.ManualAiSession
 import com.coucou.android.core.ProviderAppearance
+import com.coucou.android.core.SessionTime
 import com.coucou.android.core.TypeScale
 import com.coucou.android.link.LinkState
 import java.util.Locale
@@ -58,7 +60,7 @@ import kotlinx.coroutines.withContext
 internal fun AiLauncher(model: AppModel, onOverlay: () -> Unit) {
     val t = tokens()
     val active = model.manualTracking
-    val now by trackingClock(active)
+    val now = trackingClock(active)
     val all = model.aiProviders
     val installed = model.installedWatchApps.map { it.packageName }
     var editing by remember { mutableStateOf<AiProvider?>(null) }
@@ -80,7 +82,7 @@ internal fun AiLauncher(model: AppModel, onOverlay: () -> Unit) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 pair.forEach { provider ->
                     val session = active.firstOrNull { it.provider.id == provider.id }
-                    AiProviderCard(model, provider, session, session?.let { elapsedTracking(it, now) }, Modifier.weight(1f),
+                    AiProviderCard(model, provider, session, now, Modifier.weight(1f),
                         onEdit = { editing = provider; editorOpen = true })
                 }
                 if (pair.size == 1) Box(Modifier.weight(1f))
@@ -99,7 +101,7 @@ private fun AiProviderCard(
     model: AppModel,
     provider: AiProvider,
     session: ManualAiSession?,
-    elapsed: String?,
+    now: State<SessionTime>,
     modifier: Modifier,
     onEdit: () -> Unit,
 ) {
@@ -139,11 +141,11 @@ private fun AiProviderCard(
                 }
                 Text(stringResource(availability), maxLines = 1, overflow = TextOverflow.Ellipsis,
                     style = TypeScale.SECONDARY.style(t.textDim.c()))
-                Text(when {
-                    session == null -> stringResource(R.string.ai_no_timer)
-                    session.paused -> stringResource(R.string.ai_timer_status, stringResource(R.string.ai_timer_paused), elapsed.orEmpty())
-                    else -> stringResource(R.string.ai_timer_status, stringResource(R.string.manual_ai_tracking), elapsed.orEmpty())
-                }, style = TypeScale.SECONDARY.style(t.text.c()))
+                if (session == null) {
+                    Text(stringResource(R.string.ai_no_timer), style = TypeScale.SECONDARY.style(t.text.c()))
+                } else {
+                    ProviderTimerLabel(session, now)
+                }
                 paired?.let {
                     Text(stringResource(R.string.ai_timer_status, stringResource(R.string.ai_history_source_desktop),
                         stringResource(it.state.launcherLabel())), style = TypeScale.SECONDARY.style(t.textDim.c()))
@@ -170,6 +172,13 @@ private fun AiProviderCard(
             }
         }
     }
+}
+
+@Composable
+private fun ProviderTimerLabel(session: ManualAiSession, now: State<SessionTime>) {
+    val status = stringResource(if (session.paused) R.string.ai_timer_paused else R.string.manual_ai_tracking)
+    Text(stringResource(R.string.ai_timer_status, status, elapsedTracking(session, now.value)),
+        style = TypeScale.SECONDARY.style(tokens().text.c()))
 }
 
 @Composable

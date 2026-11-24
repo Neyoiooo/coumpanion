@@ -47,7 +47,9 @@ class AiSessionTracker(private val store: KeyValueStore) {
         }.getOrNull()
     }.distinctBy { it.id }.toMutableList()
 
-    private val providers get() = AiProvider.builtIn + custom
+    private val providers get() = AiProvider.builtIn.filterNot { builtIn ->
+        builtIn.website != null && custom.any { sameTarget(builtIn, it) }
+    } + custom
 
     var snapshot = loadSnapshot()
         private set
@@ -187,7 +189,10 @@ class AiSessionTracker(private val store: KeyValueStore) {
         }.minOrNull()
 
     fun retainInstalled(installed: Set<String>, now: SessionTime) {
-        snapshot.manual.filter { !it.provider.isCustom && it.provider.id !in installed }
+        snapshot.manual.filter { session ->
+            val packageName = session.provider.packageName
+            !session.provider.isCustom && packageName != null && packageName !in installed
+        }
             .forEach { end(it.provider.id, AiSessionResult.UNAVAILABLE, now) }
     }
 

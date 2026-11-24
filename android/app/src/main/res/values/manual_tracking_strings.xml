@@ -2,8 +2,8 @@
 <!-- English fallback until the new feature strings are translated. -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <string name="manual_ai_title">Manual task tracking</string>
-    <string name="manual_ai_tracking">Tracking</string>
-    <string name="manual_ai_unconfirmed">Manual marker. AI progress is unverified.</string>
+    <string name="manual_ai_tracking">Manual timer</string>
+    <string name="manual_ai_unconfirmed">Manual timers show elapsed time. AI progress is unverified.</string>
     <string name="standard_launcher_label">Coumpanion Standard</string>
     <string name="ai_completion_reported">Completion reported</string>
     <string name="ai_attention_reported">Issue reported</string>

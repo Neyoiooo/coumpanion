@@ -563,7 +563,8 @@ class IslandOverlay(
     @OptIn(ExperimentalFoundationApi::class)
     private fun SessionStrip(s: IslandSpec, palette: IslandPalette, headerHeight: Dp, maxListHeight: Dp, modifier: Modifier) {
         val sessions = s.manualSessions
-        val now by trackingClock(sessions)
+        val showElapsed = expanded || s.manualTracking && sessions.size == 1
+        val now by trackingClock(sessions, shown = avatarMotionVisible && showElapsed)
         val first = sessions.firstOrNull()
         val label = if (s.manualTracking && sessions.size > 1) stringResource(R.string.ai_sessions) else s.agent
         val status = when {

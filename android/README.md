@@ -15,7 +15,7 @@ Both editions support Android 11 and later. Full retains the existing applicatio
 
 ## AI Launcher and manual timers
 
-On Home, tap an AI to open it. By default this starts a manual timer if the provider opens successfully. Reopen an active provider by tapping its card. Long-press the card or open its actions menu to pause, resume, restart, mark done manually, or stop. Configure launch tracking, expiration, and reminders for new timers in **Settings → Manual timers**. Reminders require notification permission and run while Android keeps Coumpanion active. An expired timer appears as Expired in history.
+On Home, tap an AI to open it. The **Codex** card opens OpenAI’s Codex website. By default a successful launch starts a manual timer, which shows elapsed time in minutes and seconds. Reopen an active provider by tapping its card. Use the card’s **⋯** menu or long-press to start a timer without opening the provider, pause, resume, restart, mark done manually, or stop. The timer records the time you track locally. AI progress stays unverified. Configure launch tracking, expiration, and reminders for new timers in **Settings → Manual timers**. Reminders require notification permission and run while Android keeps Coumpanion active. An expired timer appears as Expired in history.
 
 Use **Add AI** for a native package or an HTTPS website. You can import a logo and choose an accent, or let Coupi choose a stable color. Android limits visibility of other packages. A custom native app may be labeled **Check by opening** until Android resolves a user-initiated launch. Providing a package does not add notification monitoring.
 

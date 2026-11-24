@@ -86,32 +86,31 @@ internal fun ProviderSwitch(app: WatchedAiApp, checked: Boolean, mood: AvatarMoo
     )
 }
 
-/** A visible panel updates once per displayed minute. There is no background timer or write. */
+/** Visible timers on this panel share one clock update a second. */
 @Composable
-internal fun trackingClock(sessions: List<ManualAiSession>): androidx.compose.runtime.State<SessionTime> {
+internal fun trackingClock(sessions: List<ManualAiSession>, shown: Boolean = true): androidx.compose.runtime.State<SessionTime> {
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
-    val visible = lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+    val visible = shown && lifecycleState.isAtLeast(Lifecycle.State.STARTED)
     val context = LocalContext.current
     val clock = remember(context) { SessionClock(context) }
     return produceState(clock.now(), visible, sessions) {
         value = clock.now()
-        val running = sessions.filterNot { it.paused }
-        if (!visible || running.isEmpty()) return@produceState
+        if (!visible || sessions.all { it.paused }) return@produceState
         while (true) {
-            val now = clock.now()
-            value = now
-            delay(running.minOf { 60_000 - (it.elapsed(now) % 60_000) })
+            delay(1_000)
+            value = clock.now()
         }
     }
 }
 
 @Composable
 internal fun elapsedTracking(session: ManualAiSession, now: SessionTime): String {
-    val minutes = session.elapsed(now) / 60_000
-    return when {
-        minutes < 1 -> stringResource(R.string.ai_duration_under_minute)
-        minutes < 60 -> stringResource(R.string.ai_duration_minutes, minutes)
-        else -> stringResource(R.string.ai_duration_hours, minutes / 60, minutes % 60)
+    val seconds = session.elapsed(now) / 1_000
+    val minutes = seconds / 60
+    return if (minutes < 60) {
+        stringResource(R.string.ai_timer_minutes_seconds, minutes, seconds % 60)
+    } else {
+        stringResource(R.string.ai_timer_hours_minutes_seconds, minutes / 60, minutes % 60, seconds % 60)
     }
 }
 
