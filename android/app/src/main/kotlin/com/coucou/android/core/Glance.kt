@@ -54,7 +54,7 @@ object GlanceBuilder {
         approvals: Int,
         nameOf: (String) -> String,
     ): Glance {
-        if (!paired) return Glance(Texts.t("glance_not_paired", "Not paired"), Texts.t("glance_not_paired_detail", "Open Coumpanion to connect to your computer"), GlanceTone.CALM, false, emptyList(), 0)
+        if (!paired) return Glance(Texts.t("app_name", "Coumpanion"), Texts.t("widget_btn_home_cd", "Open Coumpanion"), GlanceTone.CALM, false, emptyList(), 0)
         if (link != LinkState.CONNECTED) {
             val connecting = link == LinkState.CONNECTING
             return Glance(

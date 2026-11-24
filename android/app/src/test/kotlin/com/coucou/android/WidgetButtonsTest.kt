@@ -214,7 +214,7 @@ class WidgetButtonsTest {
         assertEquals(
             listOf(
                 listOf("@+id/big_l_home", "@+id/big_l_chat", "@+id/big_l_settings"),
-                listOf("@+id/big_l_recent", "@+id/big_l_session", "@+id/big_l_pair"),
+                listOf("@+id/big_l_recent", "@+id/big_l_session", "@+id/big_l_tracking"),
             ),
             grid.map { r -> r.children().map { it.getAttribute("android:id") } },
         )
@@ -232,9 +232,9 @@ class WidgetButtonsTest {
 
     @Test fun eachButtonOpensOneThingAndBothArrangementsAgree() {
         val src = bigSource
-        assertTrue(src.contains("LaunchScreen.HOME, LaunchScreen.CHAT, LaunchScreen.SETTINGS, LaunchScreen.RECENT, null, LaunchScreen.PAIR"))
+        assertTrue(src.contains("LaunchScreen.HOME, LaunchScreen.CHAT, LaunchScreen.SETTINGS, LaunchScreen.RECENT, null, LaunchScreen.AI_TRACKING"))
         assertTrue(src.contains("listOf(R.id.big_m_home, R.id.big_m_chat, R.id.big_m_settings, R.id.big_m_recent)"))
-        assertTrue(src.contains("listOf(R.id.big_l_home, R.id.big_l_chat, R.id.big_l_settings, R.id.big_l_recent, R.id.big_l_session, R.id.big_l_pair)"))
+        assertTrue(src.contains("listOf(R.id.big_l_home, R.id.big_l_chat, R.id.big_l_settings, R.id.big_l_recent, R.id.big_l_session, R.id.big_l_tracking)"))
         // The same button has the same code in the row and in the grid; each of the six has its own.
         assertTrue(src.contains("for (tiles in listOf(ROW_TILES, GRID_TILES))"))
         assertTrue(src.contains("WidgetHub.CODE_BIG_BUTTON + i"))
@@ -285,6 +285,6 @@ class WidgetButtonsTest {
         }
         // Every screen a button names is on the list.
         val named = (read(main + "app/StatusPillWidget.kt") + read(main + "app/AgentOverviewWidget.kt"))
-        for (m in Regex("""LaunchScreen\.([A-Z]+)""").findAll(named)) assertTrue(m.groupValues[1], LaunchScreen.values().any { it.name == m.groupValues[1] })
+        for (m in Regex("""LaunchScreen\.([A-Z_]+)""").findAll(named)) assertTrue(m.groupValues[1], LaunchScreen.values().any { it.name == m.groupValues[1] })
     }
 }

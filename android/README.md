@@ -1,14 +1,14 @@
 # Coumpanion for Android
 
-Coumpanion shows your agents, lets you answer approval requests and supports chat through a compatible link. The Android app is based on [Coucou](https://github.com/Louis-CFM/coucou) by Louis Raillé and the Android port by Rhytam Biswas. The code remains [MIT-licensed](LICENSE). [Coumpanion privacy policy](../docs/coumpanion-privacy.html)
+Coumpanion puts your AI launcher, local session activity and configurable island on Android. The Android app is based on [Coucou](https://github.com/Louis-CFM/coucou) by Louis Raillé and the Android port by Rhytam Biswas. The code remains [MIT-licensed](LICENSE). [Coumpanion privacy policy](../docs/coumpanion-privacy.html)
 
-The AI Launcher and manual timers run on Android 11 or later and work offline. [Coumpanion Server](server/README.md) provides a real DeepSeek connection over a private network. Compatible desktop links can also be used for pairing and chat.
+The AI Launcher and manual timers run on Android 11 or later and work offline. In development builds, Home opens to Coupi and the AI Launcher, and Activity opens local session history. Previously saved desktop links can reconnect during the standalone migration. Disconnect an existing link in **Settings → Computer**. The server and desktop pairing setup documentation applies to earlier releases. [Earlier Android preview documentation](https://github.com/Neyoiooo/coumpanion/blob/dc9b21908ca776d23304867de27a6b06d44617b5/android/README.md)
 
 ## Choose an edition
 
 | Edition | Application ID | Features |
 | --- | --- | --- |
-| Standard | `app.coumpanion.android.standard` | Manual tracking, Dynamic Island, widgets, desktop pairing and DeepSeek through the optional server |
+| Standard | `app.coumpanion.android.standard` | AI Launcher, manual tracking, Activity history, Dynamic Island and widgets |
 | Full | `app.coumpanion.android` | Standard features plus optional notification watching |
 
 Both editions support Android 11 and later. Full retains the existing application ID. Android only upgrades an existing install when the signatures match. If you have a debug-signed preview, install Standard alongside it or back up what you need before replacing the preview with production-signed Full. Android clears app data and permissions on uninstall. The editions have separate local histories, settings and pairing.
@@ -29,7 +29,7 @@ Add the Coumpanion Quick Settings tile to see the active timer count or the pair
 
 ## Session History and Diagnostics
 
-In Settings, filter **Session History** by provider, date, or final status and delete records locally. Notification reports have a receipt timestamp and no known task duration. Paired history records the interval observed on the phone from working activity through a verified finish or error. Manual entries always reflect a user timer.
+Open **Activity** from the bottom bar to filter history by provider, date or final status, or delete records locally. Notification reports have a receipt timestamp and no known task duration. History from an existing desktop link records the interval observed on the phone from working activity through a verified finish or error. Manual entries always reflect a user timer.
 
 **Diagnostics Center** shows the edition, build, permissions, link service, timer count, and avatar availability with Android settings shortcuts. Its optional clipboard report contains only local status fields. [Privacy policy](../docs/coumpanion-privacy.html)
 
@@ -86,7 +86,7 @@ For GitHub distribution, verify the release APKs against `SHA256SUMS` and regist
 
 To try the live island, start a manual timer from **AI Launcher** and grant **Display over other apps**. Switch to the provider to see the timer. For approval requests from a paired desktop, tap **Review request** to see the exact command. The first **Allow** or **Send answer** uses your PIN, pattern, or password. That check is shared while the screen stays on. **Deny** works directly.
 
-For a separate test over Wi-Fi, run the fake desktop:
+For link protocol development, the fake desktop is available for automated tests and pairing-enabled previews:
 
 ```bash
 node tools/dev-desktop.mjs --host <LAN IP>     # prints a pairing link; flags: --details --answers --diffs --usage --services --fake-chat
@@ -101,7 +101,7 @@ The desktop side is in `windows/src-tauri/src/phone_link`; the protocol is `docs
   usage and service cards when the computer offers them, and *Recent* (your own Allow/Deny decisions, kept only on the phone).
   Raw tool names become plain words (`core/ToolLabels.kt`); a command or path is never shown without a deliberate tap (`core/SafeText.kt`).
 - **Languages** (Settings > Display > Language, or Android 13 and later: Android's own Apps > Coumpanion > Language): the phone's own, English, French (informal "tu", like the rest of Coucou), Spanish, Brazilian Portuguese, Simplified Chinese, Hindi, Bengali, Russian, Indonesian, Arabic (written right to left, the layout and the arrows mirror) and Turkish. The English source is `i18n/app-strings.json` (strings and plurals); each language is a file in `i18n/translations/`; `node scripts/gen-strings.mjs` writes the resources (`values-<language>`), `res/xml/locales_config.xml` and the table `app/TextIds.kt`, and `--check` (run by CI) fails on a missing key, a placeholder that does not match, a missing plural form or a stale file. Texts the Mac and Windows apps already have in a language are reused; the rest was written for Android and is listed in `i18n/REVIEW.md` so a native speaker can check it. The words that the pure rules produce ("Running a command", "2 agents are working", the Widgets' state words) go through `core/Texts.kt`, so they are translated too. Before Android 13 there is no system per-app language, so the choice is kept in the app (the Widgets' fixed texts, drawn by the launcher, then follow the phone's language). Not translated yet: the "Can't connect?" report and its steps.
-- **Theme** (Settings > Display): System (the default), Light or Dark, and an optional *Use my phone's colours* (Material You, Android 12 and later, off by default). The hero panel, the sheets and the file-change view take their colours from `core/Tokens.kt` (`DARK` and `LIGHT`, every text pair checked for WCAG AA in `TokensTest` and `LightThemeTest`); the island remains dark and has its own background setting, and the camera screen stays black. The agent and state colours are the same in both.
+- **Theme** (Settings > Display): System (the default), Light or Dark, and optional *Use my phone's colours* (Material You, Android 12 and later). The island has its own background setting. `TokensTest` and `LightThemeTest` check WCAG AA contrast in both themes.
 - **Accessibility**: TalkBack says an agent as "Claude Code, waiting for your OK" (name, state in words, then the line), a tab with an alert as "Home, a request is waiting", and a request sheet or the island is announced when it appears (`core/SpokenLabels.kt`, `core/WidgetSpoken.kt`: every tapped area of every Widget speaks one sentence built from what it shows). Every control is at least 48 dp, sheets scroll and status lines may wrap so the app holds at a font scale of 1.3, and Settings > Display > *Reduce motion* (System, On, Off; System follows Android's "Remove animations") turns the island's and sheets' springs into a fade (`core/MotionPolicy.kt`).
 - **Request alerts** (Settings > Permission requests): *Don't wake the screen for a request* (off by default, the screen wakes as before) and the vibration (Standard is the old pattern, Short, or Off). A request is never muted or hidden by either: it still arrives with an approval tone and its notification. The vibration is a notification channel setting that Android cannot change later, so each choice has its own channel id and the old one is deleted (`core/ApprovalAlerts.kt`).
 - **Home says why the link was lost** (not on Wi-Fi, the computer closed the connection, or it cannot be reached: Coucou closed there, phone link off, another network), and the ongoing notification is posted again only when its text changes (`core/OngoingGate.kt`). Predictive back is on (`enableOnBackInvokedCallback`).
@@ -110,11 +110,9 @@ The desktop side is in `windows/src-tauri/src/phone_link`; the protocol is `docs
 - **Island over other apps** (on by default, with an option to turn it off): a dark island positioned below the status bar drops while an agent works, shows
   the result for 10 s and goes back up with the computer's motion. Needs Android's "Display over other apps". Rules are pure and
   tested (`core/Island*.kt`); `ui/IslandOverlay.kt` draws.
-- **Chat** (a tab, when the computer offers it), **session details**, **file changes** and **plan usage** are opt-in switches on the
+- For existing desktop links, **chat**, **session details**, **file changes** and **plan usage** are opt-in switches on the
   computer (Settings > Android phone), all off by default; the phone is told only what it asks for and the computer allows.
-- **Pairing**: scan the QR code with the in-app camera (CameraX + zxing, offline) or paste the link; a scan or a `coucou://pair`
-  link always asks to confirm. The certificate is pinned. If the computer's address changes the phone finds it again by itself (mDNS,
-  checked against the pinned certificate before the token is sent), or you can type the address.
+- **Existing links**: if the computer's address changes, the app can find it over mDNS and check the pinned certificate before sending the token. The existing connection can also be updated with a typed address.
 - **Away from home Wi-Fi** (optional): through your own Cloudflare relay, end-to-end encrypted; the direct link is always tried first.
 - **Keeping the link alive with the screen off**: an alarm every few minutes checks that the computer still answers and reconnects if not (Doze allows nothing more); Home says when and why the link was lost; Settings > Computer > *Can't connect?* checks the network, address, discovery, certificate, pairing code and relay; a calm hint suggests the battery setting ("Unrestricted", with the Samsung steps) only if it would help. Details and limits: `docs/ANDROID_LINK.md`, "Keeping the link alive".
 - **Widget, quick-settings tile, ongoing notification**: agent names and state words only. Updated when something changes, never on a timer.
@@ -122,7 +120,7 @@ The desktop side is in `windows/src-tauri/src/phone_link`; the protocol is `docs
   - *Agents summary* (3x2, the first Widget, same receiver as before): its text and counts are unchanged, now on the shared card with a small mark in the state of your most urgent agent, a headline with a badge for what waits for you and up to three short lines with a state dot each. A tap anywhere opens the app; it has no buttons.
   - *Agent at a glance* (Solo, 2x2): your most urgent agent, its name and a state word.
   - *All your agents* (List, 4x3): one row of at least 48dp per agent (status mark, name, state word, dot), up to five, with a badge for what waits for you; with no agent, a centred empty state ("Waiting for your computer" / "No agents running").
-  - *Agent overview* (4x4): on the left, a status mark followed by the agent’s name and state; on the right your plan usage (Claude and Codex, each with a thin bar that is teal, yellow from 75% and red from 90%, and a small percentage that becomes big and bold with "Near limit" from 90%), or "Plan usage is off" (a tap opens Settings) or "Not connected". Under them rounded buttons: two rows of three (Home, Chat, Settings, Recent, Top agent, Pair again; tinted orange while something waits), one row of four when medium, none when small.
+  - *Agent overview* (4x4): shows an existing desktop agent and plan usage where available. Its largest layout includes six shortcuts (Home, Chat, Settings, Recent, Top agent and AI tracking).
   - *One-line status* (Status Pill, 4x1): one slim line with a dot, the agent's name and its state word, and four round buttons that open Home, Chat, Settings and Recent decisions. Narrower, the state word goes first, then the name; the text never runs under the buttons.
   - *Approvals waiting* (Waiting Alert, 2x2): calm when nothing waits, a bright orange "N waiting" when something does. A tap opens the app and the sheet rises by itself.
   - *Plan usage* (Usage Ring, 2x2): a ring for your Claude or Codex plan usage; "Turn on plan usage in the app" when it is off.
@@ -132,10 +130,9 @@ The desktop side is in `windows/src-tauri/src/phone_link`; the protocol is `docs
 
   The buttons only open a screen of the app, from a closed list (`core/LaunchScreen.kt`) through the non-exported `LaunchActivity`; none approves, denies or sends anything, and `MainActivity` still reads no intent extra. A tap on Solo, Agent overview, Status Pill, Status indicator or a List row opens that agent in the app. A request is decided in the app. Widgets show agent names, state words and colours only, are redrawn when something changes (`updatePeriodMillis` stays 0) and a redraw that would look the same is skipped. On Android 12 and later they adapt to their size (small, medium, large). Code: `core/WidgetData.kt` (pure, tested), `app/WidgetHub.kt`, one class per Widget in `app/`, `app/StatusMarkBitmap.kt`, `app/RingBitmap.kt`.
 - **History**: *Weekly recap* (optional, needs Coucou with the `recap` capability on the computer; Settings → Android phone → "Show my weekly recap on the phone", off by default): a card on Home with last week's time with agents, sessions, files, lines, commands, permissions allowed and denied and the agent used most, counts only (`link/Protocol.kt`, `core/RecapText.kt`, `ui/RecapPanel.kt`; held in memory, never stored). *Activity* (Settings > More) has a search box and *Export as text*, which shares the same wording the list shows (never the commands) through Android's share sheet (`core/HistoryExport.kt`). Settings > Notices > *Mute an agent's notices* silences the finished / failed / limit notices of the agents you pick; requests and questions are never muted (`core/AgentMute.kt`, rule in `StatusPolicy.announce`).
-- **Quick actions**: long-press the app icon for *Chat*, *Recent decisions* and *Pair again* (`res/xml/shortcuts.xml`). They start the private `LaunchActivity` with the key of one screen of the closed list, like the Widget buttons: they only open a screen. *Share to Coumpanion*: in another app, Share > Coumpanion chat puts the text in the chat box as a draft, cut to the chat's limit and stripped of control characters (`core/ShareDraft.kt`, `app/ShareActivity.kt`). It is never sent by itself; if the computer does not offer chat the text is dropped with a short message, and while the computer is not reachable yet it waits for up to two minutes.
 - **Looking at every state without a computer** (debug builds only): `adb shell am broadcast -n app.coumpanion.android/com.coucou.android.app.WidgetPreviewReceiver -a com.coucou.android.debug.WIDGET_STATE --es state <disconnected|empty|working|waiting|done|live>`; `live` goes back to the real state. The receiver is in `app/src/debug` and does not exist in a release build.
 
-## Getting the phone link running on Windows
+## Windows setup for pairing-enabled previews
 
 1. Download the portable build from the repository's **Windows** workflow run (Actions, Windows, the `Coucou-Windows-portable`
    artifact). It holds `coucou.exe` and `coucou-hook.exe`.
@@ -162,7 +159,7 @@ What to know when you try approvals from the phone:
 For testing without a cable once the phone has been connected by USB once: `adb tcpip 5555`, then
 `adb connect <phone address>:5555`. It resets when the phone restarts or its address changes.
 
-## Getting the phone link running on a Mac
+## Mac setup for pairing-enabled previews
 
 1. Use a Coucou for Mac that carries the Android phone link (the GitHub build; it is not in the App Store build). Update Coucou first if
    Settings has no **Android phone** box.
@@ -179,7 +176,7 @@ permission, or nothing reaches the phone.
 ## Security rules the tests guard
 
 Certificate pinning and the pairing token; approval fingerprints, 120 s expiry and decide-once; the unlocked approval session for Allow and Answer;
-`MainActivity` ignores intent extras (only the non-exported `LaunchActivity` can ask for the Allow prompt); `FLAG_SECURE` on pairing,
+`MainActivity` ignores intent extras (only the non-exported `LaunchActivity` can ask for the Allow prompt); `FLAG_SECURE` on
 chat, approval and question screens; secrets only in the Android Keystore blob; no logging of tokens, answers or relay keys; no ad,
 billing or analytics library.
 

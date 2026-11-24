@@ -2,7 +2,6 @@ package com.coucou.android.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,19 +27,16 @@ import com.coucou.android.core.TypeScale
 
 /**
  * Shown on Home when the saved address failed and a search of about 15 seconds found nothing. Calm, with the usual
- * reasons (same Wi-Fi? asleep? firewall? client isolation) and two ways out: pair again, or type the address.
+ * reasons and an option to update the address of an existing connection.
  */
 @Composable
-fun DiscoveryHint(onPairAgain: () -> Unit, onEnterAddress: () -> Unit) {
+fun DiscoveryHint(onEnterAddress: () -> Unit) {
     val t = tokens()
     Panel {
         Column(Modifier.padding(Spacing.INSIDE.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.discovery_title), style = TypeScale.HEADLINE.style(t.text.c()))
             Text(stringResource(R.string.discovery_body), style = TypeScale.SECONDARY.style(t.textDim.c()))
-            Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PillButton(stringResource(R.string.discovery_pair_again), onPairAgain, Modifier.weight(1f))
-                PillButton(stringResource(R.string.discovery_enter_address), onEnterAddress, Modifier.weight(1f))
-            }
+            PillButton(stringResource(R.string.discovery_enter_address), onEnterAddress, Modifier.fillMaxWidth())
         }
     }
 }

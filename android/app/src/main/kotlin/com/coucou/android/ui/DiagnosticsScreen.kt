@@ -83,11 +83,13 @@ fun DiagnosticsScreen(model: AppModel, onBack: () -> Unit) {
                     open(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))
                 }
                 RowDivider()
-                DiagnosticSetting(R.string.ai_diag_service, snapshot.linkService, R.string.ai_diag_service_hint)
-                RowDivider()
                 ListRow(stringResource(R.string.ai_quick_title), hint = stringResource(R.string.ai_quick_count, snapshot.activeTimers))
-                RowDivider()
-                ListRow(stringResource(R.string.settings_section_computer), hint = linkStatusText(model))
+                if (model.mode == Mode.PAIRED) {
+                    RowDivider()
+                    DiagnosticSetting(R.string.ai_diag_service, snapshot.linkService, R.string.ai_diag_service_hint)
+                    RowDivider()
+                    ListRow(stringResource(R.string.settings_section_computer), hint = linkStatusText(model))
+                }
                 RowDivider()
                 DiagnosticSetting(R.string.ai_diag_avatar, snapshot.avatarAssets, R.string.ai_diag_avatar_hint)
             }

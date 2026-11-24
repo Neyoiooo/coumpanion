@@ -4,9 +4,11 @@
   <img src="docs/media/coupi/banner.png" width="708" alt="Coumpanion in mint-green pixel lettering on a night sky">
 </p>
 
-<p align="center"><strong>All your AI. One island.</strong></p>
+<p align="center"><strong>All your AI. One little companion.</strong></p>
 
 Coumpanion keeps your AI sessions in a Dynamic Island on Android. Open a provider from the AI Launcher, then pause, resume, mark done, or stop its manual timer. Add a native app or HTTPS site to give it a personalized Coupi. Manual tracking runs on your phone without an account, API key, or server.
+
+Development builds open to Coupi and the AI Launcher. Use the **Activity** tab for local history. Existing desktop links can reconnect during the transition to standalone Android.
 
 <p align="center">
   <a href="https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.6.1-preview.2/Coumpanion-Android-0.6.1-Standard.apk"><strong>Download Standard 0.6.1 Preview 2</strong></a>

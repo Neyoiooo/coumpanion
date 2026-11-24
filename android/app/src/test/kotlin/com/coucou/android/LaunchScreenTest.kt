@@ -12,10 +12,8 @@ import org.junit.Test
 
 /** The closed list of screens a Widget button may open: nothing else can be asked for. */
 class LaunchScreenTest {
-    @Test fun theListIsExactlyTheFiveScreensOfTheBrief() {
-        assertEquals(listOf("home", "chat", "settings", "tracking", "recent", "pair"), LaunchScreen.values().map { it.key })
-        assertEquals(listOf(LaunchScreen.HOME, LaunchScreen.CHAT, LaunchScreen.SETTINGS, LaunchScreen.AI_TRACKING, LaunchScreen.RECENT, LaunchScreen.PAIR), LaunchScreen.values().toList())
-        assertEquals("a key is used once", 6, LaunchScreen.values().map { it.key }.toSet().size)
+    @Test fun widgetsCanOnlyOpenKnownScreens() {
+        assertEquals(listOf("home", "chat", "settings", "tracking", "recent"), LaunchScreen.values().map { it.key })
     }
 
     @Test fun everyValueParsesBackFromItsOwnKey() {
@@ -24,7 +22,7 @@ class LaunchScreenTest {
 
     @Test fun anythingElseIsRejected() {
         val bad = listOf(
-            null, "", " ", "HOME", "Home", " home", "home ", "ho me", "home\n", "session", "history", "scan", "diagnostics", "licences", "wardrobe",
+            null, "", " ", "HOME", "Home", " home", "home ", "ho me", "home\n", "session", "history", "scan", "pair", "diagnostics", "licences", "wardrobe",
             "approve", "allow", "deny", "send", "unpair", "SESSION", "../home", "home;chat", "0", "-1", "HOME,CHAT", "com.coucou.android.MainActivity",
         )
         for (k in bad) assertNull("'$k' must not open anything", LaunchScreen.parse(k))
@@ -34,15 +32,11 @@ class LaunchScreenTest {
 
     @Test fun everyValueIsAScreenThatExistsInTheApp() {
         for (s in LaunchScreen.values()) assertTrue(s.name, s.screen in Screen.values())
-        // The three tabs of the bottom bar.
         assertEquals(Nav.screenOf(com.coucou.android.core.Tab.HOME), LaunchScreen.HOME.screen)
-        assertEquals(Nav.screenOf(com.coucou.android.core.Tab.CHAT), LaunchScreen.CHAT.screen)
         assertEquals(Nav.screenOf(com.coucou.android.core.Tab.SETTINGS), LaunchScreen.SETTINGS.screen)
-        // "Recent" is the full list of your own decisions, one level under Settings; "Pair again" is the pairing scan.
+        assertEquals(Screen.CHAT, LaunchScreen.CHAT.screen)
         assertEquals(Screen.HISTORY, LaunchScreen.RECENT.screen)
-        assertEquals(Screen.SCAN, LaunchScreen.PAIR.screen)
         assertEquals(Screen.SETTINGS, Nav.back(Screen.HISTORY))
-        assertEquals(Screen.HOME, Nav.back(Screen.SCAN))
         // No screen that needs a session or a request in hand is on the list.
         assertFalse(LaunchScreen.values().any { it.screen == Screen.SESSION })
     }

@@ -10,10 +10,6 @@
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <!-- Held for at most 15 seconds, only while the periodic alarm checks that the link to the computer is alive. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- Asked only when the user taps "Scan QR code" to read the pairing code; used on that screen only. -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <!-- A phone without a camera can still pair by pasting the link. -->
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <!-- Optional, asked only when the user turns on the pill that drops from the top of the screen. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -50,15 +46,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <!-- Long-press the icon: Chat, Recent decisions, Pair again (res/xml/shortcuts.xml). They start LaunchActivity, not this one. -->
-            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
-            <!-- Scanning the pairing QR code with the camera app opens coucou://pair?... here. -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="coucou" android:host="pair" />
             </intent-filter>
         </activity>
 

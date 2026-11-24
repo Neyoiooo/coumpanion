@@ -1,8 +1,8 @@
 # R8 rules for the release build (minify and shrink are on; see app/build.gradle.kts).
 #
 # Why there are almost none: the app uses no reflection, no serialization library and no JNI. Everything the system starts (activities,
-# services, receivers, the widget and the tile) is named in AndroidManifest.xml, which the build keeps by itself; Compose, CameraX,
-# AndroidX and the Kotlin runtime bring their own consumer rules; ZXing is plain Java; the protocol is read with org.json by hand.
+# services, receivers, the widget and the tile) is named in AndroidManifest.xml, which the build keeps by itself.
+# Compose, AndroidX and the Kotlin runtime bring their own consumer rules. The protocol uses org.json.
 # What the app reads by name (settings keys, the protocol's field names, the sound table) is a string, not a class or member name.
 
 # No debug logs in a release build. The Log calls are removed with their arguments, so the tags and messages are not in the APK

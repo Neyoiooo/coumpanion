@@ -15,8 +15,6 @@ enum class LaunchScreen(val key: String, val screen: Screen) {
     /** "Recent": the full list of your own decisions (the same one as Home's Recent, in full). */
     RECENT("recent", Screen.HISTORY),
 
-    /** "Pair again": the pairing scan. It always asks to confirm before anything is paired. */
-    PAIR("pair", Screen.SCAN),
     ;
 
     companion object {

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Made Coupi’s Home and the AI Launcher the starting screen for everyone. Added an Activity tab for local session and notification history.
+- Removed new desktop pairing, including QR scanning, paste and browser links, and removed the camera permission and scanner dependencies. Saved desktop links can still reconnect during the migration.
 - Added the Codex web shortcut and Coupi badge to the AI Launcher. Codex supports local manual tracking.
 - Manual timers now show elapsed seconds on visible tracking screens and in the island.
 

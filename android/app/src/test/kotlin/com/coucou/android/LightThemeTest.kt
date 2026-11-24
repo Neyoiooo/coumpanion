@@ -76,7 +76,7 @@ class LightThemeTest {
     @Test fun onlyTheIslandAndTheCameraStayBlack() {
         // The hero, the sheets and every dialog take their colours from the tokens, so they follow the theme.
         for (f in File("src/main/kotlin/com/coucou/android/ui").listFiles { it.extension == "kt" }!!) {
-            if (f.name == "IslandOverlay.kt" || f.name == "ScanScreen.kt") continue
+            if (f.name == "IslandOverlay.kt") continue
             val text = f.readText()
             assertFalse("${f.name} hard-codes the island's black", text.contains("IslandSurface."))
             for (colour in listOf("Color.White", "Color.Black", "Color(0x")) {
@@ -86,7 +86,6 @@ class LightThemeTest {
             }
         }
         assertTrue("the island provides the dark tokens", ui("IslandOverlay.kt").contains("LocalTokens provides Tokens.DARK"))
-        assertTrue("so does the camera screen", ui("ScanScreen.kt").contains("LocalTokens provides Tokens.DARK"))
     }
 
     @Test fun theThemeIsAppliedFromTheSettingAndTheSystem() {
@@ -96,7 +95,7 @@ class LightThemeTest {
         val main = File("src/main/kotlin/com/coucou/android/MainActivity.kt").readText()
         assertTrue(main.contains("CoucouTheme(model.settings.theme, model.settings.dynamicColour)"))
         // Dark icons on a light page, light icons on the camera.
-        assertTrue(main.contains("isAppearanceLightStatusBars = lightPage") && main.contains("screen != Screen.SCAN"))
+        assertTrue(main.contains("isAppearanceLightStatusBars = lightPage") && main.contains("val lightPage = !tokens().isDark"))
         assertTrue(File("src/main/res/values/themes.xml").readText().contains("DeviceDefault.DayNight"))
     }
 

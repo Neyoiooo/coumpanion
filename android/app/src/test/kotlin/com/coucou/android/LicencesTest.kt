@@ -42,14 +42,9 @@ class LicencesTest {
         assertTrue(n.contains("Android Open Source Project") && n.contains("JetBrains"))
     }
 
-    @Test fun theZxingVersionInTheNoticeIsTheOneInTheBuild() {
-        val v = Regex("""com\.google\.zxing:core:([0-9.]+)""").find(File("build.gradle.kts").readText())!!.groupValues[1]
-        assertTrue("NOTICES.txt names ZXing Core $v", asset("NOTICES.txt").contains("ZXing Core $v"))
-    }
-
     @Test fun everyLibraryInTheBuildIsCoveredByANotice() {
         val groups = Regex("""implementation\("([^":]+):""").findAll(File("build.gradle.kts").readText()).map { it.groupValues[1] }.toSet()
-        val covered = setOf("androidx.activity", "androidx.lifecycle", "androidx.compose.material3", "androidx.compose.ui", "androidx.camera", "com.google.zxing")
+        val covered = setOf("androidx.activity", "androidx.lifecycle", "androidx.compose.material3", "androidx.compose.ui")
         assertEquals("a new dependency needs a line in NOTICES.txt and in this list", covered, groups)
     }
 

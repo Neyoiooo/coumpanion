@@ -80,7 +80,6 @@ import com.coucou.android.core.SecureScreens
 import com.coucou.android.link.ApprovalRequest
 import com.coucou.android.link.QuestionRequest
 import com.coucou.android.link.LinkState
-import com.coucou.android.link.PairingPayload
 import com.coucou.android.core.BotState
 import com.coucou.android.ui.Panel
 import com.coucou.android.ui.c
@@ -103,7 +102,6 @@ import com.coucou.android.ui.AgentRows
 import com.coucou.android.ui.DiscoveryHint
 import com.coucou.android.ui.ApprovalSheet
 import com.coucou.android.ui.MessagePanel
-import com.coucou.android.ui.PairingScreen
 import com.coucou.android.ui.PillButton
 import com.coucou.android.ui.DiffSheet
 import com.coucou.android.ui.QuestionSheet
@@ -115,9 +113,6 @@ import com.coucou.android.ui.CoupiWelcome
 import com.coucou.android.ui.RecentPanel
 import com.coucou.android.ui.BarClearance
 import com.coucou.android.ui.BottomBar
-import com.coucou.android.ui.PairConfirm
-import com.coucou.android.ui.PairingPasteSheet
-import com.coucou.android.ui.ScanScreen
 import com.coucou.android.ui.SessionScreen
 import com.coucou.android.ui.AiSessionHistoryScreen
 import com.coucou.android.ui.AiLauncher
@@ -136,14 +131,12 @@ import com.coucou.android.ui.linkStatusText
 class MainActivity : ComponentActivity() {
     private val model get() = (application as CoucouApp).model
     private var screen by mutableStateOf(Screen.HOME)
-    private var activityReturn by mutableStateOf(Screen.SETTINGS)
     /** The session whose details are open. */
     private var detailPill by mutableStateOf<String?>(null)
     /** The approval the user closed without deciding (the sheet stays down for it), and the session whose question is open. */
     private var closedApproval by mutableStateOf<String?>(null)
     private var reviewApproval by mutableStateOf<String?>(null)
     private var questionPill by mutableStateOf<String?>(null)
-    private var pastePairing by mutableStateOf(false)
     private var confirming = false
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(com.coucou.android.app.AppLanguage.wrap(newBase))
@@ -156,7 +149,6 @@ class MainActivity : ComponentActivity() {
         model.resume()
         setContent {
             var watchAppsOpen by rememberSaveable { mutableStateOf(false) }
-            var showPairing by rememberSaveable { mutableStateOf(false) }
             LaunchedEffect(model.mode) {
                 if (model.mode != Mode.NONE && Build.VERSION.SDK_INT >= 33 &&
                     checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -165,32 +157,23 @@ class MainActivity : ComponentActivity() {
             }
             AvatarMotionHost(model.settings.animatedAvatars, model.settings.motion) {
                 CoucouTheme(model.settings.theme, model.settings.dynamicColour) {
-                    // Dark icons on a light page; the camera screen is black in both themes, so its icons are light.
-                    val lightPage = !tokens().isDark && screen != Screen.SCAN
+                    val lightPage = !tokens().isDark
                     SideEffect {
                         val bars = WindowCompat.getInsetsController(window, window.decorView)
                         bars.isAppearanceLightStatusBars = lightPage
                         bars.isAppearanceLightNavigationBars = lightPage
                     }
                     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        Box(Modifier.fillMaxSize().windowInsetsPadding(if (screen == Screen.HOME || screen == Screen.SCAN) WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom) else WindowInsets.safeDrawing)) {
+                        Box(Modifier.fillMaxSize().windowInsetsPadding(if (screen == Screen.HOME) WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom) else WindowInsets.safeDrawing)) {
                             val tabs = Nav.tabs()
                             val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-                            val pairingPasteVisible = pastePairing && screen == Screen.HOME && model.mode == Mode.NONE
-                            val barVisible = Nav.barVisible(screen, keyboardOpen) && !pairingPasteVisible && !watchAppsOpen
+                            val barVisible = Nav.barVisible(screen, keyboardOpen) && !watchAppsOpen
                             BackHandler(enabled = Nav.back(screen) != null) {
-                                if (screen == Screen.AI_HISTORY) screen = activityReturn else Nav.back(screen)?.let { screen = it }
+                                Nav.back(screen)?.let { screen = it }
                             }
-                            // Chat keeps its message box above the bar; Home and Settings scroll under it (their own bottom padding).
-                            Box(Modifier.fillMaxSize().padding(bottom = if (barVisible && screen == Screen.CHAT) BarClearance else 0.dp)) {
                             when (screen) {
-                                Screen.SCAN -> ScanScreen(
-                                    onBack = { screen = Screen.HOME },
-                                    // True if it was a pairing code: the camera is released and the user is asked to confirm.
-                                    onText = { text -> model.requestPairing(text).also { if (it) screen = Screen.HOME } },
-                                )
                                 Screen.CHAT -> ChatScreen(
-                                    model, onHome = { showPairing = true; screen = Screen.HOME }, onSettings = { screen = Screen.SETTINGS },
+                                    model, onHome = { screen = Screen.HOME }, onSettings = { screen = Screen.SETTINGS },
                                 )
                                 Screen.SESSION -> SessionScreen(model, detailPill.orEmpty(), onBack = { screen = Screen.HOME })
                                 Screen.SETTINGS -> SettingsScreen(
@@ -198,29 +181,19 @@ class MainActivity : ComponentActivity() {
                                     onOverlay = { setOverlay(it) },
                                     onDiagnostics = { screen = Screen.DIAGNOSTICS }, onLicences = { screen = Screen.LICENCES },
                                     onWatchApps = { watchAppsOpen = true },
-                                    onAiHistory = { activityReturn = Screen.SETTINGS; screen = Screen.AI_HISTORY },
                                 )
-                                Screen.AI_HISTORY -> AiSessionHistoryScreen(model, onBack = { screen = activityReturn })
+                                Screen.AI_HISTORY -> AiSessionHistoryScreen(model)
                                 Screen.AI_TRACKING -> AiTrackingPage(model, onBack = { screen = Screen.HOME },
                                     onOverlay = { setOverlay(true, showHint = false) })
                                 Screen.LICENCES -> LicencesScreen(onBack = { screen = Screen.SETTINGS })
                                 Screen.DIAGNOSTICS -> DiagnosticsScreen(model, onBack = { screen = Screen.SETTINGS })
                                 Screen.HISTORY -> HistoryScreen(model, onBack = { screen = Screen.SETTINGS })
-                                Screen.HOME -> if (model.mode == Mode.NONE) PairingScreen(
-                                    model, onScan = { screen = Screen.SCAN }, onPaste = { pastePairing = true },
-                                    onAbout = { screen = Screen.SETTINGS },
-                                    onWatchApps = { watchAppsOpen = true },
-                                    onOverlay = { setOverlay(true, showHint = false) },
-                                    showPairing = showPairing, onShowPairing = { showPairing = it },
-                                    onActivity = { activityReturn = Screen.HOME; screen = Screen.AI_HISTORY },
-                                ) else Home(
+                                Screen.HOME -> Home(
                                     model, onOverlay = { setOverlay(it) }, onWatchApps = { watchAppsOpen = true },
                                     onSession = { detailPill = it; screen = Screen.SESSION },
-                                    onScan = { screen = Screen.SCAN }, onReview = { closedApproval = null }, onQuestion = { questionPill = it },
+                                    onReview = { closedApproval = null }, onQuestion = { questionPill = it },
                                     onHistory = { screen = Screen.HISTORY }, onDiagnostics = { screen = Screen.DIAGNOSTICS },
-                                    onActivity = { activityReturn = Screen.HOME; screen = Screen.AI_HISTORY },
                                 )
-                            }
                             }
                             if (barVisible) {
                                 BottomBar(
@@ -229,7 +202,6 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             // Modal sheets belong above the app bar, inside the system-bar and keyboard insets.
-                            if (pairingPasteVisible) PairingPasteSheet(model, onDismiss = { pastePairing = false })
                             if (watchAppsOpen) WatchAppsSheet(
                                 model, onDismiss = { watchAppsOpen = false }, onAccess = ::notificationAccess,
                                 onOverlay = { setOverlay(true, showHint = false) },
@@ -237,19 +209,15 @@ class MainActivity : ComponentActivity() {
                             // A request for permission rises over whatever is on screen until it is decided or closed.
                             val pending = model.approvals.firstOrNull { it.fingerprint == reviewApproval && it.fingerprint != closedApproval }
                                 ?: ApprovalSheetPlan.next(model.approvals, closedApproval)
-                            if (pending != null && screen != Screen.SCAN) ApprovalSheet(model, pending, onAllow = ::approve, onDismiss = { closedApproval = pending.fingerprint })
+                            if (pending != null) ApprovalSheet(model, pending, onAllow = ::approve, onDismiss = { closedApproval = pending.fingerprint })
                             questionPill?.let { QuestionSheet(model, it, onDismiss = { questionPill = null }, onSend = ::sendAnswer) }
                             DiffSheet(model)
-                            // Pairing, chat, an approval and a question never show in screenshots or in the recent-apps card.
                             val secure = SecureScreens.needed(
-                                screen, pairing = model.mode == Mode.NONE && (showPairing || pairingPasteVisible), approvalSheetShown = pending != null && screen != Screen.SCAN,
-                                questionSheetShown = questionPill != null, pairConfirmShown = model.pairRequest != null,
+                                screen, approvalSheetShown = pending != null, questionSheetShown = questionPill != null,
                             )
                             SideEffect {
                                 if (secure) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE) else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                             }
-                            // A scanned code or a link from the camera app: the user decides before anything is paired.
-                            model.pairRequest?.let { PairConfirm(model, it) }
                         }
                     }
                 }
@@ -306,18 +274,10 @@ class MainActivity : ComponentActivity() {
         handle(intent)
     }
 
-    /** A coucou://pair link (from the camera app or a browser) or a tap on an approval notification. */
+    /** Opens requests passed inside the app by LaunchActivity. */
     private fun handle(i: Intent?) {
         i ?: return
         Log.d("CoumpanionLaunch", "MainActivity intent: action=${i.action} data=${i.data != null}")
-        i.data?.let { uri ->
-            if (uri.scheme == "coucou") {
-                // Opened from the camera app or a browser: never paired without the user's OK.
-                if (model.requestPairing(uri.toString())) pastePairing = false
-                else model.message = getString(R.string.msg_bad_link)
-                i.data = null // handled once: a rotation must not ask again
-            }
-        }
         // Never read from the intent: this activity is exported, any app could send these extras. The requests come
         // from LaunchActivity (ours, not exported) through the model, once.
         model.launch.takeSession()?.let { pill ->
@@ -325,14 +285,15 @@ class MainActivity : ComponentActivity() {
             if (model.isPaired || model.mode != Mode.NONE) { detailPill = pill; screen = Screen.SESSION }
         }
         // A tap on a widget button: a screen of the closed list ([LaunchScreen]), even when the app is locked, not connected or not paired.
-        model.launch.takeScreen()?.let { screen = it.screen }
+        model.launch.takeScreen()?.let { launch ->
+            screen = if (launch.screen == Screen.CHAT && !model.isPaired) Screen.HOME else launch.screen
+        }
         // Text shared to Coucou from another app (ShareActivity, which only keeps cleaned text): it waits in the model for the chat box.
         if (model.shareDraft.pending()) screen = Screen.CHAT
         val launch = model.launch.take() ?: return
         // Both notification and island taps open the exact request for review. Only the sheet can send Allow.
         reviewApproval = launch.fingerprint
         closedApproval = null
-        if (screen == Screen.SCAN) screen = Screen.HOME
         if (model.linkState == LinkState.CONNECTED && model.approvals.none { it.fingerprint == reviewApproval }) {
             model.message = getString(R.string.msg_not_pending)
         }
@@ -371,7 +332,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun Home(
     model: AppModel, onOverlay: (Boolean) -> Unit, onWatchApps: () -> Unit, onSession: (String) -> Unit,
-    onScan: () -> Unit, onHistory: () -> Unit, onReview: () -> Unit, onQuestion: (String) -> Unit, onDiagnostics: () -> Unit, onActivity: () -> Unit,
+    onHistory: () -> Unit, onReview: () -> Unit, onQuestion: (String) -> Unit, onDiagnostics: () -> Unit,
 ) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
@@ -391,7 +352,7 @@ private fun Home(
         item {
             Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = Gutter, vertical = Gap),
                 verticalArrangement = Arrangement.spacedBy(Gap)) {
-                CoupiWelcome(model.manualTracking.size, model.linkState == LinkState.CONNECTED, onHistory = onActivity)
+                CoupiWelcome(model.manualTracking.size)
                 AiLauncher(model, onOverlay = { onOverlay(true) })
             }
         }
@@ -403,34 +364,17 @@ private fun Home(
                 onQuestion = if (focus != null && focus.state == BotState.QUESTION) ({ onQuestion(focus.pillId) }) else null,
                 canAnswer = focus != null && model.questionFor(focus.pillId) != null,
                 desktopConnected = model.linkState == LinkState.CONNECTED,
-                onLink = {
-                    when (pair) {
-                        HomePanel.Link.PAIR -> onScan() // not reachable on Home (no computer shows the pairing screen), harmless
-                        HomePanel.Link.APPROVAL -> onReview()
-                        HomePanel.Link.NONE -> {}
-                    }
-                },
+                onLink = { if (pair == HomePanel.Link.APPROVAL) onReview() },
             )
-        }
-        if (!model.isPaired) item {
-            Box(Modifier.padding(horizontal = Gutter)) {
-                Panel {
-                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.coupi_connect_title), style = TypeScale.TITLE.style(tokens().text.c()))
-                        Text(stringResource(R.string.coupi_connect_hint), style = TypeScale.SECONDARY.style(tokens().textDim.c()))
-                        PillButton(stringResource(R.string.link_pair), onScan, Modifier.fillMaxWidth())
-                    }
-                }
-            }
         }
         // The link had worked and ended: what happened and how long ago, instead of a silent state. And, only if it would help, the battery setting.
         if (model.mode == Mode.PAIRED && model.linkState != LinkState.CONNECTED) {
             item { Box(Modifier.padding(horizontal = Gutter)) { LinkHealthPanel(model, onDiagnostics) } }
         }
         if (model.batteryHintVisible) item { Box(Modifier.padding(horizontal = Gutter)) { BatteryCard(model) } }
-        // The saved address failed and a search found nothing: a calm hint with two ways out.
+        // Offer an address change for a legacy connection that can no longer be found.
         if (model.mode == Mode.PAIRED && model.linkState != LinkState.CONNECTED && model.discovery == DiscoveryState.NOT_FOUND) {
-            item { Box(Modifier.padding(horizontal = Gutter)) { DiscoveryHint(onPairAgain = onScan, onEnterAddress = { addressOpen = true }) } }
+            item { Box(Modifier.padding(horizontal = Gutter)) { DiscoveryHint(onEnterAddress = { addressOpen = true }) } }
         }
         model.message?.let { msg ->
             item { Box(Modifier.padding(horizontal = Gutter)) { MessagePanel(msg) { model.message = null } } }
@@ -457,9 +401,11 @@ private fun Home(
             }
         }
         if (model.watchedActivity.isNotEmpty()) {
-            item { Box(Modifier.padding(horizontal = Gutter)) { com.coucou.android.ui.WatchedActivityPanel(model) } }
+            item { Box(Modifier.padding(horizontal = Gutter)) { com.coucou.android.ui.WatchedActivityPanel(model, limit = 3) } }
         }
-        item { Box(Modifier.padding(horizontal = Gutter)) { RecentPanel(model.decisions, onHistory) } }
+        if (model.isPaired || model.decisions.isNotEmpty()) item {
+            Box(Modifier.padding(horizontal = Gutter)) { RecentPanel(model.decisions, onHistory) }
+        }
 
         // Only when the switch is on but Android still refuses: the one thing Home must say about it.
         if (model.overlayWished && !model.overlayPermission) item { Box(Modifier.padding(horizontal = Gutter)) { OverlayHint(onOverlay) } }

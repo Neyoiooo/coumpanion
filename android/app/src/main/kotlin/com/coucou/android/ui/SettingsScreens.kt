@@ -215,7 +215,7 @@ val BarClearance = 96.dp
 @Composable
 fun SettingsScreen(
     model: AppModel, onHistory: () -> Unit, onOverlay: (Boolean) -> Unit, onDiagnostics: () -> Unit,
-    onLicences: () -> Unit, onWatchApps: () -> Unit, onAiHistory: () -> Unit,
+    onLicences: () -> Unit, onWatchApps: () -> Unit,
 ) {
     val s = model.settings
     val context = LocalContext.current.applicationContext
@@ -231,8 +231,6 @@ fun SettingsScreen(
             val title = if (NotificationWatchAccess.available) R.string.watch_apps_title else R.string.watch_apps_choose
             Panel {
                 LinkRow(stringResource(title), onWatchApps)
-                RowDivider()
-                LinkRow(stringResource(R.string.ai_history), onAiHistory)
                 RowDivider()
                 LinkRow(stringResource(R.string.ai_diagnostics_title), onDiagnostics)
             }
@@ -265,24 +263,18 @@ fun SettingsScreen(
             }
         }
 
-        item { SectionHeading(stringResource(R.string.settings_section_computer)) }
-        item {
-            Panel {
-                Row(Modifier.padding(Spacing.INSIDE.dp), horizontalArrangement = Arrangement.spacedBy(Spacing.GAP.dp), verticalAlignment = Alignment.CenterVertically) {
-                    StateDot(linkDotColor(model))
-                    Text(linkStatusText(model), Modifier.weight(1f), style = TypeScale.BODY.style(t.text.c()), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                }
-                when (model.mode) {
-                    Mode.PAIRED -> {
-                        RowDivider()
-                        LinkRow(stringResource(R.string.diag_title), onDiagnostics)
-                        RowDivider()
-                        PillButton(stringResource(R.string.action_unpair), { model.unpair() }, Modifier.fillMaxWidth().padding(Spacing.INSIDE.dp), PillKind.DANGER)
+        if (model.mode == Mode.PAIRED) {
+            item { SectionHeading(stringResource(R.string.settings_section_computer)) }
+            item {
+                Panel {
+                    Row(Modifier.padding(Spacing.INSIDE.dp), horizontalArrangement = Arrangement.spacedBy(Spacing.GAP.dp), verticalAlignment = Alignment.CenterVertically) {
+                        StateDot(linkDotColor(model))
+                        Text(linkStatusText(model), Modifier.weight(1f), style = TypeScale.BODY.style(t.text.c()), maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
-                    Mode.NONE -> Text(
-                        stringResource(R.string.settings_computer_none), Modifier.padding(start = Spacing.INSIDE.dp, end = Spacing.INSIDE.dp, bottom = Spacing.INSIDE.dp),
-                        style = TypeScale.SECONDARY.style(t.textDim.c()),
-                    )
+                    RowDivider()
+                    LinkRow(stringResource(R.string.diag_title), onDiagnostics)
+                    RowDivider()
+                    PillButton(stringResource(R.string.action_unpair), { model.unpair() }, Modifier.fillMaxWidth().padding(Spacing.INSIDE.dp), PillKind.DANGER)
                 }
             }
         }
@@ -431,10 +423,10 @@ fun SettingsScreen(
             }
         }
 
-        item { SectionHeading(stringResource(R.string.settings_section_more)) }
-        item {
-            Panel {
-                LinkRow(stringResource(R.string.history_title), onHistory)
+        if (model.isPaired || model.decisions.isNotEmpty()) {
+            item { SectionHeading(stringResource(R.string.settings_section_more)) }
+            item {
+                Panel { LinkRow(stringResource(R.string.history_title), onHistory) }
             }
         }
 

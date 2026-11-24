@@ -16,7 +16,10 @@ class WidgetPreviewTest {
     private val res = "src/main/res/"
     private fun read(path: String) = File(path).readText()
     private val strings: Map<String, String> =
-        Regex("""<string name="(\w+)">(.*?)</string>""").findAll(read(res + "values/strings.xml")).associate { it.groupValues[1] to it.groupValues[2].replace("\\'", "'") }
+        File(res + "values").listFiles().orEmpty().asSequence()
+            .filter { it.name.endsWith("strings.xml") }
+            .flatMap { Regex("""<string name="(\w+)">(.*?)</string>""").findAll(it.readText()) }
+            .associate { it.groupValues[1] to it.groupValues[2].replace("\\'", "'") }
 
     /** Provider XML name to the name of its preview. */
     private val providers = listOf("solo", "list", "big", "pill", "alert", "ring", "today", "mood", "team", "glance")
@@ -243,7 +246,7 @@ class WidgetPreviewTest {
             val text = xml + "\n" + Regex("""@string/(\w+)""").findAll(xml).joinToString("\n") { strings.getValue(it.groupValues[1]) }
             for (word in listOf("statusText", "steps", ".command", "files")) assertFalse("${f.name} says $word", text.contains(word))
         }
-        for (k in listOf("widget_btn_home", "widget_btn_chat", "widget_btn_settings", "widget_btn_recent", "widget_btn_session", "widget_btn_pair")) {
+        for (k in listOf("widget_btn_home", "widget_btn_chat", "widget_btn_settings", "widget_btn_recent", "widget_btn_session")) {
             for (word in listOf("statusText", "steps", ".command", "files")) assertFalse("$k says $word", strings.getValue(k).contains(word) && strings.getValue(k + "_cd").contains(word))
         }
     }

@@ -69,9 +69,8 @@ private fun agentTint(session: SessionInfo): Color? = HomePanel.colorHex(session
 internal fun stateColor(state: BotState): Color =
     if (state == BotState.IDLE) StatusColors.online else rgbColor(StatePalette.color(state))
 
-/** Mobile-first welcome. A missing optional desktop link is not an error for phone-only users. */
 @Composable
-internal fun CoupiWelcome(activeTimers: Int, connected: Boolean, onHistory: () -> Unit) {
+internal fun CoupiWelcome(activeTimers: Int) {
     val t = tokens()
     Panel {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -82,13 +81,24 @@ internal fun CoupiWelcome(activeTimers: Int, connected: Boolean, onHistory: () -
                     Text(stringResource(R.string.coupi_welcome_hint), style = TypeScale.SECONDARY.style(t.textDim.c()))
                 }
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.coupi_timer_count, activeTimers), Modifier.weight(1f),
-                    style = TypeScale.LABEL.style(t.text.c()))
-                PillButton(stringResource(R.string.coupi_history), onHistory)
+            if (activeTimers > 0) {
+                Text(stringResource(R.string.coupi_timer_count, activeTimers), style = TypeScale.LABEL.style(t.text.c()))
             }
-            Text(stringResource(if (connected) R.string.coupi_connected else R.string.coupi_local_mode),
-                style = TypeScale.SECONDARY.style(t.textDim.c()))
+        }
+    }
+}
+
+@Composable
+internal fun MessagePanel(text: String, onClose: () -> Unit) {
+    val t = tokens()
+    Panel {
+        Row(Modifier.padding(start = Spacing.INSIDE.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(text, Modifier.weight(1f).padding(vertical = 12.dp), style = TypeScale.BODY.style(t.text.c()))
+            Text(
+                stringResource(R.string.action_close),
+                Modifier.heightIn(min = Spacing.MIN_TOUCH.dp).clickable(role = Role.Button, onClick = onClose).padding(horizontal = 16.dp, vertical = 14.dp),
+                style = TypeScale.LABEL.style(t.textDim.c()),
+            )
         }
     }
 }

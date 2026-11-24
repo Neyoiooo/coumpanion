@@ -38,18 +38,18 @@ import com.coucou.android.core.StatePalette
 
 private fun Tab.icon() = when (this) {
     Tab.HOME -> IconKind.HOME
-    Tab.CHAT -> IconKind.CHAT
+    Tab.ACTIVITY -> IconKind.ACTIVITY
     Tab.SETTINGS -> IconKind.SLIDERS
 }
 
 private fun Tab.label() = when (this) {
     Tab.HOME -> R.string.tab_home
-    Tab.CHAT -> R.string.tab_chat
+    Tab.ACTIVITY -> R.string.coupi_history
     Tab.SETTINGS -> R.string.tab_settings
 }
 
 /**
- * The floating bar: a black pill with Home, Chat (only when offered) and Settings. Labels are always
+ * The floating bar for Home, Activity and Settings. Labels are always
  * shown; the open tab has a lighter pill behind it. [alert] puts the approval colour's dot on Home when
  * a request is waiting. Every item is at least 48 dp high and announces itself as a tab.
  */

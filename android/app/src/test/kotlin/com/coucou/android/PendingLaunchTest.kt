@@ -144,8 +144,8 @@ class PendingLaunchTest {
 
     @Test fun aNewerScreenRequestReplacesTheOlderOneAndNullClearsIt() {
         launch.requestScreen(LaunchScreen.HOME)
-        launch.requestScreen(LaunchScreen.PAIR)
-        assertEquals(LaunchScreen.PAIR, launch.takeScreen())
+        launch.requestScreen(LaunchScreen.AI_TRACKING)
+        assertEquals(LaunchScreen.AI_TRACKING, launch.takeScreen())
         launch.requestScreen(LaunchScreen.HOME)
         launch.requestScreen(null)
         assertNull(launch.takeScreen())

@@ -62,9 +62,9 @@ class KeepAliveSourceTest {
 
     @Test fun cantConnectIsInTheComputerPanelOnlyWhenPaired() {
         val settings = src("ui/SettingsScreens.kt")
-        val paired = settings.substringAfter("Mode.PAIRED -> {").substringBefore("Mode.NONE ->")
+        val paired = settings.substringAfter("if (model.mode == Mode.PAIRED) {").substringBefore("if (RelayStatus")
         assertTrue(paired.contains("LinkRow(stringResource(R.string.diag_title), onDiagnostics)"))
-        assertFalse(settings.substringAfter("Mode.NONE ->").substringBefore("if (RelayStatus").contains("diag_title"))
+        assertFalse(settings.substringBefore("if (model.mode == Mode.PAIRED) {").contains("R.string.diag_title"))
     }
 
     @Test fun theDiagnosticsReportUsesOnlyTheLocalStatusAllowlist() {

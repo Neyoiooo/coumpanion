@@ -19,9 +19,10 @@ class GlanceTest {
         paired: Boolean = true, desktop: String? = "Léa's PC",
     ): Glance = GlanceBuilder.build(paired, link, desktop, sessions, approvals) { names[it] ?: "An agent" }
 
-    @Test fun notPairedInvitesToConnect() {
+    @Test fun theUnpairedWidgetInvitesUsersToOpenCoumpanion() {
         val g = build(paired = false)
-        assertEquals("Not paired", g.headline)
+        assertEquals("Coumpanion", g.headline)
+        assertEquals("Open Coumpanion", g.detail)
         assertFalse(g.connected)
         assertEquals(GlanceTone.CALM, g.tone)
     }

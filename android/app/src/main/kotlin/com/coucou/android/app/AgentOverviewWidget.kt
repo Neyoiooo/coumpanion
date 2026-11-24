@@ -20,7 +20,7 @@ import com.coucou.android.core.WidgetTone
  * state word, so the state reads without a sentence. On the right, the plan usage: up to two rows (Claude and Codex), each with a thin
  * bar that is teal, yellow from 75% and red from 90%. Under the red line the percentage is small and normal; from 90% it is big and
  * bold with "Near limit" and, when known, when it resets. When plan usage is off or the computer is not there, one calm message.
- * Under them, rounded buttons that only open a screen of the app (Home, Chat, Settings, Recent, the top agent, Pair again): none
+ * Under them, rounded buttons that open the app's screens (Home, Chat, Settings, Recent, top agent and AI tracking): none
  * when the card is small, one row of four from the medium size, two rows of three when large; tinted orange while something waits.
  * Drawn by [WidgetHub] when something changes (updatePeriodMillis = 0). A tap on the card opens the top agent, or the app.
  * Nothing here changes anything.
@@ -36,12 +36,12 @@ class AgentOverviewWidget : AppWidgetProvider() {
 
         /** The six buttons, in order; null is the top agent (a session, not a screen). */
         private val BUTTONS: List<LaunchScreen?> = listOf(
-            LaunchScreen.HOME, LaunchScreen.CHAT, LaunchScreen.SETTINGS, LaunchScreen.RECENT, null, LaunchScreen.PAIR,
+            LaunchScreen.HOME, LaunchScreen.CHAT, LaunchScreen.SETTINGS, LaunchScreen.RECENT, null, LaunchScreen.AI_TRACKING,
         )
 
         // The same buttons in the two arrangements: the first four in the single row, all six in the two rows of three.
         private val ROW_TILES = listOf(R.id.big_m_home, R.id.big_m_chat, R.id.big_m_settings, R.id.big_m_recent)
-        private val GRID_TILES = listOf(R.id.big_l_home, R.id.big_l_chat, R.id.big_l_settings, R.id.big_l_recent, R.id.big_l_session, R.id.big_l_pair)
+        private val GRID_TILES = listOf(R.id.big_l_home, R.id.big_l_chat, R.id.big_l_settings, R.id.big_l_recent, R.id.big_l_session, R.id.big_l_tracking)
 
         fun views(context: Context, c: WidgetContent): RemoteViews =
             WidgetHub.responsive(MEDIUM_AT, LARGE_AT) { size -> render(context, c, size) }

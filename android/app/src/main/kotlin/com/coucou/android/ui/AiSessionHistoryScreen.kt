@@ -45,7 +45,7 @@ private data class HistoryRow(
 )
 
 @Composable
-internal fun AiSessionHistoryScreen(model: AppModel, onBack: () -> Unit) {
+internal fun AiSessionHistoryScreen(model: AppModel) {
     val entries = model.aiSessionHistory.map {
         HistoryRow(it.id, it.providerId, it.providerLabel, it.startedAtMs, it.endedAtMs, it.durationMs,
             it.source, it.result.labelRes())
@@ -67,9 +67,9 @@ internal fun AiSessionHistoryScreen(model: AppModel, onBack: () -> Unit) {
     }
     val all = stringResource(R.string.ai_history_all)
     val dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
-    LazyColumn(Modifier.padding(horizontal = Gutter), contentPadding = PaddingValues(bottom = 22.dp),
+    LazyColumn(Modifier.padding(horizontal = Gutter), contentPadding = PaddingValues(bottom = BarClearance),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item { ScreenTitle(stringResource(R.string.ai_history), onBack) }
+        item { ScreenTitle(stringResource(R.string.coupi_history), null) }
         item {
             Panel {
                 HistoryChoice(stringResource(R.string.ai_history_provider), provider,

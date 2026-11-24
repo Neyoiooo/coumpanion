@@ -10,13 +10,13 @@ The source code is distributed under the MIT License. See the accompanying MIT n
 
 The original project's branding, character, icon, sounds and visuals are Copyright (c) 2026 Louis Raillé. All rights reserved. Coumpanion uses its own icon, status marks and sounds.
 
-3. ZXing
+3. ZXing in earlier releases
 
-The pairing QR code is read with ZXing Core 3.5.3 ("Zebra Crossing", https://github.com/zxing/zxing), Copyright ZXing authors. It is licensed under the Apache License, Version 2.0, the full text of which is below ("Apache License"). The library is used unmodified; it makes no network connection.
+Earlier Android releases included ZXing Core 3.5.3 ("Zebra Crossing", https://github.com/zxing/zxing), Copyright ZXing authors, to read pairing QR codes. It is licensed under the Apache License, Version 2.0, reproduced below ("Apache License").
 
-4. AndroidX, Jetpack Compose, CameraX and Kotlin
+4. AndroidX, Jetpack Compose and Kotlin
 
-The user interface, the camera preview and the language runtime come from AndroidX (Jetpack Compose, Material 3, Activity, Lifecycle, CameraX), Copyright The Android Open Source Project, and the Kotlin standard library, Copyright JetBrains s.r.o. and Kotlin Programming Language contributors. They are licensed under the Apache License, Version 2.0, the full text of which is below. They are used unmodified.
+The interface and language runtime use AndroidX (Jetpack Compose, Material 3, Activity and Lifecycle), Copyright The Android Open Source Project, and the Kotlin standard library, Copyright JetBrains s.r.o. and Kotlin Programming Language contributors. Earlier releases also used AndroidX CameraX for the pairing scanner. They are licensed under the Apache License, Version 2.0, reproduced below.
 
 5. Lobe Icons
 
