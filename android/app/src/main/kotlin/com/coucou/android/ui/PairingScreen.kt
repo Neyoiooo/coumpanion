@@ -71,6 +71,10 @@ fun PairingScreen(
             )
             model.message?.let { MessagePanel(it) { model.message = null }; Spacer(Modifier.size(Gap)) }
             PillButton(stringResource(R.string.watch_apps_choose), onWatchApps, Modifier.fillMaxWidth(), PillKind.PRIMARY)
+            if (model.watchedActivity.isNotEmpty()) {
+                Spacer(Modifier.size(Gap))
+                WatchedActivityPanel(model, limit = 3)
+            }
             Spacer(Modifier.size(Gap))
             PillButton(stringResource(R.string.pairing_headline), { onShowPairing(true) }, Modifier.fillMaxWidth())
             return@Column

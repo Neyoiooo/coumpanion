@@ -176,6 +176,7 @@ class IslandOverlay(
     /** Clear notification text as soon as access is revoked or the screen locks. */
     fun clearWatchedUpdate() = safely {
         timeline.clearFlash(IslandSpec.Kind.APP_UPDATE)
+        // Remove the outgoing title immediately rather than animating it during a screen lock.
         if (timeline.current?.kind == IslandSpec.Kind.APP_UPDATE) timeline.retractFinished()
         sync()
     }

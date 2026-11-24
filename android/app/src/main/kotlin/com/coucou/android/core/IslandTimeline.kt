@@ -42,6 +42,11 @@ class IslandTimeline(private val clockMs: () -> Double) {
     private var flash: IslandSpec? = null
     private var flashUntil = 0.0
     private var retractUntil = 0.0
+    // Mobile updates have their own bounded FIFO; desktop completion notices retain their existing policy.
+    private data class QueuedUpdate(val spec: IslandSpec, val receivedAt: Double)
+    private val updates = ArrayDeque<QueuedUpdate>()
+    private var update: IslandSpec? = null
+    private var updateUntil = 0.0
 
     /** What the user swiped away: kept until that thing is over or something else comes up. */
     private var swiped: Triple<IslandSpec.Kind, String, String?>? = null
@@ -58,14 +63,32 @@ class IslandTimeline(private val clockMs: () -> Double) {
     }
 
     fun flash(spec: IslandSpec) {
-        flash = spec
-        flashUntil = clockMs() + HOLD_MS
+        val now = clockMs()
+        if (spec.kind == IslandSpec.Kind.APP_UPDATE) {
+            refresh()
+            if (update == null || update == spec) {
+                update = spec
+                updateUntil = now + HOLD_MS
+                swiped = null
+            } else if (updates.none { it.spec == spec }) {
+                if (updates.size >= MAX_PENDING_UPDATES) updates.removeFirst()
+                updates.addLast(QueuedUpdate(spec, now))
+            }
+        } else {
+            flash = spec
+            flashUntil = now + HOLD_MS
+        }
         refresh()
     }
 
     /** Drop one type of transient event without interrupting an active session. */
     fun clearFlash(kind: IslandSpec.Kind) {
-        if (flash?.kind == kind) {
+        if (kind == IslandSpec.Kind.APP_UPDATE) {
+            update = null
+            updates.clear()
+            if (swiped?.first == kind) swiped = null
+            refresh()
+        } else if (flash?.kind == kind) {
             flash = null
             refresh()
         }
@@ -74,8 +97,13 @@ class IslandTimeline(private val clockMs: () -> Double) {
     /** The user swiped the island up: it retracts now, and the same thing does not bring it back. */
     fun swipeAway() {
         if (phase != Phase.OPEN) return
-        swiped = (active ?: flash)?.key()
-        refresh()
+        if (current?.kind == IslandSpec.Kind.APP_UPDATE) {
+            // A deliberate dismissal clears pending mobile alerts; history still has their metadata.
+            clearFlash(IslandSpec.Kind.APP_UPDATE)
+        } else {
+            swiped = current?.key()
+            refresh()
+        }
     }
 
     /** Close at once (Coucou came to the front, the switch went off, the link dropped). */
@@ -83,6 +111,8 @@ class IslandTimeline(private val clockMs: () -> Double) {
         swiped = null
         active = null
         flash = null
+        update = null
+        updates.clear()
         current = null
         phase = Phase.HIDDEN
     }
@@ -102,13 +132,25 @@ class IslandTimeline(private val clockMs: () -> Double) {
     fun nextDeadline(): Double? = when (phase) {
         Phase.HIDDEN -> null
         Phase.RETRACTING -> retractUntil
-        Phase.OPEN -> if (active == null && flash != null) flashUntil else null
+        Phase.OPEN -> when {
+            current?.kind == IslandSpec.Kind.APP_UPDATE -> updateUntil
+            active == null && flash != null -> flashUntil
+            else -> null
+        }
     }
 
     private fun refresh() {
         val now = clockMs()
         if (flash != null && now >= flashUntil) flash = null
-        val candidate = active ?: flash
+        if (update != null && now >= updateUntil) update = null
+        while (updates.isNotEmpty() && now - updates.first().receivedAt >= MAX_UPDATE_AGE_MS) updates.removeFirst()
+        val urgent = active?.takeIf { it.kind == IslandSpec.Kind.APPROVAL || it.kind == IslandSpec.Kind.QUESTION }
+        if (urgent == null && update == null && updates.isNotEmpty()) {
+            update = updates.removeFirst().spec
+            updateUntil = now + HOLD_MS
+        }
+        // Never cover an approval/question. Mobile alerts may briefly interrupt ordinary working status.
+        val candidate = urgent ?: update ?: active ?: flash
         // Nothing going on, or something else than what was swiped: the swipe is forgotten.
         if (candidate == null || candidate.key() != swiped) swiped = null
         val shown = candidate?.takeUnless { it.key() == swiped }
@@ -128,6 +170,8 @@ class IslandTimeline(private val clockMs: () -> Double) {
 
     companion object {
         const val HOLD_MS = 10_000.0
+        private const val MAX_PENDING_UPDATES = 8
+        private const val MAX_UPDATE_AGE_MS = 60_000.0
         const val RETRACT_MS = Tracked.CLOSE_MS
     }
 }

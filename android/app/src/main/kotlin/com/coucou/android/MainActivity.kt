@@ -412,6 +412,9 @@ private fun Home(
         if (model.recap != null) item { Box(Modifier.padding(horizontal = Gutter)) { RecapPanel(model.recap) } }
         if (model.usage != null) item { Box(Modifier.padding(horizontal = Gutter)) { UsagePanel(model.usage) } }
         if (model.services.isNotEmpty()) item { Box(Modifier.padding(horizontal = Gutter)) { ServicesPanel(model.services) } }
+        if (model.watchedActivity.isNotEmpty()) {
+            item { Box(Modifier.padding(horizontal = Gutter)) { com.coucou.android.ui.WatchedActivityPanel(model) } }
+        }
         item { Box(Modifier.padding(horizontal = Gutter)) { RecentPanel(model.decisions, onHistory) } }
 
         // Only when the switch is on but Android still refuses: the one thing Home must say about it.

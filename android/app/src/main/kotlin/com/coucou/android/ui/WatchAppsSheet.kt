@@ -52,6 +52,8 @@ internal fun WatchAppsSheet(model: AppModel, onDismiss: () -> Unit, onAccess: ()
                 else -> Text(stringResource(R.string.watch_apps_ready), style = TypeScale.BODY.style(t.heroText.c()))
             }
             Spacer(Modifier.size(8.dp))
+            WatchedActivityPanel(model)
+            Spacer(Modifier.size(8.dp))
             PillButton(stringResource(R.string.action_close), onDismiss, Modifier.fillMaxWidth(), onDark = true)
         }
     }

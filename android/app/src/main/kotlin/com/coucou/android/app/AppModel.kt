@@ -136,6 +136,11 @@ class AppModel(private val context: Context) : LinkListener {
     var watchedPackages by mutableStateOf(prefs.getStringSet("watched_ai_apps", emptySet()).orEmpty().toSet()); private set
     var watchAccess by mutableStateOf(false); private set
 
+    // Local, process-lifetime metadata only: never retain notification titles or message bodies.
+    var watchedActivity by mutableStateOf<List<com.coucou.android.core.WatchedActivity>>(emptyList()); private set
+
+    fun clearWatchedActivity() { watchedActivity = emptyList() }
+
     fun refreshWatchApps() {
         installedWatchApps = WatchedAiApp.entries.filter { app ->
             @Suppress("DEPRECATION")
@@ -146,13 +151,17 @@ class AppModel(private val context: Context) : LinkListener {
             }
         }
         watchAccess = WatchNotificationService.accessGranted(context)
+        if (!watchAccess) clearWatchedActivity()
     }
 
     fun setWatched(app: WatchedAiApp, on: Boolean) {
         if (app !in installedWatchApps) return
         watchedPackages = if (on) watchedPackages + app.packageName else watchedPackages - app.packageName
         prefs.edit().putStringSet("watched_ai_apps", watchedPackages).apply()
-        if (!on) clearWatchedUpdate()
+        if (!on) {
+            watchedActivity = watchedActivity.filterNot { it.app == app }
+            clearWatchedUpdate()
+        }
     }
 
     internal fun watchedApp(packageName: String): WatchedAiApp? = WatchedAiApp.selected(packageName, watchedPackages)
@@ -411,6 +420,8 @@ class AppModel(private val context: Context) : LinkListener {
     }
 
     internal fun showWatchedUpdate(app: WatchedAiApp, title: String) {
+        if (watchedApp(app.packageName) == null || !WatchNotificationService.accessGranted(context)) return
+        watchedActivity = com.coucou.android.core.WatchedActivity.record(watchedActivity, app, System.currentTimeMillis())
         if (!islandAllowed(requireLink = false)) return
         val time = java.time.LocalTime.now()
         if (!settings.quiet.isQuiet(time.hour * 60 + time.minute)) overlay.showWatchedUpdate(app.update(title))
@@ -418,7 +429,7 @@ class AppModel(private val context: Context) : LinkListener {
 
     internal fun clearWatchedUpdate() = overlay.clearWatchedUpdate()
 
-    private fun openWatchedApp(packageName: String) {
+    internal fun openWatchedApp(packageName: String) {
         val app = watchedApp(packageName) ?: return
         val launch = context.packageManager.getLaunchIntentForPackage(app.packageName) ?: return
         runCatching { context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
