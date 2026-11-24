@@ -58,12 +58,12 @@ interface LinkListener {
     fun onChatError(id: String, reason: String, message: String) {}
 }
 
-/** What the UI talks to: the real [LinkClient] or the offline [DemoLink]. */
+/** Interface for the authenticated desktop link. */
 interface DesktopLink {
     val approvals: ApprovalBook
     fun start()
     fun stop()
-    /** Try the connection again now (the network changed); the demo has nothing to retry. */
+    /** Try the connection again now after the network changes. */
     fun retryNow() {}
     /**
      * Is the link alive right now? Connected: asks the computer for a pong and drops the connection (so it reconnects) if none
@@ -79,7 +79,7 @@ interface DesktopLink {
     /** Asks for the lines of a file in a session's list; false if the link is down or the computer did not offer `diffs`. */
     fun getDiff(pillId: String, fileId: Long): Boolean = false
 
-    // Chat through the computer (docs/ANDROID_LINK.md). Not offered by the demo.
+    // Chat through the computer (docs/ANDROID_LINK.md).
     fun chatModels() {}
     /** False if the link is down; the answer arrives through the listener. */
     fun chatSend(id: String, model: String, text: String): Boolean = false

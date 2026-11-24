@@ -1,6 +1,10 @@
 # Coumpanion Android changelog
 
-## 0.6.1 release candidate
+## 0.6.1 Preview 2
+
+- Removed Android Demo Mode and its simulated sessions and approval requests. Open the AI Launcher for real timers or pair with your desktop for verified agent activity.
+
+## 0.6.1 Preview 1
 
 - The AI Launcher opens native apps or HTTPS providers. Custom providers can have an imported logo, accent, and launch-tracking preference. Desktop pairing stays optional.
 - Manual timers support pause, resume, restart, manual completion, cancellation, expiration, and reminders. They use elapsed realtime and restore local records from Preview 1.

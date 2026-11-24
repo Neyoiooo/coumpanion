@@ -374,11 +374,6 @@ class LinkClientTest {
         assertTrue(chat.none { it.contains("early") })
     }
 
-    @Test fun theDemoOffersNoChat() {
-        val demo = DemoLink(object : LinkListener {}, autoRun = false)
-        assertFalse(demo.chatSend("c1", "a/b", "hi"))
-    }
-
     // ── Keeping the link alive while the phone sleeps ──
 
     @Test fun aLivenessCheckDropsAConnectionThatStoppedAnsweringAndReconnects() {

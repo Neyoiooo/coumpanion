@@ -29,9 +29,9 @@ object HomePanel {
      */
     enum class Link { NONE, APPROVAL, PAIR }
 
-    fun link(paired: Boolean, demo: Boolean, hasApproval: Boolean): Link = when {
+    fun link(paired: Boolean, hasApproval: Boolean): Link = when {
         hasApproval -> Link.APPROVAL
-        !paired && !demo -> Link.PAIR
+        !paired -> Link.PAIR
         else -> Link.NONE
     }
 

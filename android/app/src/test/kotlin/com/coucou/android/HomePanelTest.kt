@@ -41,12 +41,11 @@ class HomePanelTest {
     }
 
     @Test fun theLinkAnswersARequestFirstThenPairsThenIsGone() {
-        assertEquals(HomePanel.Link.APPROVAL, HomePanel.link(paired = true, demo = false, hasApproval = true))
-        assertEquals(HomePanel.Link.APPROVAL, HomePanel.link(paired = false, demo = true, hasApproval = true))
-        assertEquals(HomePanel.Link.PAIR, HomePanel.link(paired = false, demo = false, hasApproval = false))
+        assertEquals(HomePanel.Link.APPROVAL, HomePanel.link(paired = true, hasApproval = true))
+        assertEquals(HomePanel.Link.APPROVAL, HomePanel.link(paired = false, hasApproval = true))
+        assertEquals(HomePanel.Link.PAIR, HomePanel.link(paired = false, hasApproval = false))
         // Settings is no longer a link on the card (it has its own button): nothing to show.
-        assertEquals(HomePanel.Link.NONE, HomePanel.link(paired = true, demo = false, hasApproval = false))
-        assertEquals(HomePanel.Link.NONE, HomePanel.link(paired = false, demo = true, hasApproval = false))
+        assertEquals(HomePanel.Link.NONE, HomePanel.link(paired = true, hasApproval = false))
     }
 
     @Test fun pillColoursBecomeMochiBodies() {

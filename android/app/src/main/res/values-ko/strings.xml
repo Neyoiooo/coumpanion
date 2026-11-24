@@ -75,12 +75,9 @@
     <string name="status_connected">연결됨</string>
     <string name="status_connecting">연결하는 중…</string>
     <string name="status_not_connected">연결 안 됨</string>
-    <string name="demo_mode">데모 모드</string>
-    <string name="demo_try">데모 모드 체험</string>
     <string name="pair_button">페어링</string>
     <string name="approval_title">승인이 필요해요</string>
     <string name="action_unpair">이 컴퓨터 연결 해제</string>
-    <string name="demo_leave">데모 모드 나가기</string>
     <string name="pair_paste_short">링크 붙여넣기</string>
     <string name="watch_apps_title">AI 앱 확인</string>
     <string name="watch_apps_intro">아일랜드에서 AI 앱의 새 알림을 확인하세요.</string>

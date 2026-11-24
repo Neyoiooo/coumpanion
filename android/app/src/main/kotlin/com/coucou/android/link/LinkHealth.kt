@@ -70,9 +70,6 @@ object KeepAlivePolicy {
     const val COMPUTER_IDLE_MS = 20 * 60_000L
     /** The wake lock held during one check, only so the question and its answer can cross; released as soon as it is done. */
     const val WAKE_LOCK_MS = 15_000L
-
-    /** An alarm exists only while a real computer is paired. */
-    fun shouldArm(paired: Boolean, demo: Boolean) = paired && !demo
 }
 
 /**

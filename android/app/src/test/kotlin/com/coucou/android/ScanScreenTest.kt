@@ -95,7 +95,9 @@ class ScanScreenTest {
         val actions = pairing.substringAfter("model.message?.let").substringBefore("internal fun PairingPasteSheet")
         assertTrue(pairing.indexOf("R.string.pairing_help") in 0 until pairing.indexOf("model.message?.let"))
         assertTrue(actions.contains("stringResource(R.string.pair_paste_short), onPaste, Modifier.fillMaxWidth(), PillKind.PRIMARY"))
-        assertTrue(actions.contains("R.string.scan_button") && actions.contains("R.string.demo_try"))
+        assertTrue(actions.contains("R.string.scan_button"))
+        assertFalse(actions.contains("startDemo"))
+        assertTrue("the unpaired home opens the live launcher", ui.substringBefore("return@Column").contains("AiLauncher(model, onOverlay)"))
         assertTrue("paste lives in a sheet, with the clipboard shortcut", ui.contains("PasteSheet(") && ui.contains("R.string.pair_clipboard"))
         // a pasted link is checked by the same parser before anything is paired
         assertTrue(ui.contains("if (PairingPayload.parse(link) != null) { model.pair(link)"))

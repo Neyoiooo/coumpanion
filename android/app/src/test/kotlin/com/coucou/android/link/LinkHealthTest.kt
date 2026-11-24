@@ -68,12 +68,6 @@ class LinkHealthTest {
 
     // ── the alarm and the battery hint ──
 
-    @Test fun theAlarmIsArmedOnlyForARealPairing() {
-        assertTrue(KeepAlivePolicy.shouldArm(paired = true, demo = false))
-        assertFalse(KeepAlivePolicy.shouldArm(paired = false, demo = false))
-        assertFalse(KeepAlivePolicy.shouldArm(paired = true, demo = true))
-    }
-
     @Test fun theComputerToleratesSeveralMissedChecks() {
         assertTrue(KeepAlivePolicy.COMPUTER_IDLE_MS >= 4 * KeepAlivePolicy.INTERVAL_MS)
         assertTrue("Doze can stretch the alarm to about 15 minutes", KeepAlivePolicy.COMPUTER_IDLE_MS > 15 * min)

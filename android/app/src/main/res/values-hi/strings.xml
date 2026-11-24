@@ -75,12 +75,9 @@
     <string name="status_connected">जुड़ा है</string>
     <string name="status_connecting">कनेक्ट हो रहा है…</string>
     <string name="status_not_connected">कनेक्ट नहीं</string>
-    <string name="demo_mode">डेमो मोड</string>
-    <string name="demo_try">डेमो मोड आज़माएँ</string>
     <string name="pair_button">जोड़ें</string>
     <string name="approval_title">स्वीकृति चाहिए</string>
     <string name="action_unpair">इस कंप्यूटर को डिस्कनेक्ट करें</string>
-    <string name="demo_leave">डेमो मोड छोड़ें</string>
     <string name="pair_paste_short">लिंक पेस्ट करें</string>
     <string name="watch_apps_title">एआई ऐप देखें</string>
     <string name="watch_apps_intro">आइलैंड में अपने एआई ऐप के अपडेट देखें।</string>

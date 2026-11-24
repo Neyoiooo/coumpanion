@@ -279,10 +279,6 @@ fun SettingsScreen(
                         RowDivider()
                         PillButton(stringResource(R.string.action_unpair), { model.unpair() }, Modifier.fillMaxWidth().padding(Spacing.INSIDE.dp), PillKind.DANGER)
                     }
-                    Mode.DEMO -> {
-                        RowDivider()
-                        PillButton(stringResource(R.string.demo_leave), { model.stopDemo() }, Modifier.fillMaxWidth().padding(Spacing.INSIDE.dp))
-                    }
                     Mode.NONE -> Text(
                         stringResource(R.string.settings_computer_none), Modifier.padding(start = Spacing.INSIDE.dp, end = Spacing.INSIDE.dp, bottom = Spacing.INSIDE.dp),
                         style = TypeScale.SECONDARY.style(t.textDim.c()),

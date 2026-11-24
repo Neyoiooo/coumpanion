@@ -94,13 +94,10 @@ fun PairingScreen(
             stringResource(R.string.pair_paste_short), onPaste, Modifier.fillMaxWidth(), PillKind.PRIMARY,
         )
         Spacer(Modifier.size(Gap))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Gap)) {
-            PillButton(
-                stringResource(R.string.scan_button), onScan, Modifier.weight(1f),
-                icon = { CoucouIcon(IconKind.SCAN, tint = t.text.c(), size = 20.dp) },
-            )
-            PillButton(stringResource(R.string.demo_try), { model.startDemo() }, Modifier.weight(1f))
-        }
+        PillButton(
+            stringResource(R.string.scan_button), onScan, Modifier.fillMaxWidth(),
+            icon = { CoucouIcon(IconKind.SCAN, tint = t.text.c(), size = 20.dp) },
+        )
         Spacer(Modifier.size(32.dp))
         Text(stringResource(R.string.pairing_credit), style = TypeScale.SECONDARY.style(t.textFaint.c()).copy(textAlign = TextAlign.Center))
         Text(

@@ -373,7 +373,7 @@ private fun Home(
 
     // The PC's Home panel: the agent that matters in a big card, the others as pills.
     val focus = HomePanel.focus(model.sessions, selected)
-    val pair = HomePanel.link(model.isPaired, model.mode == Mode.DEMO, hasApproval = model.approvals.isNotEmpty())
+    val pair = HomePanel.link(model.isPaired, hasApproval = model.approvals.isNotEmpty())
     // Items, in order: the hero, [message], then the other agents, ask, recent.
     val others = HomePanel.others(model.sessions, focus)
     LazyColumn(

@@ -57,10 +57,10 @@ class TodayCounterTest {
         assertEquals(18 * 3_600_000L + 30 * 60_000L, TodayMidnight.nextAfter(noon, java.time.ZoneId.of("Asia/Kolkata")))
     }
 
-    @Test fun onlyAPairedComputerCountsNotTheDemo() {
+    @Test fun onlyAnObservedPairedFinishCounts() {
         val model = File("src/main/kotlin/com/coucou/android/app/AppModel.kt").readText()
         val line = model.lines().first { it.contains("todayCounter.increment()") }
-        assertTrue("the demo loops every 20 s and must not add to the day", line.contains("mode == Mode.PAIRED"))
+        assertTrue("only a real paired link may increment the counter", line.contains("mode == Mode.PAIRED"))
     }
 
     @Test fun midnightIsOurOwnAlarmBecauseTheSystemNoLongerSendsDateChanged() {

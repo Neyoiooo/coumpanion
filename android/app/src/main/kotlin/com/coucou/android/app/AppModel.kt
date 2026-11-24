@@ -51,7 +51,6 @@ import com.coucou.android.link.Discovery
 import com.coucou.android.link.DiscoveryPolicy
 import com.coucou.android.link.DiscoveryState
 import com.coucou.android.link.PinnedProbe
-import com.coucou.android.link.DemoLink
 import com.coucou.android.link.Connector
 import com.coucou.android.link.DesktopLink
 import com.coucou.android.link.PinnedTls
@@ -73,7 +72,7 @@ import com.coucou.android.link.SessionInfo
 import com.coucou.android.sound.SoundPlayer
 import com.coucou.android.core.BotState
 
-enum class Mode { NONE, DEMO, PAIRED }
+enum class Mode { NONE, PAIRED }
 
 /** The one place the UI, the service and the notification actions share. Created by [CoucouApp]. */
 class AppModel(private val context: Context) : LinkListener {
@@ -137,7 +136,7 @@ class AppModel(private val context: Context) : LinkListener {
     )
 
     private fun mayDiscover() = DiscoveryPolicy.mayDiscover(
-        paired = currentPairing != null, demo = mode == Mode.DEMO, wifiUp = netWatch.wifiUp, linkConnected = linkState == LinkState.CONNECTED,
+        paired = currentPairing != null, wifiUp = netWatch.wifiUp, linkConnected = linkState == LinkState.CONNECTED,
     )
 
     private val prefs = context.getSharedPreferences("coucou_ui", Context.MODE_PRIVATE)
@@ -675,7 +674,7 @@ class AppModel(private val context: Context) : LinkListener {
 
     /** Called at launch and by the service: reconnects to the stored desktop, if any. */
     fun resume() {
-        if (mode == Mode.DEMO || link != null) return
+        if (link != null) return
         val p = store.loadPairing() ?: return
         connect(p)
     }
@@ -873,20 +872,12 @@ class AppModel(private val context: Context) : LinkListener {
         return true
     }
 
-    fun startDemo() {
-        stopLink()
-        mode = Mode.DEMO
-        link = DemoLink(this).also { it.start() }
-    }
-
     /** Forgets the desktop: closes the link and deletes the stored secret. */
     fun unpair() {
         stopLink()
         store.clearPairing()
         LinkService.stop(context)
     }
-
-    fun stopDemo() = stopLink()
 
     private fun stopLink() {
         closeDiff()
@@ -916,7 +907,7 @@ class AppModel(private val context: Context) : LinkListener {
         notifier.cancelAllStatus()
     }
 
-    /** True if the decision was sent (or applied to the demo). Allow is gated by the screen lock in the UI. */
+    /** True if the decision was sent. Allow is gated by the screen lock in the UI. */
     fun decide(fingerprint: String, allow: Boolean): Boolean {
         val request = approvals.firstOrNull { it.fingerprint == fingerprint }
         if (allow && request != null && !com.coucou.android.core.ApprovalSheetPlan.canAllowHere(request)) {
@@ -977,7 +968,7 @@ class AppModel(private val context: Context) : LinkListener {
     }
 
     override fun onWelcome(desktopName: String, os: String) {
-        main.post { if (mode != Mode.DEMO && desktopName.isNotBlank()) this.desktopName = desktopName }
+        main.post { if (mode == Mode.PAIRED && desktopName.isNotBlank()) this.desktopName = desktopName }
     }
 
     override fun onCaps(caps: Set<String>) {
@@ -1064,7 +1055,7 @@ class AppModel(private val context: Context) : LinkListener {
             val minute = java.time.LocalTime.now().let { it.hour * 60 + it.minute }
             for (s in sessions) {
                 val prev = lastState.put(s.pillId, s.state)
-                // A task just finished (not one already finished when the link came back), on a real computer: the demo loops and never counts.
+                // Count a new finish received through the paired link.
                 if (mode == Mode.PAIRED && prev != null && prev != BotState.FINISHED && s.state == BotState.FINISHED) todayCounter.increment()
                 val name = agentName(s.pillId)
                 val sound = SoundPlayer.stateSounds[s.state]
