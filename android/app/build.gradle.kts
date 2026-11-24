@@ -88,7 +88,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     // Scanning the pairing QR code. CameraX (androidx) shows the camera; zxing-core (Apache 2.0, pure Java) reads the
     // code. Neither talks to any server; the reasoning is in the commit message.
-    val cameraX = "1.3.4"
+    val cameraX = "1.4.2" // Its native libraries support 16 KB Android devices.
     implementation("androidx.camera:camera-core:$cameraX")
     implementation("androidx.camera:camera-camera2:$cameraX")
     implementation("androidx.camera:camera-lifecycle:$cameraX")
