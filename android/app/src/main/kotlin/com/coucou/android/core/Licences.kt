@@ -6,7 +6,7 @@ package com.coucou.android.core
  */
 object Licences {
     /** In the order they are shown. */
-    val FILES = listOf("NOTICES.txt", "MIT.txt", "MIT-Android.txt", "Apache-2.0.txt")
+    val FILES = listOf("NOTICES.txt", "MIT.txt", "MIT-Android.txt", "Apache-2.0.txt", "MIT-LobeIcons.txt")
 
     /** The text cut into blocks at blank lines, so a long licence is a list the screen can scroll without laying it all out at once. */
     fun paragraphs(text: String): List<String> =

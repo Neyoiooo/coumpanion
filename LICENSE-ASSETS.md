@@ -35,3 +35,7 @@ Open an issue on [GitHub](https://github.com/Louis-CFM/coucou/issues) or write t
 ## Coupi provider badges
 
 The Coupi badges use the provider marks from LobeHub's `@lobehub/icons-static-png` 2.12.0. The marks are placed on circular plates for contrast and used in the Android avatars and README GIFs to identify the equipped provider. The marks remain the property of their respective owners. [Source package](https://www.npmjs.com/package/@lobehub/icons-static-png/v/2.12.0) · [Lobe Icons MIT license](android/app/src/main/assets/licenses/MIT-LobeIcons.txt)
+
+## Android distribution
+
+The Coumpanion Android packages use the Coupi mascot, the Coumpanion launcher and status artwork, and the replacement alert sounds from the Android rebrand. The upstream desktop resources and website remain in this repository with their original notices. They are outside the Coumpanion Android release artifacts. The upstream license restrictions still apply to any separate redistribution of those resources.

@@ -54,7 +54,7 @@ class LicencesTest {
     }
 
     @Test fun theScreenShowsTheNoticesAndLicencesInOrder() {
-        assertEquals(listOf("NOTICES.txt", "MIT.txt", "MIT-Android.txt", "Apache-2.0.txt"), Licences.FILES)
+        assertEquals(listOf("NOTICES.txt", "MIT.txt", "MIT-Android.txt", "Apache-2.0.txt", "MIT-LobeIcons.txt"), Licences.FILES)
         for (f in Licences.FILES) assertTrue("$f is bundled", File("src/main/assets/licenses/$f").length() > 500)
         val text = Licences.FILES.joinToString("\n\n") { asset(it) }
         val p = Licences.paragraphs(text)

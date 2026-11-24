@@ -1,6 +1,6 @@
 # Coumpanion for Android
 
-Coumpanion shows your agents, lets you answer approval requests and supports chat through a compatible link. The Android app is based on [Coucou](https://github.com/Louis-CFM/coucou) by Louis Raillé and the Android port by Rhytam Biswas. The code remains [MIT-licensed](LICENSE).
+Coumpanion shows your agents, lets you answer approval requests and supports chat through a compatible link. The Android app is based on [Coucou](https://github.com/Louis-CFM/coucou) by Louis Raillé and the Android port by Rhytam Biswas. The code remains [MIT-licensed](LICENSE). [Coumpanion privacy policy](../docs/coumpanion-privacy.html)
 
 The offline demo runs on Android 11 or later. [Coumpanion Server](server/README.md) provides a real DeepSeek connection over a private network. Compatible desktop links can also be used for pairing and chat.
 

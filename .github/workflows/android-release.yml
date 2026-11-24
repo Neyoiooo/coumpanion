@@ -149,7 +149,10 @@ jobs:
 
       - name: Start Android 16 with 16 KB pages
         run: |
+          test -c /dev/kvm
           sudo chmod a+rw /dev/kvm
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
           sdk_tools="$ANDROID_HOME/cmdline-tools/latest/bin"
           if [[ ! -x "$sdk_tools/sdkmanager" ]]; then
             manager="$(find "$ANDROID_HOME/cmdline-tools" -type f -path '*/bin/sdkmanager' | sort -V | tail -1)"
@@ -159,19 +162,44 @@ jobs:
           image='system-images;android-36;google_apis_ps16k;x86_64'
           "$sdk_tools/sdkmanager" --sdk_root="$ANDROID_HOME" 'platform-tools' 'emulator' "$image"
           echo no | "$sdk_tools/avdmanager" create avd -n coumpanion -k "$image"
-          export PATH="$ANDROID_HOME/platform-tools:$PATH"
+          adb="$ANDROID_HOME/platform-tools/adb"
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-          "$ANDROID_HOME/emulator/emulator" -avd coumpanion -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader > "$RUNNER_TEMP/emulator.log" 2>&1 &
-          timeout 240 adb wait-for-device
-          timeout 240 bash -c 'until [[ "$(adb shell getprop sys.boot_completed | tr -d "\r")" = 1 ]]; do sleep 2; done'
-          test "$(adb shell getconf PAGE_SIZE | tr -d '\r')" = 16384
-          adb shell input keyevent 82
+          echo 'ANDROID_SERIAL=emulator-5554' >> "$GITHUB_ENV"
+          export ANDROID_SERIAL=emulator-5554
+          "$adb" start-server
+          emulator="$ANDROID_HOME/emulator/emulator"
+          "$emulator" -accel-check
+          nohup "$emulator" -avd coumpanion -port 5554 -accel on -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -no-metrics \
+            < /dev/null > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          emulator_pid=$!
+          deadline=$((SECONDS + 360))
+          until [[ "$(timeout 5 "$adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)" = 1 ]]; do
+            if ! kill -0 "$emulator_pid" 2>/dev/null || (( SECONDS >= deadline )); then
+              "$adb" devices -l
+              tail -100 "$RUNNER_TEMP/emulator.log"
+              exit 1
+            fi
+            sleep 3
+          done
+          test "$("$adb" shell getconf PAGE_SIZE | tr -d '\r')" = 16384
+          "$adb" shell input keyevent 82
 
       - name: Install and launch both signed APKs
         env:
           VERSION: ${{ needs.build.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           sha256sum -c SHA256SUMS
+          if [[ "$VERSION" != 0.6.0 ]]; then
+            gh release download coumpanion-v0.6.0-preview.1 --repo "$GITHUB_REPOSITORY" --pattern '*.apk' --dir baseline
+            (
+              cd baseline
+              sha256sum -c <<'BASELINE'
+          2e3c4ceb29d7b794fd646e831b9cbe26ea188c85b6cf9594c611288c427f8361  Coumpanion-Android-0.6.0-Full.apk
+          eba69fb04a2ad90cfa1d6e8fd4bb8155d4c5f28257cfb143718e56dd0ebde2c1  Coumpanion-Android-0.6.0-Standard.apk
+          BASELINE
+            )
+          fi
           for edition in Standard Full; do
             app=app.coumpanion.android
             if [[ "$edition" = Standard ]]; then app+=.standard; fi
@@ -181,7 +209,21 @@ jobs:
             adb shell am start -W -n "$app/com.coucou.android.MainActivity" | tee "$RUNNER_TEMP/launch.txt"
             grep -q 'Status: ok' "$RUNNER_TEMP/launch.txt"
             adb shell pidof "$app"
+            if [[ "$VERSION" != 0.6.0 ]]; then
+              adb uninstall "$app"
+              adb install "baseline/Coumpanion-Android-0.6.0-$edition.apk"
+              adb install -r "$apk"
+              adb shell am start -W -n "$app/com.coucou.android.MainActivity" | tee "$RUNNER_TEMP/upgrade.txt"
+              grep -q 'Status: ok' "$RUNNER_TEMP/upgrade.txt"
+              adb shell pidof "$app"
+            fi
           done
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: android-emulator-log
+          path: ${{ runner.temp }}/emulator.log
 
   publish-preview:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.preview_run_id != ''
