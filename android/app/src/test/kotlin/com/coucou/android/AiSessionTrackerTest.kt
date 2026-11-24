@@ -203,7 +203,8 @@ class AiSessionTrackerTest {
         val box = IslandGeometry.place(400, 1f, PxRect(65, 0, 85, 35), 30, safeLeft = 40)
         val landscape = IslandGeometry.place(660, 1f, null, 25, safeLeft = 48, safeRight = 52,
             size = IslandSize.LARGE, screenH = 280, safeBottom = 24)
-        assertEquals(227, landscape.maxHeight)
+        assertEquals(25, landscape.windowTop)
+        assertEquals(280 - landscape.windowTop - 24, landscape.maxHeight)
         assertTrue(landscape.workingW > box.workingW)
         assertTrue(landscape.leftFor(landscape.expandedW, IslandPosition.LEFT) >= 48)
         val width = 100
