@@ -16,24 +16,37 @@ Coumpanion keeps your AI sessions in a Dynamic Island on Android. Start a timer,
 
 ## <img src="docs/media/coupi/idle.gif" width="26" alt=""> Meet Coupi
 
-Coupi is the little robot that lives in your island. Equip an AI and Coupi takes on its colors. The round badge on its belly shows which AI it has equipped while you track that session. ChatGPT wears mint, Claude wears terracotta, Gemini wears blue-violet, and Codex wears indigo. When several sessions are open, expand the island to see who’s equipped with what.
+<p align="center">
+  <img src="docs/media/coupi/tracking.gif" width="126" alt="Mint ChatGPT Coupi floats with three orbiting pixels">
+  <img src="docs/media/coupi/idle.gif" width="126" alt="Silver Coupi breathes and blinks with its badge empty">
+  <img src="docs/media/coupi/thinking.gif" width="126" alt="Terracotta Claude Coupi tilts with animated thinking dots">
+</p>
 
-The gallery previews Coupi’s effects as animated pixel stickers. The avatar artwork is pending, and the linked APKs are the existing signed preview.
+Coupi is the little robot that lives in your island. Equip an AI and Coupi takes on its colors. The round badge on its belly shows which AI it has equipped. When several sessions are open, expand the island to see each one.
+
+The gallery shows the avatar system on `main`. The download links below point to the signed Android preview.
 
 ## <img src="docs/media/coupi/completed.gif" width="26" alt=""> Coupi’s states
 
-| Pixel sticker | State | What the island is telling you |
+| Coupi | State and equipped AI | What the island is telling you |
 | :---: | --- | --- |
-| <img src="docs/media/coupi/idle.gif" width="50" height="50" alt="A mint pixel light gently bobs"> | **Idle** · mint | Coupi is at rest. |
-| <img src="docs/media/coupi/tracking.gif" width="50" height="50" alt="Three mint pixels orbit a small tile"> | **Tracking** · ChatGPT mint | Your manual timer is running. Only elapsed tracking time is confirmed. |
-| <img src="docs/media/coupi/thinking.gif" width="50" height="50" alt="Three terracotta dots take turns rising"> | **Thinking** · Claude terracotta | A paired desktop agent reported that it is thinking. |
-| <img src="docs/media/coupi/working.gif" width="50" height="50" alt="Blue-violet pixels move along processing bars"> | **Working** · Gemini blue-violet | A paired desktop agent reported work in progress. |
-| <img src="docs/media/coupi/completed.gif" width="50" height="50" alt="Sparkles flash around an indigo check mark"> | **Completed** · Codex indigo | A paired desktop agent reported completion. Coupi celebrates briefly and returns to idle. |
-| <img src="docs/media/coupi/approval.gif" width="50" height="50" alt="A lavender question mark gently pulses"> | **Waiting for approval** · lavender | A paired desktop agent needs your response. |
-| <img src="docs/media/coupi/error.gif" width="50" height="50" alt="An orange warning triangle shakes"> | **Error** · orange | A paired desktop agent reported a problem. |
-| <img src="docs/media/coupi/disconnected.gif" width="50" height="50" alt="Silver pixel Zs drift upward"> | **Disconnected** · silver | The desktop link is offline. |
+| <img src="docs/media/coupi/idle.gif" width="88" height="88" alt="Coupi breathes and blinks"> | **Idle** · Unequipped | Coupi is at rest. |
+| <img src="docs/media/coupi/tracking.gif" width="88" height="88" alt="Mint Coupi sways under three orbiting pixels"> | **Tracking** · ChatGPT | Your manual timer is running. Only elapsed tracking time is confirmed. |
+| <img src="docs/media/coupi/thinking.gif" width="88" height="88" alt="Terracotta Coupi tilts above animated thinking dots"> | **Thinking** · Claude | A paired desktop agent reported that it is thinking. |
+| <img src="docs/media/coupi/working.gif" width="88" height="88" alt="Blue-violet Coupi bounces between processing pixels"> | **Working** · Gemini | A paired desktop agent reported work in progress. |
+| <img src="docs/media/coupi/completed.gif" width="88" height="88" alt="Indigo Coupi jumps and throws off pixel sparkles"> | **Completed** · Codex | A paired desktop agent reported completion. Coupi celebrates briefly and returns to idle. |
+| <img src="docs/media/coupi/approval.gif" width="88" height="88" alt="Lavender Coupi pulses under a question mark"> | **Waiting for approval** · Muse | A paired desktop agent needs your response. |
+| <img src="docs/media/coupi/error.gif" width="88" height="88" alt="Ocean-blue Coupi shakes beside a warning"> | **Error** · DeepSeek | An integration reported a problem. |
+| <img src="docs/media/coupi/disconnected.gif" width="88" height="88" alt="Silver Coupi rests beneath drifting pixel Zs"> | **Disconnected** · Grok | The desktop link is offline. |
 
-The colors are examples. Any equipped provider can use the states supported by its activity source. Full edition’s optional notification watching shows updates reported by the source app.
+<p align="center">
+  <img src="docs/media/coupi/perplexity.gif" width="96" alt="Turquoise Coupi equipped with Perplexity">
+  <img src="docs/media/coupi/copilot.gif" width="96" alt="Pastel rainbow Coupi equipped with Copilot">
+  <br>
+  <strong>Perplexity · Copilot</strong>
+</p>
+
+The pairings illustrate how the palettes and motions combine. The island shows states supported by each session’s activity source. Full edition’s optional notification watching shows updates reported by the source app.
 
 ## <img src="docs/media/coupi/tracking.gif" width="26" alt=""> Install on Android
 
