@@ -48,14 +48,16 @@ PROVIDERS = {
 EYES = ((29, 35, 48, 58), (64, 35, 84, 58))
 EYE_X = (38, 74)
 SMILE = ("XXXXXXX", ".XXXXX.", "..XXX..")
-FROWN = ("..XXX..", ".XXXXX.", "XX...XX")
 CLOSED = ("XX...XX", ".XXXXX.")
 HEART = (".XX.XX.", "XXXXXXX", "XXXXXXX", ".XXXXX.", "..XXX..", "...X...")
 QUESTION = (".XXX.", "XX.XX", "...XX", "..XX.", "..X..", ".....", "..X..")
 WARNING = ("...X...", "..XXX..", "..X!X..", ".XX!XX.", ".XXXXX.", "XXX!XXX", "XXXXXXX")
-CROSSED = ("XX...XX", ".XX.XX.", "..XXX..", ".XX.XX.", "XX...XX")
-FOCUS = ("XX.......", "XXXXX....", "XXXXXXXX.", ".XXXXXXX.", ".XX++XXX.", ".XXXXXXX.", "..XXXXX..")
-
+CLOCK = ("...XXXXX...", "..XX...XX..", ".X.......X.", "XX.......XX",
+         "X.........X", "X.........X", "X.........X", "XX.......XX",
+         ".X.......X.", "..XX...XX..", "...XXXXX...")
+BUBBLE = ("..XXXXXXXXX..", ".XX.......XX.", "XX.........XX", "X...........X",
+          "X...........X", "XX.........XX", ".XXXXXXXXXXX.", "...XX........", "...X.........")
+SLEEP = ("XXXXXXX", ".....XX", "....XX.", "...XX..", "..XX...", ".XX....", "XXXXXXX")
 
 def glyph(draw, center, rows, colors, cell=2):
     x = center[0] - len(rows[0]) * cell // 2
@@ -143,96 +145,67 @@ def face_overlays(master, timeline):
         for y in range(26, 74)
     ]
 
+    def face_notification(name, draw):
+        center = (56, 49)
+        panel = {
+            "warning": "#f37e7c",
+            "warning_red": "#e96a70",
+        }.get(name, face)
+        for y, cream in enumerate(cream_rows, start=26):
+            if cream:
+                draw.line((cream[0], y, cream[-1], y), fill=panel)
+
+        if name.startswith("timer_"):
+            color = "#544489"
+            glyph(draw, center, CLOCK, {"X": color}, 3)
+            draw.rectangle((55, 41, 57, 50), fill=color)
+            tips = {"timer_one": (62, 49), "timer_two": (61, 54), "timer_three": (56, 56)}
+            draw.line((center, tips[name]), fill=color, width=3)
+        elif name.startswith("think_"):
+            glyph(draw, (56, 50), BUBBLE, {"X": "#55467c"}, 3)
+            active = ("think_one", "think_two", "think_three").index(name)
+            for i in range(3):
+                x = 47 + i * 8
+                draw.rectangle((x, 47, x + 3, 50), fill="#55467c" if i == active else "#b6a5cd")
+        elif name.startswith("work_"):
+            draw.rounded_rectangle((34, 41, 77, 57), 3, outline="#284867", width=2)
+            active = ("work_one", "work_two", "work_three").index(name)
+            for i in range(3):
+                x = 38 + i * 12
+                draw.rectangle((x, 45, x + 9, 53), fill="#287d9e" if i == active else "#cbdce1")
+        elif name in ("heart", "heart_large"):
+            cell = 4 if name == "heart" else 5
+            glyph(draw, center, HEART, {"X": "#128447" if cell == 4 else "#169b54"}, cell)
+        elif name.startswith("question"):
+            glyph(draw, center, QUESTION, {"X": "#7346b7" if name == "question_bright" else "#504180"}, 5)
+        elif name.startswith("warning"):
+            glyph(draw, center, WARNING, {"X": "#ffd775", "!": "#641b34"}, 5)
+        elif name.startswith("sleeping"):
+            glyph(draw, (56, 48 if name == "sleeping" else 45), SLEEP, {"X": "#56557f"}, 4)
+        else:
+            raise ValueError(f"Unknown face expression: {name}")
+
     def pose(name):
         overlay = Image.new("RGBA", master.size)
-        d = ImageDraw.Draw(overlay)
-
-        def draw_eyes(dx=0, dy=0):
-            for (x, y, _, _), eye in zip(EYES, eye_patches):
-                overlay.alpha_composite(eye, (x + dx, y + dy))
-
-        def cover_eyes():
-            for left, top, right, bottom in EYES:
-                d.rectangle((left, top, right - 1, bottom - 1), fill=face)
-
-        def cover_mouth():
-            d.rectangle((48, 51, 64, 64), fill=face)
-
-        def mark(center, rows, color=INK, cell=2):
-            glyph(d, center, rows, {"X": color}, cell)
-
-        def mouth_o(tall=False):
-            rows = (".XXX.", "XX.XX", "XX.XX", ".XXX.") if tall else (".XX.", "X..X", ".XX.")
-            mark((56, 57), rows)
-
-        def dots(number, color):
-            for i in range(number):
-                x = 49 + 6 * i
-                d.rectangle((x, 64, x + 2, 66), fill=color)
-
+        draw = ImageDraw.Draw(overlay)
         if name == "neutral":
             return overlay
         if name in ("glance_left", "glance_right", "blink"):
-            cover_eyes()
+            for left, top, right, bottom in EYES:
+                draw.rectangle((left, top, right - 1, bottom - 1), fill=face)
             if name == "blink":
                 for x in EYE_X:
-                    mark((x, 48), CLOSED)
+                    glyph(draw, (x, 48), CLOSED, {"X": INK})
             else:
-                draw_eyes(-4 if name == "glance_left" else 4)
+                dx = -4 if name == "glance_left" else 4
+                for (x, y, _, _), eye in zip(EYES, eye_patches):
+                    overlay.alpha_composite(eye, (x + dx, y))
         elif name in ("smile", "mouth_o"):
-            cover_mouth()
-            if name == "smile":
-                mark((56, 56), SMILE)
-            else:
-                mouth_o()
-        elif name.startswith("timer_"):
-            dots(("timer_one", "timer_two", "timer_three").index(name) + 1, "#65529a")
-        elif name.startswith("think_"):
-            cover_eyes()
-            draw_eyes(3, -4)
-            d.rectangle((71, 29, 78, 30), fill=INK)
-            cover_mouth()
-            mouth_o()
-            dots(("think_one", "think_two", "think_three").index(name) + 1, "#485482")
-        elif name in ("focused", "processing"):
-            cover_eyes()
-            cover_mouth()
-            highlight = "#529ac9" if name == "focused" else "#83dae7"
-            for x, reverse in ((38, False), (74, True)):
-                rows = tuple(row[::-1] for row in FOCUS) if reverse else FOCUS
-                glyph(d, (x, 46), rows, {"X": INK, "+": highlight})
-            mark((56, 56), ("XX...XX", ".XXXXX." if name == "focused" else "XXXXXXX"))
-        elif name in ("hearts", "hearts_big"):
-            cover_eyes()
-            cover_mouth()
-            for x in EYE_X:
-                mark((x, 46), HEART, "#118445" if name == "hearts" else "#169b54",
-                     2 if name == "hearts" else 3)
-            mark((56, 56), SMILE)
-        elif name.startswith("question"):
-            cover_eyes()
-            cover_mouth()
-            bright = name == "question_bright"
-            mark((56, 48), QUESTION, "#7346b7" if bright else "#504180", 4)
-            for x in EYE_X:
-                mark((x, 50), ("XX", "XX"))
-        elif name.startswith("warning"):
-            red = "#f37e7c" if name == "warning" else "#e96a70"
-            for y, cream in enumerate(cream_rows, start=26):
-                if cream:
-                    d.line((cream[0], y, cream[-1], y), fill=red)
-            for x in EYE_X:
-                mark((x, 47), CROSSED, "#641b34")
-            glyph(d, (56, 36), WARNING, {"X": "#ffd775", "!": "#641b34"})
-            mark((56, 60), FROWN, "#641b34")
-        elif name.startswith("sleeping"):
-            cover_eyes()
-            cover_mouth()
-            for x in EYE_X:
-                mark((x, 47), CLOSED)
-            mouth_o(tall=name == "sleeping_o")
+            draw.rectangle((48, 51, 64, 64), fill=face)
+            mouth = SMILE if name == "smile" else (".XX.", "X..X", ".XX.")
+            glyph(draw, (56, 56), mouth, {"X": INK})
         else:
-            raise ValueError(f"Unknown face expression: {name}")
+            face_notification(name, draw)
         return overlay
 
     return {name: pose(name) for name in dict.fromkeys(name for frames in timeline.values() for name, _ in frames)}
@@ -249,8 +222,6 @@ def indexed(image, palette):
 def animate(master, overlays, timeline, theme):
     sprite = equip(master, theme)
     sequence = timeline[theme.state]
-    if theme.state == "COMPLETED":
-        sequence += timeline["IDLE"]
     frames, durations = [], []
     for name, duration in sequence:
         art = Image.alpha_composite(sprite, overlays[name])

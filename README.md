@@ -16,22 +16,22 @@ Coumpanion keeps your AI sessions in a Dynamic Island on Android. Start a timer,
 
 ## <img src="docs/media/coupi/idle.gif" width="26" alt=""> Meet Coupi
 
-Coupi is the little robot that lives in your island. When a session changes, its eyes, mouth, and face tell you what happened. Equip an AI to give Coupi the provider’s colors and its logo in the belly badge.
+Coupi is the little robot that lives in your island. Coupi looks around and smiles when idle. During every other state, its head shows a status symbol. Equip an AI to give Coupi the provider’s colors and its logo in the belly badge.
 
 The gallery shows the avatar system on `main`. The download links below point to the signed Android preview.
 
-## <img src="docs/media/coupi/completed.gif" width="26" alt=""> Coupi’s expressions
+## <img src="docs/media/coupi/completed.gif" width="26" alt=""> Coupi’s status display
 
 | Default Coupi | State | What the island is telling you |
 | :---: | --- | --- |
 | <img src="docs/media/coupi/idle.gif" width="104" height="104" alt="Coupi blinks, looks around, and moves its mouth"> | **Idle** | Coupi is at rest. |
-| <img src="docs/media/coupi/tracking.gif" width="104" height="104" alt="Dots tick beneath Coupi’s smile"> | **Tracking** | Your manual timer is running. Only elapsed tracking time is confirmed. |
-| <img src="docs/media/coupi/thinking.gif" width="104" height="104" alt="Coupi glances upward, puckers its mouth, and counts thinking dots"> | **Thinking** | A paired desktop agent reported that it is thinking. |
-| <img src="docs/media/coupi/working.gif" width="104" height="104" alt="Coupi narrows its eyes into a focused stare"> | **Working** | A paired desktop agent reported work in progress. |
-| <img src="docs/media/coupi/completed.gif" width="104" height="104" alt="Green pixel hearts pulse in Coupi’s eyes"> | **Completed** | A paired desktop agent reported completion. Coupi celebrates briefly and returns to idle. |
-| <img src="docs/media/coupi/approval.gif" width="104" height="104" alt="A purple question mark appears on Coupi’s face"> | **Question or approval** | A paired desktop agent needs your response. |
-| <img src="docs/media/coupi/error.gif" width="104" height="104" alt="Coupi’s face turns red with crossed eyes and a yellow warning"> | **Error** | An integration reported a problem. |
-| <img src="docs/media/coupi/disconnected.gif" width="104" height="104" alt="Coupi closes its eyes and breathes through a round mouth"> | **Disconnected** | The desktop link is offline. |
+| <img src="docs/media/coupi/tracking.gif" width="104" height="104" alt="A clock ticks on Coupi’s display"> | **Tracking** | Your manual timer is running. Only elapsed tracking time is confirmed. |
+| <img src="docs/media/coupi/thinking.gif" width="104" height="104" alt="A thought bubble with animated dots appears on Coupi’s display"> | **Thinking** | A paired desktop agent reported that it is thinking. |
+| <img src="docs/media/coupi/working.gif" width="104" height="104" alt="A blue segment moves across Coupi’s activity indicator"> | **Working** | A paired desktop agent reported work in progress. |
+| <img src="docs/media/coupi/completed.gif" width="104" height="104" alt="A green pixel heart pulses on Coupi’s display"> | **Completed** | A paired desktop agent reported completion. Coupi pulses a green heart and then holds it. |
+| <img src="docs/media/coupi/approval.gif" width="104" height="104" alt="A purple question mark appears on Coupi’s display"> | **Question or approval** | A paired desktop agent needs your response. |
+| <img src="docs/media/coupi/error.gif" width="104" height="104" alt="Coupi’s display turns red with a yellow warning symbol"> | **Error** | An integration reported a problem. |
+| <img src="docs/media/coupi/disconnected.gif" width="104" height="104" alt="A floating Z appears on Coupi’s display"> | **Disconnected** | The desktop link is offline. |
 
 The island shows states supported by each session’s activity source. Full edition’s optional notification watching shows updates reported by the source app.
 

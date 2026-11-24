@@ -34,9 +34,7 @@ internal class AvatarMotion private constructor(
         if (!animate) return timeline.first().tile
         val duration = timeline.last().endMs
         val age = ageMs.coerceAtLeast(0)
-        if (mood == AvatarMood.COMPLETED && age >= duration) {
-            return frame(AvatarMood.IDLE, age - duration, true)
-        }
+        if (mood == AvatarMood.COMPLETED && age >= duration) return timeline.last().tile
         val elapsed = age % duration
         return timeline.first { elapsed < it.endMs }.tile
     }

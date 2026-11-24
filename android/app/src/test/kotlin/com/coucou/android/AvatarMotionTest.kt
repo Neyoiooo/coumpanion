@@ -65,6 +65,9 @@ class AvatarMotionTest {
         assertNotEquals(motion.frame(AvatarMood.IDLE, 0, true), motion.frame(AvatarMood.IDLE, 700, true))
         assertNotEquals(motion.frame(AvatarMood.TRACKING, 0, true), motion.frame(AvatarMood.TRACKING, 450, true))
         assertEquals(motion.frame(AvatarMood.WORKING, 0, true), motion.frame(AvatarMood.WORKING, 840, true))
-        assertEquals(motion.frame(AvatarMood.IDLE, 0, true), motion.frame(AvatarMood.COMPLETED, 1_500, true))
+        val completed = motion.frame(AvatarMood.COMPLETED, 0, true)
+        assertNotEquals(completed, motion.frame(AvatarMood.COMPLETED, 250, true))
+        assertEquals(completed, motion.frame(AvatarMood.COMPLETED, 1_500, true))
+        assertEquals(completed, motion.frame(AvatarMood.COMPLETED, 9_000, true))
     }
 }
