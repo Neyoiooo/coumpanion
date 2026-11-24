@@ -9,7 +9,7 @@
 Coumpanion keeps your AI sessions in a Dynamic Island on Android. Open a provider from the AI Launcher, then pause, resume, mark done, or stop its manual timer. Add a native app or HTTPS site to give it a personalized Coupi. Manual tracking runs on your phone without an account, API key, or server.
 
 <p align="center">
-  <a href="https://github.com/Neyoiooo/coumpanion/releases/tag/coumpanion-v0.6.0-preview.1"><strong>Get the Android preview</strong></a>
+  <a href="https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.6.1-preview.1/Coumpanion-Android-0.6.1-Standard.apk"><strong>Download Standard 0.6.1 Preview</strong></a>
   ·
   <a href="android/README.md">Setup and installation</a>
 </p>
@@ -18,7 +18,7 @@ Coumpanion keeps your AI sessions in a Dynamic Island on Android. Open a provide
 
 Coupi is the little robot that lives in your island. Coupi looks around and smiles when idle. During every other state, its head shows a status symbol. Equip an AI to give Coupi the provider’s colors and its logo in the belly badge.
 
-The gallery shows Coupi’s status symbols and idle looks on `main`. The download links below point to the original signed 0.6.0 preview. [Android changelog](android/CHANGELOG.md)
+The gallery shows Coupi’s status symbols and idle looks on `main`. [Android changelog](android/CHANGELOG.md)
 
 ## <img src="docs/media/coupi/completed.gif" width="26" alt=""> Coupi’s status display
 
@@ -53,12 +53,12 @@ At rest, Coupi looks left and right, blinks, and makes a little “o” before s
 
 ## <img src="docs/media/coupi/tracking.gif" width="26" alt=""> Install on Android
 
-Both editions require **Android 11 or later**. In the source build, pick a provider in **AI Launcher** and grant **Display over other apps** to use the island. The signed Preview 1 uses **Choose AI apps**.
+Both editions require **Android 11 or later**. In Standard 0.6.1, pick a provider in **AI Launcher** and grant **Display over other apps** to use the island. Full 0.6.0 uses **Choose AI apps**.
 
 | Edition | What’s included | Signed preview |
 | --- | --- | --- |
-| **Standard** | Local tracking, Dynamic Island, widgets, optional desktop pairing | [Download Standard APK](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.6.0-preview.1/Coumpanion-Android-0.6.0-Standard.apk) |
-| **Full** | Standard features plus optional notification watching | [Download Full APK](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.6.0-preview.1/Coumpanion-Android-0.6.0-Full.apk) |
+| **Standard** | AI Launcher, custom providers, local timer controls, Dynamic Island, widgets, optional desktop pairing | [Download Standard 0.6.1 Preview APK](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.6.1-preview.1/Coumpanion-Android-0.6.1-Standard.apk) |
+| **Full** | Local tracking, Dynamic Island, widgets, optional desktop pairing and notification watching | [Download Full 0.6.0 Preview APK](https://github.com/Neyoiooo/coumpanion/releases/download/coumpanion-v0.6.0-preview.1/Coumpanion-Android-0.6.0-Full.apk) |
 
 Both editions can use DeepSeek through the optional Coumpanion Server. The server holds your DeepSeek API key. [Set up the server from your phone](android/server/README.md#from-your-phone) · [Browse releases](https://github.com/Neyoiooo/coumpanion/releases)
 
