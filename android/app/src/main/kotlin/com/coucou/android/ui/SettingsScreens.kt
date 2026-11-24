@@ -214,7 +214,7 @@ val BarClearance = 96.dp
 @Composable
 fun SettingsScreen(
     model: AppModel, onHistory: () -> Unit, onOverlay: (Boolean) -> Unit, onDiagnostics: () -> Unit,
-    onLicences: () -> Unit, onWatchApps: () -> Unit,
+    onLicences: () -> Unit, onWatchApps: () -> Unit, onAiHistory: () -> Unit,
 ) {
     val s = model.settings
     val context = LocalContext.current.applicationContext
@@ -228,7 +228,13 @@ fun SettingsScreen(
         item { ScreenTitle(stringResource(R.string.settings_title), null) }
         item {
             val title = if (NotificationWatchAccess.available) R.string.watch_apps_title else R.string.watch_apps_choose
-            Panel { LinkRow(stringResource(title), onWatchApps) }
+            Panel {
+                LinkRow(stringResource(title), onWatchApps)
+                RowDivider()
+                LinkRow(stringResource(R.string.ai_history), onAiHistory)
+                RowDivider()
+                LinkRow(stringResource(R.string.ai_diagnostics_title), onDiagnostics)
+            }
         }
 
         item { SectionHeading(stringResource(R.string.ai_timer_settings)) }

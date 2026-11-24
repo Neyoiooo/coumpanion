@@ -16,6 +16,10 @@ import com.coucou.android.core.AiNotificationEvent
 import com.coucou.android.core.AiSessionTracker
 import com.coucou.android.core.AiProvider
 import com.coucou.android.core.AiSessionResult
+import com.coucou.android.core.AiSessionHistory
+import com.coucou.android.core.AiActivitySource
+import com.coucou.android.core.SessionTime
+import com.coucou.android.core.WatchedActivity
 import com.coucou.android.core.ChatTab
 import com.coucou.android.core.ChatTabState
 import com.coucou.android.core.Decision
@@ -204,6 +208,17 @@ class AppModel(private val context: Context) : LinkListener {
 
     fun clearSessionHistory(id: String? = null) {
         aiTracker.clearHistory(id)
+        aiSessions = aiTracker.snapshot
+    }
+
+    fun clearAllAiHistory() {
+        aiTracker.clearHistory()
+        aiTracker.clearActivity()
+        aiSessions = aiTracker.snapshot
+    }
+
+    fun removeNotificationHistory(entry: WatchedActivity) {
+        aiTracker.removeActivity(entry)
         aiSessions = aiTracker.snapshot
     }
 
@@ -613,6 +628,7 @@ class AppModel(private val context: Context) : LinkListener {
     private val expiry = HashMap<String, Runnable>()
     private var link: DesktopLink? = null
     private val lastState = HashMap<String, BotState>()
+    private val desktopObserved = HashMap<String, SessionTime>()
 
     /** The name the user knows the agent by: the session's own name, else the pill catalog. */
     fun agentName(pillId: String): String =
@@ -783,16 +799,23 @@ class AppModel(private val context: Context) : LinkListener {
     }
 
     /** The text the user can copy: the checks and what they found, with no code, fingerprint, name or full address. */
-    fun diagnosticsReport(): String {
-        val p = currentPairing
-        val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "?"
-        val via = when {
-            linkState != LinkState.CONNECTED -> "not connected"
-            route == com.coucou.android.link.Route.RELAY -> "the relay"
-            else -> "the direct link"
-        }
-        return Diagnostics.report(version, Build.VERSION.RELEASE, "${Build.MANUFACTURER} ${Build.MODEL}", diagResults, p?.let { Diagnostics.maskHost(it.host) } ?: "none", via)
-    }
+    internal fun mobileDiagnostics() = com.coucou.android.core.MobileDiagnostics(
+        full = NotificationWatchAccess.available,
+        version = com.coucou.android.BuildConfig.VERSION_NAME,
+        buildCode = com.coucou.android.BuildConfig.VERSION_CODE,
+        debug = com.coucou.android.BuildConfig.DEBUG,
+        androidApi = Build.VERSION.SDK_INT,
+        overlay = overlayPermission,
+        notifications = notificationManager?.areNotificationsEnabled() == true,
+        notificationAccess = watchAccess.takeIf { NotificationWatchAccess.available },
+        batterySaver = power?.isPowerSaveMode == true,
+        linkService = LinkService.running,
+        activeTimers = manualTracking.size,
+        desktop = linkState,
+        avatarAssets = AvatarArtwork.available(context),
+    )
+
+    fun diagnosticsReport(): String = mobileDiagnostics().report()
 
     private fun onNetworkChanged(wifiUp: Boolean) {
         if (mode != Mode.PAIRED) return
@@ -908,7 +931,10 @@ class AppModel(private val context: Context) : LinkListener {
             if (state == LinkState.CONNECTED) finder.connected() // found it (or never lost it): stop looking
             // A card for a request we can no longer answer would only produce "no longer pending".
             if (state != LinkState.CONNECTED && mode == Mode.PAIRED) dropApprovals()
-            if (state != LinkState.CONNECTED) chatLinkLost()
+            if (state != LinkState.CONNECTED) {
+                desktopObserved.clear()
+                chatLinkLost()
+            }
             refreshIsland()
         }
     }
@@ -963,9 +989,41 @@ class AppModel(private val context: Context) : LinkListener {
         main.post { chatSession.onError(id, reason); chatChanged(save = true) }
     }
 
+    private fun observePairedSessions(sessions: List<SessionInfo>) {
+        if (mode != Mode.PAIRED || linkState != LinkState.CONNECTED) {
+            desktopObserved.clear()
+            return
+        }
+        desktopObserved.keys.retainAll(sessions.map { it.pillId }.toSet())
+        val now = sessionClock.now()
+        for (session in sessions) {
+            when (session.state) {
+                BotState.SEARCHING, BotState.THINKING, BotState.WORKING ->
+                    if (desktopObserved.size < 64) desktopObserved.putIfAbsent(session.pillId, now) else Unit
+                BotState.FINISHED, BotState.ERROR, BotState.RATELIMIT -> {
+                    val start = desktopObserved.remove(session.pillId) ?: continue
+                    val entry = Pills.byId(session.pillId)
+                    val label = entry?.name ?: context.getString(R.string.ai_history_paired_agent)
+                    val id = entry?.id ?: "paired-agent"
+                    // Use catalog metadata only. Agent-supplied titles, output, and project names stay out of history.
+                    aiTracker.recordHistory(AiSessionHistory(
+                        java.util.UUID.randomUUID().toString(), id, label, start.wallMs,
+                        now.wallMs.coerceAtLeast(start.wallMs), (now.elapsedMs - start.elapsedMs).coerceAtLeast(0),
+                        AiActivitySource.DESKTOP,
+                        if (session.state == BotState.FINISHED) AiSessionResult.DESKTOP_DONE else AiSessionResult.DESKTOP_ERROR,
+                    ))
+                }
+                BotState.IDLE, BotState.SLEEPING, BotState.DIZZY -> desktopObserved.remove(session.pillId)
+                BotState.QUESTION, BotState.APPROVAL -> Unit
+            }
+        }
+        aiSessions = aiTracker.snapshot
+    }
+
     override fun onSessions(sessions: List<SessionInfo>) {
         main.post {
             this.sessions = sessions
+            observePairedSessions(sessions)
             val minute = java.time.LocalTime.now().let { it.hour * 60 + it.minute }
             for (s in sessions) {
                 val prev = lastState.put(s.pillId, s.state)

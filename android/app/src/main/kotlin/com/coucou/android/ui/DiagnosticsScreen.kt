@@ -1,5 +1,8 @@
 package com.coucou.android.ui
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,11 +21,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.coucou.android.R
 import com.coucou.android.app.AppModel
+import com.coucou.android.app.Mode
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import com.coucou.android.core.Spacing
 import com.coucou.android.core.TypeScale
 import com.coucou.android.link.DiagResult
@@ -39,34 +45,79 @@ fun DiagnosticsScreen(model: AppModel, onBack: () -> Unit) {
     val t = tokens()
     val clipboard = LocalClipboardManager.current
     var copied by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { if (model.diagResults.isEmpty() && !model.diagRunning) model.runDiagnostics() }
+    val context = LocalContext.current
+    val state by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val visible = state.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
+    val snapshot = model.mobileDiagnostics()
+    val appUri = Uri.fromParts("package", context.packageName, null)
+    fun open(intent: Intent) {
+        runCatching { context.startActivity(intent) }.onFailure {
+            runCatching { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, appUri)) }
+        }
+    }
     LazyColumn(
         Modifier.padding(horizontal = Gutter), contentPadding = PaddingValues(bottom = BarClearance),
         verticalArrangement = Arrangement.spacedBy(Gap),
     ) {
-        item { ScreenTitle(stringResource(R.string.diag_title), onBack) }
-        item { Text(stringResource(R.string.diag_intro), Modifier.padding(horizontal = 4.dp), style = TypeScale.SECONDARY.style(t.textDim.c())) }
+        item { ScreenTitle(stringResource(R.string.ai_diagnostics_title), onBack) }
         item {
+            Panel {
+                ListRow(stringResource(R.string.ai_diag_edition), hint = stringResource(
+                    R.string.ai_diag_version, snapshot.edition, snapshot.version, snapshot.buildCode, snapshot.androidApi))
+                RowDivider()
+                DiagnosticSetting(R.string.overlay_title, snapshot.overlay, R.string.ai_diag_overlay_hint) {
+                    open(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, appUri))
+                }
+                RowDivider()
+                DiagnosticSetting(R.string.ai_diag_notifications, snapshot.notifications, R.string.ai_diag_notifications_hint) {
+                    open(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
+                }
+                snapshot.notificationAccess?.let { granted ->
+                    RowDivider()
+                    DiagnosticSetting(R.string.ai_diag_watch, granted, R.string.ai_diag_watch_hint) {
+                        open(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                    }
+                }
+                RowDivider()
+                DiagnosticSetting(R.string.ai_diag_battery, snapshot.batterySaver, R.string.ai_diag_battery_hint) {
+                    open(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))
+                }
+                RowDivider()
+                DiagnosticSetting(R.string.ai_diag_service, snapshot.linkService, R.string.ai_diag_service_hint)
+                RowDivider()
+                ListRow(stringResource(R.string.ai_quick_title), hint = stringResource(R.string.ai_quick_count, snapshot.activeTimers))
+                RowDivider()
+                ListRow(stringResource(R.string.settings_section_computer), hint = linkStatusText(model))
+                RowDivider()
+                DiagnosticSetting(R.string.ai_diag_avatar, snapshot.avatarAssets, R.string.ai_diag_avatar_hint)
+            }
+        }
+        if (model.mode == Mode.PAIRED) item {
             Panel {
                 model.diagResults.forEachIndexed { i, (step, result) ->
                     if (i > 0) RowDivider()
                     DiagRow(step, result)
                 }
                 if (model.diagRunning) Text(stringResource(R.string.diag_running), Modifier.padding(Spacing.INSIDE.dp), style = TypeScale.SECONDARY.style(t.textDim.c()))
+                PillButton(stringResource(R.string.diag_run), { copied = false; model.runDiagnostics() },
+                    Modifier.fillMaxWidth().padding(Spacing.INSIDE.dp), enabled = !model.diagRunning)
             }
         }
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PillButton(stringResource(R.string.diag_run), { copied = false; model.runDiagnostics() }, Modifier.weight(1f), enabled = !model.diagRunning)
-                PillButton(
-                    stringResource(R.string.diag_copy),
-                    { clipboard.setText(AnnotatedString(model.diagnosticsReport())); copied = true },
-                    Modifier.weight(1f), PillKind.PRIMARY, enabled = model.diagResults.isNotEmpty() && !model.diagRunning,
-                )
-            }
+            PillButton(stringResource(R.string.diag_copy),
+                { clipboard.setText(AnnotatedString(model.diagnosticsReport())); copied = true },
+                Modifier.fillMaxWidth(), PillKind.PRIMARY,
+                enabled = visible)
         }
         if (copied) item { Text(stringResource(R.string.diag_copied), Modifier.padding(horizontal = 4.dp), style = TypeScale.SECONDARY.style(t.textDim.c())) }
     }
+}
+
+@Composable
+private fun DiagnosticSetting(label: Int, enabled: Boolean, explanation: Int, shortcut: (() -> Unit)? = null) {
+    val state = stringResource(if (enabled) R.string.ai_diag_on else R.string.ai_diag_off)
+    ListRow(stringResource(label), hint = stringResource(R.string.ai_timer_status, state, stringResource(explanation)),
+        onClick = shortcut)
 }
 
 /** One check: a dot, its name with a word (so colour is not the only signal), what was found, and what to try. */

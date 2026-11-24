@@ -67,8 +67,8 @@ class KeepAliveSourceTest {
         assertFalse(settings.substringAfter("Mode.DEMO ->").substringBefore("Mode.NONE").contains("diag_title"))
     }
 
-    @Test fun theDiagnosticsScreenIsNotSecretButTheReportMasksTheAddress() {
-        assertTrue(src("app/AppModel.kt").contains("Diagnostics.maskHost(it.host)"))
+    @Test fun theDiagnosticsReportUsesOnlyTheLocalStatusAllowlist() {
+        assertTrue(src("app/AppModel.kt").contains("fun diagnosticsReport(): String = mobileDiagnostics().report()"))
         assertFalse(src("ui/DiagnosticsScreen.kt").contains("p.token") || src("ui/DiagnosticsScreen.kt").contains("certSha256"))
     }
 }

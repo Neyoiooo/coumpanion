@@ -118,6 +118,7 @@ import com.coucou.android.ui.PairConfirm
 import com.coucou.android.ui.PairingPasteSheet
 import com.coucou.android.ui.ScanScreen
 import com.coucou.android.ui.SessionScreen
+import com.coucou.android.ui.AiSessionHistoryScreen
 import com.coucou.android.ui.AiLauncher
 import com.coucou.android.ui.AiTrackingPage
 import com.coucou.android.ui.ChatScreen
@@ -193,7 +194,9 @@ class MainActivity : ComponentActivity() {
                                     onOverlay = { setOverlay(it) },
                                     onDiagnostics = { screen = Screen.DIAGNOSTICS }, onLicences = { screen = Screen.LICENCES },
                                     onWatchApps = { watchAppsOpen = true },
+                                    onAiHistory = { screen = Screen.AI_HISTORY },
                                 )
+                                Screen.AI_HISTORY -> AiSessionHistoryScreen(model, onBack = { screen = Screen.SETTINGS })
                                 Screen.AI_TRACKING -> AiTrackingPage(model, onBack = { screen = Screen.HOME },
                                     onOverlay = { setOverlay(true, showHint = false) })
                                 Screen.LICENCES -> LicencesScreen(onBack = { screen = Screen.SETTINGS })

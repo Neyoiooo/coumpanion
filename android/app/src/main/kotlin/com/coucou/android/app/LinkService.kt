@@ -7,6 +7,8 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 /**
  * Keeps the desktop link alive while the app is in the background, so approvals arrive as
@@ -26,11 +28,20 @@ class LinkService : Service() {
         } else {
             startForeground(Notifications.ONGOING_ID, notification)
         }
+        running = true
         model.resume()
         return START_STICKY
     }
 
+    override fun onDestroy() {
+        running = false
+        super.onDestroy()
+    }
+
     companion object {
+        internal var running by androidx.compose.runtime.mutableStateOf(false)
+            private set
+
         fun start(context: Context) {
             runCatching { context.startForegroundService(Intent(context, LinkService::class.java)) }
         }

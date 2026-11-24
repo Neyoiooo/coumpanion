@@ -38,23 +38,28 @@ class AiSessionTracker(private val store: KeyValueStore) {
         }.getOrNull()
     }.distinctBy { it.id }.toMutableList()
 
-    private val stored = store.safeString(SESSIONS)
-    private val rows = stored.removePrefix(HEADER).lineSequence().take(MAX_ACTIVE + HISTORY_LIMIT).toList()
     private val providers get() = AiProvider.builtIn + custom
 
-    var snapshot = Snapshot(
-        if (stored.startsWith(HEADER)) rows.mapNotNull(::decodeSession).distinctBy { it.provider.id }.take(MAX_ACTIVE)
-        else decodeLegacy(),
-        store.safeString(ACTIVITY).lineSequence().take(WatchedActivity.LIMIT).mapNotNull { row ->
-            val fields = row.split('|')
-            val app = WatchedAiApp.fromPackage(fields.first()) ?: return@mapNotNull null
-            val time = fields.getOrNull(1)?.toLongOrNull()?.takeIf { it > 0 } ?: return@mapNotNull null
-            val event = AiNotificationEvent.entries.firstOrNull { it.name == fields.getOrNull(2) }
-            event?.let { WatchedActivity(app, time, it) }
-        }.toList(),
-        rows.mapNotNull(::decodeHistory).distinctBy { it.id }.take(HISTORY_LIMIT),
-        providers,
-    ); private set
+    var snapshot = loadSnapshot()
+        private set
+
+    private fun loadSnapshot(): Snapshot {
+        val stored = store.safeString(SESSIONS)
+        val rows = stored.removePrefix(HEADER).lineSequence().take(MAX_ACTIVE + HISTORY_LIMIT).toList()
+        return Snapshot(
+            if (stored.startsWith(HEADER)) rows.mapNotNull(::decodeSession).distinctBy { it.provider.id }.take(MAX_ACTIVE)
+            else decodeLegacy(),
+            store.safeString(ACTIVITY).lineSequence().take(WatchedActivity.LIMIT).mapNotNull { row ->
+                val fields = row.split('|')
+                val app = WatchedAiApp.fromPackage(fields.first()) ?: return@mapNotNull null
+                val time = fields.getOrNull(1)?.toLongOrNull()?.takeIf { it > 0 } ?: return@mapNotNull null
+                val event = AiNotificationEvent.entries.firstOrNull { it.name == fields.getOrNull(2) }
+                event?.let { WatchedActivity(app, time, it) }
+            }.toList(),
+            rows.mapNotNull(::decodeHistory).distinctBy { it.id }.take(HISTORY_LIMIT),
+            providers,
+        )
+    }
 
     fun provider(id: String): AiProvider? = providers.firstOrNull { it.id == id }
 
@@ -95,7 +100,7 @@ class AiSessionTracker(private val store: KeyValueStore) {
                 s.copy(anchorMs = now.elapsedMs, bootCount = now.bootCount)
             } else s
         }
-        save(restored, force = !stored.startsWith(HEADER))
+        save(restored, force = !store.safeString(SESSIONS).startsWith(HEADER))
         if (store.safeString(LEGACY).isNotEmpty()) store.put(LEGACY, "")
     }
 
@@ -185,6 +190,8 @@ class AiSessionTracker(private val store: KeyValueStore) {
 
     fun clearActivity(app: WatchedAiApp? = null) =
         saveActivity(if (app == null) emptyList() else snapshot.activity.filterNot { it.app == app })
+
+    fun removeActivity(entry: WatchedActivity) = saveActivity(snapshot.activity - entry)
 
     private fun save(
         sessions: List<ManualAiSession> = snapshot.manual,
