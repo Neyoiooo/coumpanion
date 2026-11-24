@@ -1,8 +1,5 @@
 package com.coucou.android.core
 
-import kotlin.math.abs
-import kotlin.math.sin
-
 internal enum class AvatarMood {
     IDLE, TRACKING, THINKING, WORKING, COMPLETED, WAITING, ERROR, DISCONNECTED;
 
@@ -25,44 +22,42 @@ internal enum class AvatarMood {
     }
 }
 
-internal data class AvatarFrame(
-    val x: Float = 0f,
-    val y: Float = 0f,
-    val scaleX: Float = 1f,
-    val scaleY: Float = 1f,
-    val tilt: Float = 0f,
-    val blink: Boolean = false,
-    val effect: AvatarMood = AvatarMood.IDLE,
-    val glow: Float = 0f,
-)
+/** Selects a face tile from the shared timeline used for the app and showcase. */
+internal class AvatarMotion private constructor(
+    private val timelines: Map<AvatarMood, List<Pose>>,
+    val frameCount: Int,
+) {
+    private data class Pose(val tile: Int, val endMs: Long)
 
-/** Coordinates are fractions of the drawing area. Elapsed time pauses with the surface clock. */
-internal object AvatarMotion {
-    const val CELEBRATION_MS = 1_200L
-    const val SHAKE_MS = 560L
-
-    fun frame(mood: AvatarMood, ageMs: Long, motion: Boolean): AvatarFrame {
-        if (!motion) return AvatarFrame()
+    fun frame(mood: AvatarMood, ageMs: Long, animate: Boolean): Int {
+        val timeline = timelines.getValue(mood)
+        if (!animate) return timeline.first().tile
+        val duration = timeline.last().endMs
         val age = ageMs.coerceAtLeast(0)
-        fun wave(period: Long) = sin((age % period) * (2 * Math.PI / period)).toFloat()
-        fun breathing(period: Long, amount: Float) = AvatarFrame(
-            scaleY = 1f + wave(period) * amount,
-            blink = age % 5_400 in 5_220L..5_340L,
-        )
-        return when (mood) {
-            AvatarMood.IDLE -> breathing(3_400, 0.035f)
-            AvatarMood.TRACKING -> AvatarFrame(wave(3_600) * 0.045f, wave(2_250) * 0.04f,
-                tilt = wave(3_600) * 4f, effect = mood, glow = 0.10f + wave(2_250) * 0.045f)
-            AvatarMood.THINKING -> AvatarFrame(y = wave(2_000) * 0.02f, tilt = wave(2_000) * 5f, effect = mood)
-            AvatarMood.WORKING -> AvatarFrame(y = -abs(wave(1_100)) * 0.085f,
-                scaleY = 1f + wave(1_100) * 0.035f, tilt = wave(1_700) * 6f, effect = mood)
-            AvatarMood.COMPLETED -> if (age < CELEBRATION_MS) {
-                val bounce = sin(age * Math.PI / CELEBRATION_MS).toFloat()
-                AvatarFrame(y = -bounce * 0.15f, scaleX = 1f + bounce * 0.05f, scaleY = 1f + bounce * 0.10f, effect = mood)
-            } else frame(AvatarMood.IDLE, age - CELEBRATION_MS, true)
-            AvatarMood.WAITING -> AvatarFrame(scaleY = 1f + wave(1_850) * 0.06f, effect = mood)
-            AvatarMood.ERROR -> AvatarFrame(x = if (age < SHAKE_MS) wave(145) * 0.09f * (1f - age / SHAKE_MS.toFloat()) else 0f, effect = mood)
-            AvatarMood.DISCONNECTED -> breathing(4_800, 0.02f).copy(effect = mood)
+        if (mood == AvatarMood.COMPLETED && age >= duration) {
+            return frame(AvatarMood.IDLE, age - duration, true)
+        }
+        val elapsed = age % duration
+        return timeline.first { elapsed < it.endMs }.tile
+    }
+
+    companion object {
+        fun parse(source: String): AvatarMotion {
+            val tiles = mutableMapOf<String, Int>()
+            val timelines = mutableMapOf<AvatarMood, List<Pose>>()
+            source.lineSequence().map { it.substringBefore('#').trim() }.filter { it.isNotEmpty() }.forEach { line ->
+                val fields = line.split(Regex("\\s+"))
+                val mood = AvatarMood.valueOf(fields.first())
+                require(fields.size > 1 && mood !in timelines)
+                var elapsed = 0L
+                timelines[mood] = fields.drop(1).map { entry ->
+                    val (name, duration) = entry.split(':')
+                    elapsed += duration.toLong().also { require(it > 0) }
+                    Pose(tiles.getOrPut(name) { tiles.size }, elapsed)
+                }
+            }
+            require(timelines.size == AvatarMood.entries.size)
+            return AvatarMotion(timelines, tiles.size)
         }
     }
 }

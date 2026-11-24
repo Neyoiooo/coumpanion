@@ -8,23 +8,27 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.util.LruCache
+import com.coucou.android.core.AvatarMotion
 import com.coucou.android.core.ProviderAppearance
 import kotlin.math.roundToInt
 
-/** One master image. Provider colors, badges and blink frames are derived locally and cached. */
+/** One master image and a face atlas shared by every provider. */
 internal object AvatarArtwork {
     private const val MASTER = "avatars/robot.png"
     private const val BADGES = "avatars/badges"
     private const val MAX_EDGE = 256
     private const val CACHE_BYTES = 8 * 1024 * 1024
 
-    internal data class Sprite(val awake: Bitmap, val blinking: Bitmap)
+    internal data class Faces(val atlas: Bitmap, val motion: AvatarMotion) {
+        val tileWidth: Int = atlas.width / motion.frameCount
+    }
 
     private var master: Bitmap? = null
     private var loaded = false
-    private val sprites = object : LruCache<ProviderAppearance, Sprite>(CACHE_BYTES) {
-        override fun sizeOf(key: ProviderAppearance, value: Sprite): Int =
-            value.awake.allocationByteCount + value.blinking.allocationByteCount
+    private var faceTemplate: Faces? = null
+    private var facesLoaded = false
+    private val sprites = object : LruCache<ProviderAppearance, Bitmap>(CACHE_BYTES) {
+        override fun sizeOf(key: ProviderAppearance, value: Bitmap): Int = value.allocationByteCount
     }
     private data class WidgetKey(val appearance: ProviderAppearance, val edge: Int)
     private val widgetSprites = object : LruCache<WidgetKey, Bitmap>(CACHE_BYTES) {
@@ -32,16 +36,31 @@ internal object AvatarArtwork {
     }
 
     @Synchronized
-    fun sprite(context: Context, appearance: ProviderAppearance): Sprite? {
+    fun sprite(context: Context, appearance: ProviderAppearance): Bitmap? {
         sprites.get(appearance)?.let { return it }
         val source = master(context) ?: return null
-        val awake = colorShell(source, appearance)
-        drawBadge(context, awake, appearance)
-        return Sprite(awake, blink(awake)).also { sprites.put(appearance, it) }
+        val sprite = colorShell(source, appearance)
+        drawBadge(context, sprite, appearance)
+        return sprite.also { sprites.put(appearance, it) }
     }
 
     @Synchronized
-    fun available(context: Context): Boolean = master(context) != null
+    fun faces(context: Context): Faces? {
+        if (!facesLoaded) {
+            faceTemplate = runCatching {
+                val motion = context.assets.open("avatars/face-timeline.txt").bufferedReader()
+                    .use { AvatarMotion.parse(it.readText()) }
+                val atlas = checkNotNull(context.assets.open("avatars/faces.png").use(BitmapFactory::decodeStream))
+                require(atlas.width % motion.frameCount == 0)
+                Faces(atlas, motion)
+            }.getOrNull()
+            facesLoaded = true
+        }
+        return faceTemplate
+    }
+
+    @Synchronized
+    fun available(context: Context): Boolean = master(context) != null && faces(context) != null
 
     private fun master(context: Context): Bitmap? {
         if (!loaded) {
@@ -55,7 +74,7 @@ internal object AvatarArtwork {
     fun widget(context: Context, appearance: ProviderAppearance, edge: Int): Bitmap? {
         val key = WidgetKey(appearance, edge.coerceIn(1, MAX_EDGE))
         widgetSprites.get(key)?.let { return it }
-        val image = sprite(context, appearance)?.awake ?: return null
+        val image = sprite(context, appearance) ?: return null
         val scale = key.edge.toFloat() / maxOf(image.width, image.height)
         val width = (image.width * scale).roundToInt().coerceAtLeast(1)
         val height = (image.height * scale).roundToInt().coerceAtLeast(1)
@@ -193,23 +212,6 @@ internal object AvatarArtwork {
         val arm = cell * 1.5f
         canvas.drawRect(cx - arm, cy - half, cx + arm, cy + half, paint)
         canvas.drawRect(cx - half, cy - arm, cx + half, cy + arm, paint)
-    }
-
-    private fun blink(image: Bitmap): Bitmap {
-        val out = image.copy(Bitmap.Config.ARGB_8888, true)
-        val canvas = Canvas(out)
-        val w = out.width.toFloat()
-        val h = out.height.toFloat()
-        val face = out.getPixel((w * 0.49f).toInt(), (h * 0.42f).toInt())
-        val eye = out.getPixel((w * 0.35f).toInt(), (h * 0.50f).toInt())
-        val paint = Paint()
-        for (center in listOf(0.344f, 0.658f)) {
-            paint.color = face
-            canvas.drawRect(w * (center - 0.075f), h * 0.350f, w * (center + 0.075f), h * 0.557f, paint)
-            paint.color = eye
-            canvas.drawRect(w * (center - 0.053f), h * 0.492f, w * (center + 0.053f), h * 0.516f, paint)
-        }
-        return out
     }
 
     private fun Bitmap.pixels() = IntArray(width * height).also { getPixels(it, 0, width, 0, 0, width, height) }

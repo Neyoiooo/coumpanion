@@ -16,41 +16,40 @@ Coumpanion keeps your AI sessions in a Dynamic Island on Android. Start a timer,
 
 ## <img src="docs/media/coupi/idle.gif" width="26" alt=""> Meet Coupi
 
-<p align="center">
-  <img src="docs/media/coupi/tracking.gif" width="126" alt="Mint ChatGPT Coupi floats with three orbiting pixels">
-  <img src="docs/media/coupi/idle.gif" width="126" alt="Silver Coupi breathes and blinks with its badge empty">
-  <img src="docs/media/coupi/thinking.gif" width="126" alt="Terracotta Claude Coupi tilts with animated thinking dots">
-</p>
-
-Coupi is the little robot that lives in your island. Equip an AI and Coupi takes on its colors. The round badge on its belly shows which AI it has equipped. When several sessions are open, expand the island to see each one.
+Coupi is the little robot that lives in your island. When a session changes, its eyes, mouth, and face tell you what happened. Equip an AI to give Coupi the provider’s colors and its logo in the belly badge.
 
 The gallery shows the avatar system on `main`. The download links below point to the signed Android preview.
 
-## <img src="docs/media/coupi/completed.gif" width="26" alt=""> Coupi’s states
+## <img src="docs/media/coupi/completed.gif" width="26" alt=""> Coupi’s expressions
 
-| Coupi | State and equipped AI | What the island is telling you |
+| Default Coupi | State | What the island is telling you |
 | :---: | --- | --- |
-| <img src="docs/media/coupi/idle.gif" width="88" height="88" alt="Coupi breathes and blinks"> | **Idle** · Unequipped | Coupi is at rest. |
-| <img src="docs/media/coupi/tracking.gif" width="88" height="88" alt="Mint Coupi sways under three orbiting pixels"> | **Tracking** · <img src="android/app/src/main/assets/avatars/badges/chatgpt.png" width="22" height="22" alt=""> ChatGPT | Your manual timer is running. Only elapsed tracking time is confirmed. |
-| <img src="docs/media/coupi/thinking.gif" width="88" height="88" alt="Terracotta Coupi tilts above animated thinking dots"> | **Thinking** · <img src="android/app/src/main/assets/avatars/badges/claude.png" width="22" height="22" alt=""> Claude | A paired desktop agent reported that it is thinking. |
-| <img src="docs/media/coupi/working.gif" width="88" height="88" alt="Blue-violet Coupi bounces between processing pixels"> | **Working** · <img src="android/app/src/main/assets/avatars/badges/gemini.png" width="22" height="22" alt=""> Gemini | A paired desktop agent reported work in progress. |
-| <img src="docs/media/coupi/completed.gif" width="88" height="88" alt="Indigo Coupi jumps and throws off pixel sparkles"> | **Completed** · <img src="android/app/src/main/assets/avatars/badges/codex.png" width="22" height="22" alt=""> Codex | A paired desktop agent reported completion. Coupi celebrates briefly and returns to idle. |
-| <img src="docs/media/coupi/approval.gif" width="88" height="88" alt="Lavender Coupi pulses under a question mark"> | **Waiting for approval** · <img src="android/app/src/main/assets/avatars/badges/muse.png" width="22" height="22" alt=""> Muse | A paired desktop agent needs your response. |
-| <img src="docs/media/coupi/error.gif" width="88" height="88" alt="Ocean-blue Coupi shakes beside a warning"> | **Error** · <img src="android/app/src/main/assets/avatars/badges/deepseek.png" width="22" height="22" alt=""> DeepSeek | An integration reported a problem. |
-| <img src="docs/media/coupi/disconnected.gif" width="88" height="88" alt="Silver Coupi rests beneath drifting pixel Zs"> | **Disconnected** · <img src="android/app/src/main/assets/avatars/badges/grok.png" width="22" height="22" alt=""> Grok | The desktop link is offline. |
+| <img src="docs/media/coupi/idle.gif" width="104" height="104" alt="Coupi blinks, looks around, and moves its mouth"> | **Idle** | Coupi is at rest. |
+| <img src="docs/media/coupi/tracking.gif" width="104" height="104" alt="Dots tick beneath Coupi’s smile"> | **Tracking** | Your manual timer is running. Only elapsed tracking time is confirmed. |
+| <img src="docs/media/coupi/thinking.gif" width="104" height="104" alt="Coupi glances upward, puckers its mouth, and counts thinking dots"> | **Thinking** | A paired desktop agent reported that it is thinking. |
+| <img src="docs/media/coupi/working.gif" width="104" height="104" alt="Coupi narrows its eyes into a focused stare"> | **Working** | A paired desktop agent reported work in progress. |
+| <img src="docs/media/coupi/completed.gif" width="104" height="104" alt="Green pixel hearts pulse in Coupi’s eyes"> | **Completed** | A paired desktop agent reported completion. Coupi celebrates briefly and returns to idle. |
+| <img src="docs/media/coupi/approval.gif" width="104" height="104" alt="A purple question mark appears on Coupi’s face"> | **Question or approval** | A paired desktop agent needs your response. |
+| <img src="docs/media/coupi/error.gif" width="104" height="104" alt="Coupi’s face turns red with crossed eyes and a yellow warning"> | **Error** | An integration reported a problem. |
+| <img src="docs/media/coupi/disconnected.gif" width="104" height="104" alt="Coupi closes its eyes and breathes through a round mouth"> | **Disconnected** | The desktop link is offline. |
 
-<p align="center">
-  <img src="docs/media/coupi/perplexity.gif" width="96" alt="Turquoise Coupi equipped with Perplexity">
-  <img src="docs/media/coupi/copilot.gif" width="96" alt="Pastel rainbow Coupi equipped with Copilot">
-  <br>
-  <strong>
-    <img src="android/app/src/main/assets/avatars/badges/perplexity.png" width="22" height="22" alt=""> Perplexity
-    ·
-    <img src="android/app/src/main/assets/avatars/badges/copilot.png" width="22" height="22" alt=""> Copilot
-  </strong>
-</p>
+The island shows states supported by each session’s activity source. Full edition’s optional notification watching shows updates reported by the source app.
 
-The pairings illustrate how the palettes and motions combine. The island shows states supported by each session’s activity source. Full edition’s optional notification watching shows updates reported by the source app.
+## <img src="docs/media/coupi/idle.gif" width="26" alt=""> Coupi’s idle personality
+
+At rest, Coupi looks left and right, blinks, and makes a little “o” before smiling again. Equip a provider to see the same idle loop in its colors.
+
+| <img src="android/app/src/main/assets/avatars/badges/chatgpt.png" width="22" alt=""> ChatGPT | <img src="android/app/src/main/assets/avatars/badges/claude.png" width="22" alt=""> Claude | <img src="android/app/src/main/assets/avatars/badges/gemini.png" width="22" alt=""> Gemini |
+| :---: | :---: | :---: |
+| <img src="docs/media/coupi/chatgpt.gif" width="112" height="112" alt="ChatGPT Coupi looks around and blinks"> | <img src="docs/media/coupi/claude.gif" width="112" height="112" alt="Claude Coupi looks around and blinks"> | <img src="docs/media/coupi/gemini.gif" width="112" height="112" alt="Gemini Coupi looks around and blinks"> |
+
+| <img src="android/app/src/main/assets/avatars/badges/deepseek.png" width="22" alt=""> DeepSeek | <img src="android/app/src/main/assets/avatars/badges/perplexity.png" width="22" alt=""> Perplexity | <img src="android/app/src/main/assets/avatars/badges/muse.png" width="22" alt=""> Muse |
+| :---: | :---: | :---: |
+| <img src="docs/media/coupi/deepseek.gif" width="112" height="112" alt="DeepSeek Coupi looks around and blinks"> | <img src="docs/media/coupi/perplexity.gif" width="112" height="112" alt="Perplexity Coupi looks around and blinks"> | <img src="docs/media/coupi/muse.gif" width="112" height="112" alt="Muse Coupi looks around and blinks"> |
+
+| <img src="android/app/src/main/assets/avatars/badges/copilot.png" width="22" alt=""> Copilot | <img src="android/app/src/main/assets/avatars/badges/grok.png" width="22" alt=""> Grok | <img src="android/app/src/main/assets/avatars/badges/codex.png" width="22" alt=""> Codex |
+| :---: | :---: | :---: |
+| <img src="docs/media/coupi/copilot.gif" width="112" height="112" alt="Copilot Coupi looks around and blinks"> | <img src="docs/media/coupi/grok.gif" width="112" height="112" alt="Grok Coupi looks around and blinks"> | <img src="docs/media/coupi/codex.gif" width="112" height="112" alt="Codex Coupi looks around and blinks"> |
 
 ## <img src="docs/media/coupi/tracking.gif" width="26" alt=""> Install on Android
 

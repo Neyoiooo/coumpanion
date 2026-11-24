@@ -1,0 +1,10 @@
+# Each row lists expressions and their duration in milliseconds.
+# The first expression is the static pose. First appearance sets the atlas order.
+IDLE neutral:620 glance_left:460 neutral:160 blink:120 glance_right:460 neutral:180 smile:240 mouth_o:170 smile:160 neutral:440 blink:120 neutral:720
+TRACKING timer_one:420 timer_two:420 timer_three:420
+THINKING think_one:360 think_two:360 think_three:520
+WORKING focused:420 processing:420
+COMPLETED hearts:220 hearts_big:190 hearts:280 hearts_big:190 hearts:620
+WAITING question:540 question_bright:460
+ERROR warning:720 warning_red:720
+DISCONNECTED sleeping:1100 sleeping_o:1100

@@ -1,7 +1,6 @@
 package com.coucou.android
 
 import com.coucou.android.core.AiNotificationEvent
-import com.coucou.android.core.AvatarFrame
 import com.coucou.android.core.AvatarMood
 import com.coucou.android.core.AvatarMotion
 import com.coucou.android.core.BotState
@@ -9,6 +8,7 @@ import com.coucou.android.core.IslandSpec
 import com.coucou.android.core.ManualAiSession
 import com.coucou.android.core.ProviderAppearance
 import com.coucou.android.core.WatchedAiApp
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -55,12 +55,16 @@ class AvatarMotionTest {
     }
 
     @Test fun disabledAnimationsAreStaticAndOneShotEffectsEnd() {
-        AvatarMood.entries.forEach { assertEquals(AvatarFrame(), AvatarMotion.frame(it, 2_000, false)) }
-        assertTrue(AvatarMotion.frame(AvatarMood.IDLE, 5_260, true).blink)
-        assertNotEquals(0f, AvatarMotion.frame(AvatarMood.TRACKING, 300, true).x)
-        assertEquals(AvatarMood.COMPLETED, AvatarMotion.frame(AvatarMood.COMPLETED, 300, true).effect)
-        assertEquals(AvatarMood.IDLE, AvatarMotion.frame(AvatarMood.COMPLETED, AvatarMotion.CELEBRATION_MS, true).effect)
-        assertNotEquals(0f, AvatarMotion.frame(AvatarMood.ERROR, 30, true).x)
-        assertEquals(0f, AvatarMotion.frame(AvatarMood.ERROR, AvatarMotion.SHAKE_MS, true).x)
+        val motion = AvatarMotion.parse(File("src/main/assets/avatars/face-timeline.txt").readText())
+        val staticPoses = AvatarMood.entries.map { mood ->
+            motion.frame(mood, 0, true).also { initial ->
+                assertEquals(initial, motion.frame(mood, 9_000, false))
+            }
+        }
+        assertEquals(AvatarMood.entries.size, staticPoses.distinct().size)
+        assertNotEquals(motion.frame(AvatarMood.IDLE, 0, true), motion.frame(AvatarMood.IDLE, 700, true))
+        assertNotEquals(motion.frame(AvatarMood.TRACKING, 0, true), motion.frame(AvatarMood.TRACKING, 450, true))
+        assertEquals(motion.frame(AvatarMood.WORKING, 0, true), motion.frame(AvatarMood.WORKING, 840, true))
+        assertEquals(motion.frame(AvatarMood.IDLE, 0, true), motion.frame(AvatarMood.COMPLETED, 1_500, true))
     }
 }
