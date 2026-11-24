@@ -1,6 +1,5 @@
 package com.coucou.android.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
@@ -52,6 +50,7 @@ import com.coucou.android.link.PairingPayload
 fun PairingScreen(
     model: AppModel, onScan: () -> Unit, onPaste: () -> Unit, onAbout: () -> Unit, onWatchApps: () -> Unit,
     onOverlay: () -> Unit, showPairing: Boolean, onShowPairing: (Boolean) -> Unit,
+    onActivity: () -> Unit = onAbout,
 ) {
     val t = tokens()
     androidx.activity.compose.BackHandler(enabled = showPairing) { onShowPairing(false) }
@@ -63,6 +62,8 @@ fun PairingScreen(
         Spacer(Modifier.size(20.dp))
         if (!showPairing) {
             model.message?.let { MessagePanel(it) { model.message = null }; Spacer(Modifier.size(Gap)) }
+            CoupiWelcome(model.manualTracking.size, false, onHistory = onActivity)
+            Spacer(Modifier.size(Gap))
             AiLauncher(model, onOverlay)
             if (com.coucou.android.app.NotificationWatchAccess.available) {
                 Spacer(Modifier.size(Gap))
@@ -76,7 +77,7 @@ fun PairingScreen(
             PillButton(stringResource(R.string.pairing_headline), { onShowPairing(true) }, Modifier.fillMaxWidth())
             return@Column
         }
-        Image(painterResource(R.drawable.coumpanion_firefly), contentDescription = null, modifier = Modifier.size(96.dp))
+        ProviderAvatar("coumpanion", "", com.coucou.android.core.AvatarMood.IDLE, Modifier.size(96.dp))
         Spacer(Modifier.size(20.dp))
         Text(stringResource(R.string.pairing_headline), style = TypeScale.DISPLAY.style(t.text.c()).copy(textAlign = TextAlign.Center))
         Text(

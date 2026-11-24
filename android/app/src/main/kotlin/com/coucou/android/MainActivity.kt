@@ -136,6 +136,7 @@ import com.coucou.android.ui.linkStatusText
 class MainActivity : ComponentActivity() {
     private val model get() = (application as CoucouApp).model
     private var screen by mutableStateOf(Screen.HOME)
+    private var activityReturn by mutableStateOf(Screen.SETTINGS)
     /** The session whose details are open. */
     private var detailPill by mutableStateOf<String?>(null)
     /** The approval the user closed without deciding (the sheet stays down for it), and the session whose question is open. */
@@ -177,7 +178,9 @@ class MainActivity : ComponentActivity() {
                             val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
                             val pairingPasteVisible = pastePairing && screen == Screen.HOME && model.mode == Mode.NONE
                             val barVisible = Nav.barVisible(screen, keyboardOpen) && !pairingPasteVisible && !watchAppsOpen
-                            BackHandler(enabled = Nav.back(screen) != null) { Nav.back(screen)?.let { screen = it } }
+                            BackHandler(enabled = Nav.back(screen) != null) {
+                                if (screen == Screen.AI_HISTORY) screen = activityReturn else Nav.back(screen)?.let { screen = it }
+                            }
                             // Chat keeps its message box above the bar; Home and Settings scroll under it (their own bottom padding).
                             Box(Modifier.fillMaxSize().padding(bottom = if (barVisible && screen == Screen.CHAT) BarClearance else 0.dp)) {
                             when (screen) {
@@ -195,9 +198,9 @@ class MainActivity : ComponentActivity() {
                                     onOverlay = { setOverlay(it) },
                                     onDiagnostics = { screen = Screen.DIAGNOSTICS }, onLicences = { screen = Screen.LICENCES },
                                     onWatchApps = { watchAppsOpen = true },
-                                    onAiHistory = { screen = Screen.AI_HISTORY },
+                                    onAiHistory = { activityReturn = Screen.SETTINGS; screen = Screen.AI_HISTORY },
                                 )
-                                Screen.AI_HISTORY -> AiSessionHistoryScreen(model, onBack = { screen = Screen.SETTINGS })
+                                Screen.AI_HISTORY -> AiSessionHistoryScreen(model, onBack = { screen = activityReturn })
                                 Screen.AI_TRACKING -> AiTrackingPage(model, onBack = { screen = Screen.HOME },
                                     onOverlay = { setOverlay(true, showHint = false) })
                                 Screen.LICENCES -> LicencesScreen(onBack = { screen = Screen.SETTINGS })
@@ -209,11 +212,13 @@ class MainActivity : ComponentActivity() {
                                     onWatchApps = { watchAppsOpen = true },
                                     onOverlay = { setOverlay(true, showHint = false) },
                                     showPairing = showPairing, onShowPairing = { showPairing = it },
+                                    onActivity = { activityReturn = Screen.HOME; screen = Screen.AI_HISTORY },
                                 ) else Home(
                                     model, onOverlay = { setOverlay(it) }, onWatchApps = { watchAppsOpen = true },
                                     onSession = { detailPill = it; screen = Screen.SESSION },
                                     onScan = { screen = Screen.SCAN }, onReview = { closedApproval = null }, onQuestion = { questionPill = it },
                                     onHistory = { screen = Screen.HISTORY }, onDiagnostics = { screen = Screen.DIAGNOSTICS },
+                                    onActivity = { activityReturn = Screen.HOME; screen = Screen.AI_HISTORY },
                                 )
                             }
                             }
@@ -366,7 +371,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun Home(
     model: AppModel, onOverlay: (Boolean) -> Unit, onWatchApps: () -> Unit, onSession: (String) -> Unit,
-    onScan: () -> Unit, onHistory: () -> Unit, onReview: () -> Unit, onQuestion: (String) -> Unit, onDiagnostics: () -> Unit,
+    onScan: () -> Unit, onHistory: () -> Unit, onReview: () -> Unit, onQuestion: (String) -> Unit, onDiagnostics: () -> Unit, onActivity: () -> Unit,
 ) {
     var selected by rememberSaveable { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
@@ -386,7 +391,7 @@ private fun Home(
         item {
             Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = Gutter, vertical = Gap),
                 verticalArrangement = Arrangement.spacedBy(Gap)) {
-                CoupiWelcome(model.manualTracking.size, model.linkState == LinkState.CONNECTED, onHistory = onHistory)
+                CoupiWelcome(model.manualTracking.size, model.linkState == LinkState.CONNECTED, onHistory = onActivity)
                 AiLauncher(model, onOverlay = { onOverlay(true) })
             }
         }
