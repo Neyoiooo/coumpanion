@@ -21,4 +21,12 @@
     <string name="ai_tracking_reminder_body">You have a manual timer for %1$s.</string>
     <string name="ai_provider_unavailable">This provider could not be opened.</string>
     <string name="ai_timer_paused">Paused</string>
+    <string name="coupi_welcome_title">Meet Coupi</string>
+    <string name="coupi_welcome_hint">All your AI. One little companion.</string>
+    <string name="coupi_timer_count">Manual timers: %1$d</string>
+    <string name="coupi_history">Activity</string>
+    <string name="coupi_local_mode">Local mode · no account or server needed</string>
+    <string name="coupi_connected">Paired agent link connected</string>
+    <string name="coupi_connect_title">Connect an AI agent</string>
+    <string name="coupi_connect_hint">Pair a compatible host to see actual agent task events. Launching an AI app here only starts a manual timer.</string>
 </resources>

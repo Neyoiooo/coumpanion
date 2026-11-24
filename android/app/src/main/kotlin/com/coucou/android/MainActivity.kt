@@ -111,6 +111,7 @@ import com.coucou.android.ui.ServicesPanel
 import com.coucou.android.ui.UsagePanel
 import com.coucou.android.ui.RecapPanel
 import com.coucou.android.ui.HeroCard
+import com.coucou.android.ui.CoupiWelcome
 import com.coucou.android.ui.RecentPanel
 import com.coucou.android.ui.BarClearance
 import com.coucou.android.ui.BottomBar
@@ -383,11 +384,13 @@ private fun Home(
         verticalArrangement = Arrangement.spacedBy(Gap),
     ) {
         item {
-            Box(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = Gutter, vertical = Gap)) {
+            Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = Gutter, vertical = Gap),
+                verticalArrangement = Arrangement.spacedBy(Gap)) {
+                CoupiWelcome(model.manualTracking.size, model.linkState == LinkState.CONNECTED, onHistory = onHistory)
                 AiLauncher(model, onOverlay = { onOverlay(true) })
             }
         }
-        item {
+        if (model.isPaired || focus != null) item {
             HeroCard(
                 focus, pair, HomeText.running(model.sessions),
                 linkDot = linkDotColor(model), linkText = linkStatusText(model),
@@ -403,6 +406,17 @@ private fun Home(
                     }
                 },
             )
+        }
+        if (!model.isPaired) item {
+            Box(Modifier.padding(horizontal = Gutter)) {
+                Panel {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.coupi_connect_title), style = TypeScale.TITLE.style(tokens().text.c()))
+                        Text(stringResource(R.string.coupi_connect_hint), style = TypeScale.SECONDARY.style(tokens().textDim.c()))
+                        PillButton(stringResource(R.string.link_pair), onScan, Modifier.fillMaxWidth())
+                    }
+                }
+            }
         }
         // The link had worked and ended: what happened and how long ago, instead of a silent state. And, only if it would help, the battery setting.
         if (model.mode == Mode.PAIRED && model.linkState != LinkState.CONNECTED) {

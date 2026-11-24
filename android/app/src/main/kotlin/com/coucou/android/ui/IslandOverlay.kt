@@ -503,7 +503,7 @@ class IslandOverlay(
         val accent = Color(palette.label)
         val provider = s.manualSessions.firstOrNull()?.provider?.takeIf { s.manualTracking }
         val appearance = remember(s.pillId, s.agent, provider) {
-            provider?.let(ProviderAppearance::forProvider) ?: ProviderAppearance.resolve(s.pillId, s.agent)
+            provider?.let { ProviderAppearance.forProvider(it) } ?: ProviderAppearance.resolve(s.pillId, s.agent)
         }
         // Attach to the safe top edge without covering the system status bar or camera.
         val shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = px(corner), bottomEnd = px(corner))
