@@ -72,12 +72,14 @@ jobs:
           cargo test --workspace --locked
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: '17' }
+      - name: Android SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v5
       - name: Kotlin client against the Rust desktop
         working-directory: android
         env:
           COUCOU_RUST_INTEROP: '1'
-        run: ./gradlew testDebugUnitTest --tests '*RustDesktopInteropTest' --console=plain
+        run: ./gradlew testFullDebugUnitTest --tests '*RustDesktopInteropTest' --console=plain
 
   relay:
     runs-on: ubuntu-24.04
@@ -124,6 +126,8 @@ jobs:
         working-directory: android/relay
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: '17' }
+      - name: Android SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v5
       - name: The hook binary the Tauri build expects (a cold cache does not have it)
         working-directory: windows
@@ -144,6 +148,8 @@ jobs:
         with: { distribution: temurin, java-version: '17' }
       - uses: actions/setup-node@v7
         with: { node-version: '22' }
+      - name: Android SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v5
       - name: English strings are up to date
         run: node scripts/gen-strings.mjs --check

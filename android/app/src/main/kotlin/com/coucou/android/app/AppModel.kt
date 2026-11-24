@@ -12,12 +12,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.coucou.android.R
+import com.coucou.android.core.AiNotificationEvent
+import com.coucou.android.core.AiSessionTracker
 import com.coucou.android.core.ChatTab
 import com.coucou.android.core.ChatTabState
 import com.coucou.android.core.Decision
 import com.coucou.android.core.DecisionLog
 import com.coucou.android.core.KeyValueStore
+import com.coucou.android.core.ManualAiSession
 import com.coucou.android.core.IslandPlan
+import com.coucou.android.core.IslandSpec
 import com.coucou.android.core.WatchedAiApp
 import com.coucou.android.core.OverlayChoice
 import com.coucou.android.core.StatusPolicy
@@ -136,50 +140,6 @@ class AppModel(private val context: Context) : LinkListener {
     var watchedPackages by mutableStateOf(prefs.getStringSet("watched_ai_apps", emptySet()).orEmpty().toSet()); private set
     var watchAccess by mutableStateOf(false); private set
 
-    // Local, process-lifetime metadata only: never retain notification titles or message bodies.
-    var watchedActivity by mutableStateOf<List<com.coucou.android.core.WatchedActivity>>(emptyList()); private set
-
-    fun clearWatchedActivity() { watchedActivity = emptyList() }
-
-    // Explicit user choice; no notification access or network connection required.
-    var manualTracking by mutableStateOf<com.coucou.android.core.ManualAiSession?>(null); private set
-
-    fun setManualTracking(app: WatchedAiApp, on: Boolean) {
-        if (on && app !in installedWatchApps) return
-        manualTracking = if (on) com.coucou.android.core.ManualAiSession(app, System.currentTimeMillis())
-            else manualTracking?.takeUnless { it.app == app }
-        refreshIsland()
-    }
-
-    fun refreshWatchApps() {
-        installedWatchApps = WatchedAiApp.entries.filter { app ->
-            @Suppress("DEPRECATION")
-            try {
-                context.packageManager.getApplicationInfo(app.packageName, 0).enabled
-            } catch (_: PackageManager.NameNotFoundException) {
-                false
-            }
-        }
-        watchAccess = WatchNotificationService.accessGranted(context)
-        if (!watchAccess) clearWatchedActivity()
-        if (manualTracking?.app?.let { it !in installedWatchApps } == true) {
-            manualTracking = null
-            refreshIsland()
-        }
-    }
-
-    fun setWatched(app: WatchedAiApp, on: Boolean) {
-        if (app !in installedWatchApps) return
-        watchedPackages = if (on) watchedPackages + app.packageName else watchedPackages - app.packageName
-        prefs.edit().putStringSet("watched_ai_apps", watchedPackages).apply()
-        if (!on) {
-            watchedActivity = watchedActivity.filterNot { it.app == app }
-            clearWatchedUpdate()
-        }
-    }
-
-    internal fun watchedApp(packageName: String): WatchedAiApp? = WatchedAiApp.selected(packageName, watchedPackages)
-
     private val kv = object : KeyValueStore {
         override fun getBoolean(key: String, default: Boolean) = prefs.getBoolean(key, default)
         override fun getInt(key: String, default: Int) = prefs.getInt(key, default)
@@ -196,6 +156,68 @@ class AppModel(private val context: Context) : LinkListener {
             }.apply()
         }
     }
+
+    private val aiTracker = AiSessionTracker(kv)
+    private var aiSessions by mutableStateOf(aiTracker.snapshot)
+    val watchedActivity get() = aiSessions.activity
+    val manualTracking get() = aiSessions.manual
+
+    private val manualScreen = ScreenWatch(context) { on ->
+        if (!on) overlay.clearWatchedUpdate()
+        refreshIsland()
+    }
+
+    fun clearWatchedActivity() {
+        aiTracker.clearActivity()
+        aiSessions = aiTracker.snapshot
+    }
+
+    fun setManualTracking(app: WatchedAiApp, on: Boolean) {
+        if (on && app !in installedWatchApps) return
+        aiTracker.setManual(app, on, System.currentTimeMillis())
+        updateManualTracking()
+    }
+
+    private fun updateManualTracking() {
+        aiSessions = aiTracker.snapshot
+        if (manualTracking.isEmpty()) manualScreen.stop() else manualScreen.start()
+        refreshIsland()
+    }
+
+    fun refreshWatchApps() {
+        installedWatchApps = WatchedAiApp.entries.filter { app ->
+            @Suppress("DEPRECATION")
+            try {
+                context.packageManager.getApplicationInfo(app.packageName, 0).enabled
+            } catch (_: PackageManager.NameNotFoundException) {
+                false
+            }
+        }
+        refreshWatchAccess()
+        aiTracker.retainInstalled(installedWatchApps.toSet())
+        updateManualTracking()
+    }
+
+    internal fun refreshWatchAccess() {
+        watchAccess = NotificationWatchAccess.granted(context)
+        if (!watchAccess) {
+            clearWatchedActivity()
+            clearWatchedUpdate()
+        }
+    }
+
+    fun setWatched(app: WatchedAiApp, on: Boolean) {
+        if (!NotificationWatchAccess.available || app !in installedWatchApps) return
+        watchedPackages = if (on) watchedPackages + app.packageName else watchedPackages - app.packageName
+        prefs.edit().putStringSet("watched_ai_apps", watchedPackages).apply()
+        if (!on) {
+            aiTracker.clearActivity(app)
+            aiSessions = aiTracker.snapshot
+            clearWatchedUpdate()
+        }
+    }
+
+    internal fun watchedApp(packageName: String): WatchedAiApp? = WatchedAiApp.selected(packageName, watchedPackages)
 
     /** The language the surfaces (Widgets, the ongoing notification) were last drawn in. */
     private var surfacesLanguage: String? = null
@@ -216,6 +238,7 @@ class AppModel(private val context: Context) : LinkListener {
 
     fun updateSettings(next: UserSettings) {
         val relayChanged = next.useRelay != settings.useRelay
+        val quietChanged = next.quiet != settings.quiet
         val dndChoiceChanged = next.hideIslandInDnd != settings.hideIslandInDnd
         settings = next
         UserSettings.save(kv, next)
@@ -224,10 +247,8 @@ class AppModel(private val context: Context) : LinkListener {
         com.coucou.android.core.MotionState.choice = settings.motion
         // Switching the relay on or off rebuilds the connection with the right routes.
         if (relayChanged) currentPairing?.let { restartLink(it) }
-        if (dndChoiceChanged) {
-            watchDnd()
-            refreshIsland()
-        }
+        if (dndChoiceChanged) watchDnd()
+        if (dndChoiceChanged || quietChanged) refreshIsland()
     }
 
     // ── Do Not Disturb ──────────────────────────────────────────────────────────
@@ -419,10 +440,13 @@ class AppModel(private val context: Context) : LinkListener {
         onOpen = { notifier.openApp() },
         onSwiped = { shadeAfterSwipe(it) },
         onOpenWatchedApp = ::openWatchedApp,
+        onStopTracking = { setManualTracking(it, false) },
+        position = { settings.islandPosition },
+        plain = { settings.plainIsland },
     )
 
     /** The island went up: leave what it showed in the notification shade (quietly), so nothing is lost with the swipe. */
-    private fun shadeAfterSwipe(spec: com.coucou.android.core.IslandSpec) {
+    private fun shadeAfterSwipe(spec: IslandSpec) {
         when (IslandPlan.shadeFor(spec.kind)) {
             IslandPlan.Shade.STATUS_NOTE -> notifier.showStatus(spec.pillId, spec.agent, spec.state, spec.text)
             IslandPlan.Shade.REQUEST_NOTE ->
@@ -434,18 +458,20 @@ class AppModel(private val context: Context) : LinkListener {
     }
 
     internal fun showWatchedUpdate(app: WatchedAiApp, title: String) {
-        if (watchedApp(app.packageName) == null || !WatchNotificationService.accessGranted(context)) return
-        watchedActivity = com.coucou.android.core.WatchedActivity.record(watchedActivity, app, System.currentTimeMillis())
+        if (watchedApp(app.packageName) == null || !NotificationWatchAccess.granted(context)) return
+        val event = AiNotificationEvent.classify(app, title)
+        aiTracker.record(app, event, System.currentTimeMillis())
+        aiSessions = aiTracker.snapshot
         if (!islandAllowed(requireLink = false)) return
         val time = java.time.LocalTime.now()
-        if (!settings.quiet.isQuiet(time.hour * 60 + time.minute)) overlay.showWatchedUpdate(app.update(title))
+        if (!settings.quiet.isQuiet(time.hour * 60 + time.minute)) overlay.showWatchedUpdate(app.update(title, event))
     }
 
     internal fun clearWatchedUpdate() = overlay.clearWatchedUpdate()
 
     internal fun openWatchedApp(packageName: String) {
         val app = watchedApp(packageName)
-            ?: manualTracking?.app?.takeIf { it.packageName == packageName }
+            ?: manualTracking.firstOrNull { it.app.packageName == packageName }?.app
             ?: return
         val launch = context.packageManager.getLaunchIntentForPackage(app.packageName) ?: return
         runCatching { context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
@@ -503,8 +529,14 @@ class AppModel(private val context: Context) : LinkListener {
         }
         val desktop = IslandPlan.active(sessions, approvals, allowed = islandAllowed(), this::agentName)
         val time = java.time.LocalTime.now()
-        val manual = manualTracking?.takeUnless { settings.quiet.isQuiet(time.hour * 60 + time.minute) }?.island()
-        overlay.setActive(desktop ?: manual)
+        val manual = manualTracking.takeIf {
+            it.isNotEmpty() && !settings.quiet.isQuiet(time.hour * 60 + time.minute) && overlay.seenByUser()
+        }.orEmpty()
+        overlay.setActive(when (desktop?.kind) {
+            null -> ManualAiSession.island(manual)
+            IslandSpec.Kind.WORKING -> desktop.copy(manualSessions = manual)
+            else -> desktop
+        })
     }
 
     private val expiry = HashMap<String, Runnable>()

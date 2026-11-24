@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.coucou.android.R
 import com.coucou.android.app.AppModel
+import com.coucou.android.core.AiNotificationEvent
 import com.coucou.android.core.TypeScale
 import java.time.Instant
 import java.time.ZoneId
@@ -50,11 +51,17 @@ internal fun WatchedActivityPanel(model: AppModel, limit: Int = 10) {
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(entry.app.label, style = TypeScale.BODY.style(t.text.c()))
-                        Text(stringResource(R.string.watch_apps_update), style = TypeScale.SECONDARY.style(t.textDim.c()))
+                        Text(stringResource(entry.event.labelRes()), style = TypeScale.SECONDARY.style(t.textDim.c()))
                     }
                     Text(format.format(Instant.ofEpochMilli(entry.atMs)), style = TypeScale.SECONDARY.style(t.textDim.c()))
                 }
             }
         }
     }
+}
+
+internal fun AiNotificationEvent.labelRes(): Int = when (this) {
+    AiNotificationEvent.UPDATE -> R.string.watch_apps_update
+    AiNotificationEvent.COMPLETION_REPORTED -> R.string.ai_completion_reported
+    AiNotificationEvent.ATTENTION_REPORTED -> R.string.ai_attention_reported
 }

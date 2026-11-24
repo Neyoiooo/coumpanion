@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- English fallback until the manual tracking feature is translated. -->
+<!-- English fallback until the new feature strings are translated. -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <string name="manual_ai_title">Manual task tracking</string>
     <string name="manual_ai_tracking">Tracking</string>
-    <string name="manual_ai_unconfirmed">Manual marker. AI progress is not verified.</string>
+    <string name="manual_ai_unconfirmed">Manual marker. AI progress is unverified.</string>
+    <string name="standard_launcher_label">Coumpanion Standard</string>
+    <string name="ai_completion_reported">Completion reported</string>
+    <string name="ai_attention_reported">Issue reported</string>
+    <string name="ai_stop_provider">Stop tracking %1$s</string>
+    <string name="ai_tracking_count">Tracking · %1$d</string>
+    <string name="ai_sessions">AI sessions</string>
+    <string name="island_position">Island position</string>
+    <string name="island_position_camera">Camera</string>
+    <string name="island_position_center">Center</string>
+    <string name="island_position_left">Left</string>
+    <string name="island_position_right">Right</string>
+    <string name="island_plain">Solid island background</string>
 </resources>

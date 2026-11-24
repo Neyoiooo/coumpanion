@@ -50,7 +50,7 @@ echo "starting the computer side (Rust)"
 PC_PID=$!
 
 echo "running the phone side (Kotlin)"
-PHONE_CMD="${PHONE_CMD:-cd $ROOT/android && ./gradlew cleanTestDebugUnitTest testDebugUnitTest --tests '*RelayE2ETest' --console=plain}"
+PHONE_CMD="${PHONE_CMD:-cd $ROOT/android && ./gradlew cleanTestFullDebugUnitTest testFullDebugUnitTest --tests '*RelayE2ETest' --console=plain}"
 if ! bash -c "$PHONE_CMD"; then
   echo "the phone side failed"; tail -30 "$LOG/pc.log" || true; exit 1
 fi

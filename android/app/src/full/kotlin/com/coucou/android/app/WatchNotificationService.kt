@@ -1,9 +1,6 @@
 package com.coucou.android.app
 
 import android.app.Notification
-import android.app.NotificationManager
-import android.content.ComponentName
-import android.content.Context
 import android.os.Process
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -15,6 +12,7 @@ class WatchNotificationService : NotificationListenerService() {
     private val screen by lazy { ScreenWatch(this) { on -> if (!on) model.clearWatchedUpdate() } }
 
     override fun onListenerConnected() {
+        model.refreshWatchApps()
         screen.start()
     }
 
@@ -31,13 +29,14 @@ class WatchNotificationService : NotificationListenerService() {
         screen.stop()
         seen.clear()
         model.clearWatchedUpdate()
+        model.refreshWatchAccess()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         if (sbn.user != Process.myUserHandle()) return
         // Check the package and the user's selection before reading notification contents.
         val app = model.watchedApp(sbn.packageName) ?: return
-        if (!accessGranted(this)) return
+        if (!NotificationWatchAccess.granted(this)) return
         val notification = sbn.notification
         if (notification.visibility == Notification.VISIBILITY_SECRET ||
             notification.flags and Notification.FLAG_GROUP_SUMMARY != 0) return
@@ -53,12 +52,5 @@ class WatchNotificationService : NotificationListenerService() {
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         seen.remove(sbn.key)
-    }
-
-    companion object {
-        fun component(context: Context) = ComponentName(context, WatchNotificationService::class.java)
-
-        fun accessGranted(context: Context): Boolean =
-            context.getSystemService(NotificationManager::class.java)?.isNotificationListenerAccessGranted(component(context)) == true
     }
 }

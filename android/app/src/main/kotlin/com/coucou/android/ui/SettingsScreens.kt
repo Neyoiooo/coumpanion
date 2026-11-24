@@ -1,5 +1,6 @@
 package com.coucou.android.ui
 
+import com.coucou.android.core.IslandPosition
 import com.coucou.android.core.AgentMute
 import com.coucou.android.core.TeamChoice
 import androidx.compose.material3.OutlinedTextField
@@ -60,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import com.coucou.android.Attribution
 import com.coucou.android.R
 import com.coucou.android.app.AppModel
+import com.coucou.android.app.NotificationWatchAccess
 import com.coucou.android.app.Mode
 import com.coucou.android.core.HistoryDays
 import com.coucou.android.core.HomeText
@@ -221,7 +223,10 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(Gap),
     ) {
         item { ScreenTitle(stringResource(R.string.settings_title), null) }
-        item { Panel { LinkRow(stringResource(R.string.watch_apps_title), onWatchApps) } }
+        item {
+            val title = if (NotificationWatchAccess.available) R.string.watch_apps_title else R.string.watch_apps_choose
+            Panel { LinkRow(stringResource(title), onWatchApps) }
+        }
 
         item { SectionHeading(stringResource(R.string.settings_section_computer)) }
         item {
@@ -278,6 +283,21 @@ fun SettingsScreen(
                 }
                 RowDivider()
                 SettingSwitch(stringResource(R.string.overlay_title), stringResource(R.string.overlay_hint), model.overlayWished, onOverlay)
+                RowDivider()
+                ChoiceRow(
+                    stringResource(R.string.island_position),
+                    listOf(
+                        IslandPosition.CAMERA to stringResource(R.string.island_position_camera),
+                        IslandPosition.CENTER to stringResource(R.string.island_position_center),
+                        IslandPosition.LEFT to stringResource(R.string.island_position_left),
+                        IslandPosition.RIGHT to stringResource(R.string.island_position_right),
+                    ),
+                    s.islandPosition,
+                ) { model.updateSettings(s.copy(islandPosition = it)) }
+                RowDivider()
+                SettingSwitch(stringResource(R.string.island_plain), null, s.plainIsland) {
+                    model.updateSettings(s.copy(plainIsland = it))
+                }
                 RowDivider()
                 SettingSwitch(stringResource(R.string.overlay_dnd_title), stringResource(R.string.overlay_dnd_hint), s.hideIslandInDnd) {
                     model.updateSettings(s.copy(hideIslandInDnd = it))

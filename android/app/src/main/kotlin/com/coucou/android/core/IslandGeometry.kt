@@ -9,6 +9,8 @@ data class PxRect(val left: Int, val top: Int, val right: Int, val bottom: Int) 
     val width: Int get() = right - left
 }
 
+enum class IslandPosition { CAMERA, CENTER, LEFT, RIGHT }
+
 /** The camera anchor, safe window bounds and layout sizes, in pixels. */
 data class IslandBox(
     val anchorX: Int,
@@ -25,7 +27,16 @@ data class IslandBox(
     val maxWidth: Int get() = rightEdge - leftEdge
 
     /** Keep the compact pill close to the actual camera even when the expanded card needs to shift. */
-    fun leftFor(width: Int): Int = (anchorX - width / 2).coerceIn(leftEdge, (rightEdge - width).coerceAtLeast(leftEdge))
+    fun leftFor(width: Int, position: IslandPosition = IslandPosition.CAMERA): Int {
+        val lastLeft = (rightEdge - width).coerceAtLeast(leftEdge)
+        val left = when (position) {
+            IslandPosition.CAMERA -> anchorX - width / 2
+            IslandPosition.CENTER -> (leftEdge + rightEdge - width) / 2
+            IslandPosition.LEFT -> leftEdge
+            IslandPosition.RIGHT -> lastLeft
+        }
+        return left.coerceIn(leftEdge, lastLeft)
+    }
 }
 
 /**

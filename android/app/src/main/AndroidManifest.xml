@@ -33,7 +33,7 @@
     <application
         android:name=".app.CoucouApp"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
+        android:label="${launcherLabel}"
         android:allowBackup="false"
         android:supportsRtl="true"
         android:localeConfig="@xml/locales_config"
@@ -82,16 +82,6 @@
         </service>
 
         <receiver android:name=".app.ActionReceiver" android:exported="false" />
-
-        <service
-            android:name=".app.WatchNotificationService"
-            android:exported="false"
-            android:label="@string/app_name"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
 
         <!-- The home-screen widget: a short summary, updated by the app when something changes (no timer). -->
         <receiver android:name=".app.GlanceWidget" android:exported="true" android:label="@string/widget_glance_label">

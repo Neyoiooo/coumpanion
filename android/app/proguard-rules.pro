@@ -15,6 +15,6 @@
     public static int e(...);
 }
 
-# A crash trace is still readable with the mapping file (app/build/outputs/mapping/release/mapping.txt; keep it with the build you ship).
+# A crash trace is still readable with the mapping file (app/build/outputs/mapping/<edition>Release/mapping.txt; keep it with the build you ship).
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile

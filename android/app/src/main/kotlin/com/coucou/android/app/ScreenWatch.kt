@@ -7,7 +7,7 @@ import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 
 /**
- * Tells the model when the screen turns on (or the phone is unlocked) and off. Registered only while a computer is paired; these are
+ * Tells the model when the screen turns on (or the phone is unlocked) and off. Registered only while a feature needs it. These are
  * system broadcasts that Android delivers to a running app, so nothing polls and nothing runs while the screen stays as it is.
  */
 class ScreenWatch(context: Context, private val onChange: (on: Boolean) -> Unit) {

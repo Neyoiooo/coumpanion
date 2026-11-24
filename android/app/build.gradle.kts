@@ -17,15 +17,29 @@ val releaseKeyPassword = signingValue("COUCOU_KEY_PASSWORD") ?: releaseStorePass
 
 android {
     namespace = "com.coucou.android"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "app.coumpanion.android"
         minSdk = 30
-        targetSdk = 35
-        versionCode = 8
-        versionName = "0.5.0"
+        targetSdk = 36
+        versionCode = 9
+        versionName = "0.6.0"
+        manifestPlaceholders["launcherLabel"] = "@string/app_name"
         // The app's languages (English and the translations in i18n/translations); the libraries' other languages are left out of the app.
         resourceConfigurations += listOf("en", "fr", "es", "pt-rBR", "b+zh+Hans", "hi", "bn", "ru", "in", "ar", "tr", "de", "ja", "ko", "b+zh+Hant", "th", "it")
+    }
+    flavorDimensions += "edition"
+    productFlavors {
+        create("standard") {
+            dimension = "edition"
+            applicationIdSuffix = ".standard"
+            manifestPlaceholders["launcherLabel"] = "@string/standard_launcher_label"
+            buildConfigField("boolean", "NOTIFICATION_WATCH", "false")
+        }
+        create("full") {
+            dimension = "edition"
+            buildConfigField("boolean", "NOTIFICATION_WATCH", "true")
+        }
     }
     signingConfigs {
         val keystore = releaseKeystore
@@ -50,13 +64,17 @@ android {
             signingConfig = signingConfigs.findByName("release") // null: unsigned
         }
     }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
     sourceSets["main"].java.srcDirs("src/main/kotlin")
+    sourceSets["full"].java.srcDirs("src/full/kotlin")
     sourceSets["debug"].java.srcDirs("src/debug/kotlin") // the Widgets preview receiver: debug builds only
     sourceSets["test"].java.srcDirs("src/test/kotlin")
 }
@@ -86,15 +104,22 @@ val verifyReleaseNoLogs by tasks.registering {
     group = "verification"
     description = "Builds the release APK and fails if a debug log tag or message is still in it."
     dependsOn("assembleRelease")
-    val apkDir = layout.buildDirectory.dir("outputs/apk/release")
+    val apkDir = layout.buildDirectory.dir("outputs/apk")
     doLast {
-        val apks = apkDir.get().asFile.walkTopDown().filter { it.extension == "apk" }.toList()
-        check(apks.size == 1) { "expected one release APK, found ${apks.size}" }
         val leftovers = listOf("CoumpanionOverlay", "CoumpanionLaunch", "CoumpanionDiscovery", "CoumpanionIsland", "island failed", "cannot browse", "ignored an early tap")
-        ZipFile(apks.single()).use { zip ->
-            for (entry in zip.entries().asSequence().filter { it.name.endsWith(".dex") }) {
-                val text = String(zip.getInputStream(entry).readBytes(), Charsets.ISO_8859_1)
-                for (word in leftovers) check(!text.contains(word)) { "'$word' is still in ${entry.name}: the debug logs were not stripped" }
+        for (edition in listOf("standard", "full")) {
+            val apk = apkDir.get().dir("$edition/release").asFile.listFiles { file -> file.extension == "apk" }?.singleOrNull()
+            checkNotNull(apk) { "expected one $edition release APK" }
+            ZipFile(apk).use { zip ->
+                for (entry in zip.entries().asSequence().filter { it.name.endsWith(".dex") }) {
+                    val text = String(zip.getInputStream(entry).readBytes(), Charsets.ISO_8859_1)
+                    for (word in leftovers) check(!text.contains(word)) { "'$word' is still in $edition ${entry.name}: the debug logs were not stripped" }
+                }
+                val manifest = String(zip.getInputStream(zip.getEntry("AndroidManifest.xml")).readBytes(), Charsets.UTF_8)
+                val listener = "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+                // Binary XML uses one string pool encoding for all attributes.
+                val containsListener = manifest.contains(listener) || manifest.contains(listener.toCharArray().joinToString("\u0000"))
+                check(containsListener == (edition == "full")) { "unexpected notification listener declaration in $edition" }
             }
         }
     }

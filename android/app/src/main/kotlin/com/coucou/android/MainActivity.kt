@@ -69,7 +69,7 @@ import com.coucou.android.app.BiometricGate
 import com.coucou.android.app.CoucouApp
 import com.coucou.android.app.Mode
 import com.coucou.android.app.Notifications
-import com.coucou.android.app.WatchNotificationService
+import com.coucou.android.app.NotificationWatchAccess
 import com.coucou.android.core.ApprovalSheetPlan
 import com.coucou.android.core.HomeText
 import com.coucou.android.core.Nav
@@ -257,8 +257,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun notificationAccess() {
+        if (!NotificationWatchAccess.available) return
         val detail = Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).putExtra(
-            Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, WatchNotificationService.component(this).flattenToString(),
+            Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, NotificationWatchAccess.component(this).flattenToString(),
         )
         try {
             startActivity(detail)
@@ -412,7 +413,7 @@ private fun Home(
         if (model.recap != null) item { Box(Modifier.padding(horizontal = Gutter)) { RecapPanel(model.recap) } }
         if (model.usage != null) item { Box(Modifier.padding(horizontal = Gutter)) { UsagePanel(model.usage) } }
         if (model.services.isNotEmpty()) item { Box(Modifier.padding(horizontal = Gutter)) { ServicesPanel(model.services) } }
-        if (model.manualTracking != null) {
+        if (model.manualTracking.isNotEmpty()) {
             item { Box(Modifier.padding(horizontal = Gutter)) { com.coucou.android.ui.ManualTrackingPanel(model, { onOverlay(true) }, showPicker = false) } }
         }
         if (model.watchedActivity.isNotEmpty()) {

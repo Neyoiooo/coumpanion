@@ -25,7 +25,9 @@ class WatchedAiAppTest {
         val queries = manifest.substringAfter("<queries>").substringBefore("</queries>")
         assertEquals(WatchedAiApp.entries.map { it.packageName }.toSet(),
             Regex("""<package android:name="([^"]+)"""").findAll(queries).map { it.groupValues[1] }.toSet())
-        assertTrue(manifest.contains("android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"))
+        val listenerPermission = "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+        assertFalse(manifest.contains(listenerPermission))
+        assertTrue(File("src/full/AndroidManifest.xml").readText().contains(listenerPermission))
         assertFalse(manifest.contains("android.permission.QUERY_ALL_PACKAGES"))
     }
 

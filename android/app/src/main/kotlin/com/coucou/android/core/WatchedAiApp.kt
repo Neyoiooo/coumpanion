@@ -10,8 +10,8 @@ enum class WatchedAiApp(val packageName: String, val label: String) {
     COPILOT("com.microsoft.copilot", "Copilot"),
     GROK("ai.x.grok", "Grok");
 
-    fun update(title: String): IslandSpec = IslandSpec(
-        IslandSpec.Kind.APP_UPDATE, packageName, label, BotState.IDLE, title,
+    fun update(title: String, event: AiNotificationEvent = AiNotificationEvent.UPDATE): IslandSpec = IslandSpec(
+        IslandSpec.Kind.APP_UPDATE, packageName, label, BotState.IDLE, title, notificationEvent = event,
     )
 
     companion object {

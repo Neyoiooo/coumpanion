@@ -19,6 +19,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +30,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
@@ -53,11 +56,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.ComposeView
@@ -90,6 +95,7 @@ import com.coucou.android.core.IconKind
 import com.coucou.android.core.IslandBox
 import com.coucou.android.core.IslandGeometry
 import com.coucou.android.core.IslandPalette
+import com.coucou.android.core.IslandPosition
 import com.coucou.android.core.IslandSpec
 import com.coucou.android.core.IslandSurface
 import com.coucou.android.core.IslandTimeline
@@ -99,6 +105,7 @@ import com.coucou.android.core.OverlayPolicy
 import com.coucou.android.core.PxRect
 import com.coucou.android.core.Tokens
 import com.coucou.android.core.Tracked
+import com.coucou.android.core.WatchedAiApp
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -123,6 +130,9 @@ class IslandOverlay(
     /** The user swiped the island up: what it showed now belongs in the notification shade. */
     private val onSwiped: (IslandSpec) -> Unit = {},
     private val onOpenWatchedApp: (packageName: String) -> Unit,
+    private val onStopTracking: (WatchedAiApp) -> Unit,
+    private val position: () -> IslandPosition,
+    private val plain: () -> Boolean,
 ) {
     private val wm = context.getSystemService(WindowManager::class.java)
     private val main = Handler(Looper.getMainLooper())
@@ -136,6 +146,7 @@ class IslandOverlay(
     private var spec by mutableStateOf<IslandSpec?>(null)
     private var expanded by mutableStateOf(false)
     private var approvalContentHeight by mutableIntStateOf(0)
+    private var sessionsContentHeight by mutableIntStateOf(0)
     private var glowMotion by mutableStateOf(false)
     private val width = Tracked(0.0)
     private val height = Tracked(0.0)
@@ -201,7 +212,7 @@ class IslandOverlay(
             seenByUser()
 
     /** The island is a window of its own: nobody sees it with the screen off, in a screen saver or behind the lock screen. */
-    private fun seenByUser(): Boolean = runCatching {
+    fun seenByUser(): Boolean = runCatching {
         context.getSystemService(android.os.PowerManager::class.java).isInteractive &&
             !context.getSystemService(android.app.KeyguardManager::class.java).isKeyguardLocked
     }.getOrDefault(false)
@@ -232,8 +243,10 @@ class IslandOverlay(
         val b = box ?: return
         if (spec?.kind != current.kind || spec?.fingerprint != current.fingerprint ||
             (current.kind == IslandSpec.Kind.APP_UPDATE && spec != current)) shownAt = clock()
-        if (spec?.kind != current.kind || spec?.pillId != current.pillId || spec?.fingerprint != current.fingerprint) {
+        val sameGroup = spec?.manualTracking == true && current.manualTracking
+        if (spec?.kind != current.kind || (!sameGroup && spec?.pillId != current.pillId) || spec?.fingerprint != current.fingerprint) {
             expanded = false
+            sessionsContentHeight = 0
         }
         spec = current
         val now = clock()
@@ -241,7 +254,7 @@ class IslandOverlay(
             width.jump(b.seedWidth.toDouble()); height.jump(0.0); radius.jump(b.panelCorner.toDouble())
         }
         val reduced = reducedMotion()
-        glowMotion = !reduced && phase == IslandTimeline.Phase.OPEN
+        glowMotion = !reduced && !plain() && !current.manualTracking && current.kind != IslandSpec.Kind.APP_UPDATE && phase == IslandTimeline.Phase.OPEN
         if (phase == IslandTimeline.Phase.OPEN) {
             val w = IslandGeometry.sizeFor(b, current.kind, expanded).first
             val h = targetHeight(b, current.kind)
@@ -264,9 +277,25 @@ class IslandOverlay(
         Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f),
     )
 
-    private fun targetHeight(b: IslandBox, kind: IslandSpec.Kind): Int =
-        if (kind == IslandSpec.Kind.APPROVAL && approvalContentHeight > 0) approvalContentHeight
-        else IslandGeometry.sizeFor(b, kind, expanded).second
+    private fun targetHeight(b: IslandBox, kind: IslandSpec.Kind): Int = when {
+        kind == IslandSpec.Kind.APPROVAL && approvalContentHeight > 0 -> approvalContentHeight
+        expanded && spec?.manualSessions?.isNotEmpty() == true && sessionsContentHeight > 0 -> sessionsContentHeight
+        spec?.manualSessions?.isNotEmpty() == true && !expanded -> trackingHeaderHeight(b)
+        else -> IslandGeometry.sizeFor(b, kind, expanded).second
+    }
+
+    private fun trackingHeaderHeight(b: IslandBox) = maxOf(b.workingH, (48 * context.resources.displayMetrics.density).roundToInt())
+
+    private fun measureSessions(pixels: Int) = safely {
+        val b = box ?: return@safely
+        if (pixels <= 0 || !expanded || sessionsContentHeight == pixels) return@safely
+        sessionsContentHeight = pixels
+        if (timeline.phase == IslandTimeline.Phase.OPEN) {
+            val h = targetHeight(b, IslandSpec.Kind.WORKING).toDouble()
+            if (reducedMotion()) height.jump(h) else height.goTo(h, clock())
+            motionKey++
+        }
+    }
 
     private fun toggleDetails() = safely {
         if (timeline.phase != IslandTimeline.Phase.OPEN || spec?.kind == IslandSpec.Kind.APPROVAL) return@safely
@@ -301,7 +330,7 @@ class IslandOverlay(
         val v = view ?: return
         val b = box ?: return
         val params = v.layoutParams as? WindowManager.LayoutParams ?: return
-        val left = b.leftFor(visibleWidth(b))
+        val left = b.leftFor(visibleWidth(b), position())
         val secure = WindowManager.LayoutParams.FLAG_SECURE
         val flags = if (spec?.kind == IslandSpec.Kind.APP_UPDATE) params.flags or secure else params.flags and secure.inv()
         if (params.x == left && params.y == b.windowTop && params.flags == flags) return
@@ -324,6 +353,7 @@ class IslandOverlay(
         spec = null
         expanded = false
         approvalContentHeight = 0
+        sessionsContentHeight = 0
     }
 
     private fun measure(): IslandBox {
@@ -366,7 +396,7 @@ class IslandOverlay(
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.LEFT
-            x = b.leftFor(b.seedWidth)
+            x = b.leftFor(b.seedWidth, position())
             y = b.windowTop
             layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
         }
@@ -462,7 +492,9 @@ class IslandOverlay(
         val density = LocalDensity.current
         fun px(v: Double): Dp = with(density) { v.toFloat().toDp() }
         val approval = s.kind == IslandSpec.Kind.APPROVAL
-        val (compactW, compactH) = IslandGeometry.sizeFor(b, s.kind)
+        val (compactW, defaultCompactH) = IslandGeometry.sizeFor(b, s.kind)
+        val sessionList = s.manualSessions.isNotEmpty()
+        val compactH = if (sessionList) trackingHeaderHeight(b) else defaultCompactH
         val shownHeight = height.value.coerceAtLeast(0.0)
         val reveal = if (approval) 0f else ((shownHeight - compactH) / (b.expandedH - compactH).coerceAtLeast(1))
             .coerceIn(0.0, 1.0).toFloat()
@@ -477,9 +509,13 @@ class IslandOverlay(
             val swipeThreshold = with(density) { SWIPE_UP_DP.dp.toPx() }
             Box(
                 Modifier.width(px(visibleWidth(b).toDouble())).height(px(shownHeight))
-                    .clip(shape).islandBackground(palette) { if (glowMotion) sweep else 0.25f }
+                    .clip(shape).then(
+                        if (plain()) Modifier.background(Color(0xFF0D0E14))
+                        else Modifier.islandBackground(palette) { if (glowMotion) sweep else 0.25f }
+                    )
                     .border(1.dp, borderBrush, shape)
-                    .pointerInput(s.kind, s.fingerprint) {
+                    .pointerInput(s.kind, s.fingerprint, sessionList && expanded) {
+                        if (sessionList && expanded) return@pointerInput
                         var travelled = 0f
                         detectVerticalDragGestures(
                             onDragStart = { travelled = 0f },
@@ -495,6 +531,15 @@ class IslandOverlay(
                     .semantics { liveRegion = if (approval) LiveRegionMode.Assertive else LiveRegionMode.Polite }
                 if (approval) {
                     RequestCard(s, accent, content.requiredWidth(px(compactW.toDouble())).onSizeChanged { measureApproval(it.height) })
+                } else if (sessionList) {
+                    val maxListHeight = remember(b, compactH) {
+                        val metrics = wm.currentWindowMetrics
+                        val bottom = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()).bottom
+                        (metrics.bounds.height() - b.windowTop - bottom - compactH).coerceAtLeast(0)
+                    }
+                    val listWidth = if (expanded) b.expandedW else compactW
+                    SessionStrip(s, palette, px(compactH.toDouble()), px(maxListHeight.toDouble()),
+                        content.requiredWidth(px(listWidth.toDouble())))
                 } else {
                     StatusStrip(s, palette, px(compactH.toDouble()), reveal, content) { if (glowMotion) sweep else null }
                 }
@@ -527,26 +572,81 @@ class IslandOverlay(
     }
 
     @Composable
+    private fun statusText(s: IslandSpec): String = stringResource(when (s.kind) {
+        IslandSpec.Kind.WORKING -> when (s.state) {
+            BotState.THINKING -> R.string.state_thinking
+            BotState.SEARCHING -> R.string.state_searching
+            else -> R.string.state_working
+        }
+        IslandSpec.Kind.ERROR -> R.string.notif_error
+        IslandSpec.Kind.RATELIMIT -> R.string.notif_ratelimit
+        IslandSpec.Kind.QUESTION -> R.string.notif_question
+        IslandSpec.Kind.APP_UPDATE -> R.string.watch_apps_update
+        else -> R.string.notif_finished
+    })
+
+    @Composable
+    @OptIn(ExperimentalFoundationApi::class)
+    private fun SessionStrip(s: IslandSpec, palette: IslandPalette, headerHeight: Dp, maxListHeight: Dp, modifier: Modifier) {
+        val sessions = s.manualSessions
+        val label = if (s.manualTracking && sessions.size > 1) stringResource(R.string.ai_sessions) else s.agent
+        val status = when {
+            !s.manualTracking -> statusText(s)
+            sessions.size > 1 -> stringResource(R.string.ai_tracking_count, sessions.size)
+            else -> stringResource(R.string.manual_ai_tracking)
+        }
+        val toggle = stringResource(if (expanded) R.string.island_collapse_details else R.string.island_expand_details)
+        Column(modifier.fillMaxWidth().onSizeChanged { measureSessions(it.height) }) {
+            Row(
+                Modifier.fillMaxWidth().height(headerHeight).combinedClickable(
+                    onClickLabel = if (s.manualTracking) toggle else null,
+                    onClick = { tap("the session strip") { if (s.manualTracking) toggleDetails() else onOpen() } },
+                    onLongClickLabel = toggle,
+                    onLongClick = { tap("the island long press") { toggleDetails() } },
+                ).padding(horizontal = 11.dp),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AgentPixels(palette) { null }
+                Text(label, Modifier.weight(1f), color = foreground, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(status, color = Color(palette.label), fontSize = 11.sp, maxLines = 1)
+                CoucouIcon(IconKind.CHEVRON, Modifier.rotate(if (expanded) -90f else 90f), tint = dim, size = 12.dp, mirror = false)
+            }
+            if (expanded) {
+                val now by trackingClock(sessions)
+                Column(Modifier.heightIn(max = maxListHeight).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
+                    if (!s.manualTracking && s.text.isNotBlank()) Text(s.text, color = foreground, fontSize = 13.sp)
+                    Text(stringResource(R.string.manual_ai_unconfirmed), Modifier.padding(vertical = 6.dp), color = dim, fontSize = 12.sp)
+                    sessions.forEach { session ->
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(
+                                Modifier.weight(1f).heightIn(min = 56.dp).clickable(role = Role.Button) {
+                                    tap("a tracked app") { onOpenWatchedApp(session.app.packageName) }
+                                }.padding(vertical = 8.dp),
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                Text(session.app.label, color = foreground, fontSize = 13.sp)
+                                Text(elapsedTracking(session, now), color = dim, fontSize = 12.sp)
+                            }
+                            StopTrackingButton(session) { tap("stop tracking") { onStopTracking(session.app) } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
     @OptIn(ExperimentalFoundationApi::class)
     private fun StatusStrip(s: IslandSpec, palette: IslandPalette, headerHeight: Dp, reveal: Float, modifier: Modifier, sweep: () -> Float?) {
-        val status = stringResource(if (s.manualTracking) R.string.manual_ai_tracking else when (s.kind) {
-            IslandSpec.Kind.WORKING -> when (s.state) {
-                BotState.THINKING -> R.string.state_thinking
-                BotState.SEARCHING -> R.string.state_searching
-                else -> R.string.state_working
-            }
-            IslandSpec.Kind.ERROR -> R.string.notif_error
-            IslandSpec.Kind.RATELIMIT -> R.string.notif_ratelimit
-            IslandSpec.Kind.QUESTION -> R.string.notif_question
-            IslandSpec.Kind.APP_UPDATE -> R.string.watch_apps_update
-            else -> R.string.notif_finished
-        })
+        val status = statusText(s)
         val accent = Color(palette.label)
         Column(
             modifier.fillMaxWidth().combinedClickable(
                 onClick = {
                     tap("the status strip") {
-                        if (s.kind == IslandSpec.Kind.APP_UPDATE || s.manualTracking) onOpenWatchedApp(s.pillId) else onOpen()
+                        if (s.kind == IslandSpec.Kind.APP_UPDATE) onOpenWatchedApp(s.pillId) else onOpen()
                     }
                 },
                 onLongClick = { tap("the island long press") { toggleDetails() } },
@@ -564,7 +664,8 @@ class IslandOverlay(
             }
             if (expanded || reveal > 0f) {
                 val detail = when {
-                    s.manualTracking -> stringResource(R.string.manual_ai_unconfirmed)
+                    s.kind == IslandSpec.Kind.APP_UPDATE -> listOf(stringResource(s.notificationEvent.labelRes()), s.text)
+                        .filter { it.isNotBlank() }.joinToString(" · ")
                     s.kind == IslandSpec.Kind.QUESTION -> stringResource(R.string.island_answer_on_pc)
                     s.text.isBlank() -> stringResource(R.string.island_open_app)
                     else -> s.text

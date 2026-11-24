@@ -50,6 +50,8 @@ data class UserSettings(
     val mutedAgents: Set<String> = emptySet(),
     /** Keep the island away while the phone is in Do Not Disturb (the notifications still reach the shade). Off = today's behaviour. */
     val hideIslandInDnd: Boolean = false,
+    val islandPosition: IslandPosition = IslandPosition.CAMERA,
+    val plainIsland: Boolean = false,
 ) {
     companion object {
         private const val SOUND = "sound_on"
@@ -65,10 +67,13 @@ data class UserSettings(
         private const val THEME = "theme_choice"
         private const val DYNAMIC = "dynamic_colour"
         private const val MUTED = "muted_agents"
+        private const val ISLAND_POSITION = "island_position"
+        private const val PLAIN_ISLAND = "island_plain"
         private const val HIDE_IN_DND = "island_hide_in_dnd"
 
         fun load(store: KeyValueStore): UserSettings {
             val d = UserSettings()
+            val islandPosition = store.getString(ISLAND_POSITION, "")
             return UserSettings(
                 soundOn = store.getBoolean(SOUND, d.soundOn),
                 volume = com.coucou.android.sound.SoundVolume.clamp(store.getFloat(VOLUME, d.volume)),
@@ -86,6 +91,9 @@ data class UserSettings(
                 dynamicColour = store.getBoolean(DYNAMIC, d.dynamicColour),
                 mutedAgents = AgentMute.decode(store.getString(MUTED, "")),
                 hideIslandInDnd = store.getBoolean(HIDE_IN_DND, d.hideIslandInDnd),
+                islandPosition = IslandPosition.entries.firstOrNull { it.name == islandPosition }
+                    ?: d.islandPosition,
+                plainIsland = store.getBoolean(PLAIN_ISLAND, d.plainIsland),
             )
         }
 
@@ -104,6 +112,8 @@ data class UserSettings(
             store.put(DYNAMIC, s.dynamicColour)
             store.put(MUTED, AgentMute.encode(s.mutedAgents))
             store.put(HIDE_IN_DND, s.hideIslandInDnd)
+            store.put(ISLAND_POSITION, s.islandPosition.name)
+            store.put(PLAIN_ISLAND, s.plainIsland)
         }
     }
 }

@@ -14,8 +14,11 @@ data class IslandSpec(
     /** False for a request whose command could not be shown in full: the island offers Deny only. */
     val canAllow: Boolean = true,
     /** A user-started local marker, not verified AI activity. */
-    val manualTracking: Boolean = false,
+    val manualSessions: List<ManualAiSession> = emptyList(),
+    val notificationEvent: AiNotificationEvent = AiNotificationEvent.UPDATE,
 ) {
+    val manualTracking: Boolean get() = manualSessions.firstOrNull()?.app?.packageName == pillId
+
     enum class Kind { WORKING, QUESTION, APPROVAL, FINISHED, ERROR, RATELIMIT, APP_UPDATE }
 
     /** Working, a question and a permission request stay until something changes. */
@@ -51,9 +54,11 @@ class IslandTimeline(private val clockMs: () -> Double) {
     private var updateUntil = 0.0
 
     /** What the user swiped away: kept until that thing is over or something else comes up. */
-    private var swiped: Triple<IslandSpec.Kind, String, String?>? = null
+    private var swiped: IslandSpec? = null
 
-    private fun IslandSpec.key() = Triple(kind, pillId, fingerprint)
+    private fun IslandSpec.matches(other: IslandSpec?): Boolean = other != null &&
+        kind == other.kind && pillId == other.pillId && fingerprint == other.fingerprint &&
+        manualSessions == other.manualSessions
 
     /** What to draw now (kept while retracting, so the island shrinks around its last content). */
     var current: IslandSpec? = null
@@ -88,7 +93,7 @@ class IslandTimeline(private val clockMs: () -> Double) {
         if (kind == IslandSpec.Kind.APP_UPDATE) {
             update = null
             updates.clear()
-            if (swiped?.first == kind) swiped = null
+            if (swiped?.kind == kind) swiped = null
             refresh()
         } else if (flash?.kind == kind) {
             flash = null
@@ -103,7 +108,7 @@ class IslandTimeline(private val clockMs: () -> Double) {
             // A deliberate dismissal clears pending mobile alerts; history still has their metadata.
             clearFlash(IslandSpec.Kind.APP_UPDATE)
         } else {
-            swiped = current?.key()
+            swiped = current
             refresh()
         }
     }
@@ -154,8 +159,8 @@ class IslandTimeline(private val clockMs: () -> Double) {
         // Never cover an approval/question. Mobile alerts may briefly interrupt ordinary working status.
         val candidate = urgent ?: update ?: active ?: flash
         // Nothing going on, or something else than what was swiped: the swipe is forgotten.
-        if (candidate == null || candidate.key() != swiped) swiped = null
-        val shown = candidate?.takeUnless { it.key() == swiped }
+        if (candidate == null || !candidate.matches(swiped)) swiped = null
+        val shown = candidate?.takeUnless { it.matches(swiped) }
         when {
             shown != null -> {
                 current = shown
